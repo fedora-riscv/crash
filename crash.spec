@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 3.10
-Release: 12
+Release: 13
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -42,6 +42,14 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Thu Mar 03 2005 Dave Anderson <anderson@redhat.com> 3.10-13
+- Compiler error- and warning-related fixes for gcc 4 build.
+- Update to enhance x86 and x86_64 gdb disassembly output so as to
+  symbolically display call targets from kernel module text without
+  requiring module debuginfo data.
+- Fix hole where an ia64 vmcore could be mistakenly accepted as a
+  usable dumpfile on an x86_64 machine, leading eventually to a
+  non-related error message.
 * Wed Mar 02 2005 Dave Anderson <anderson@redhat.com> 3.10-12
 - rebuild (gcc 4)
 * Thu Feb 10 2005 Dave Anderson <anderson@redhat.com> 3.10-9

@@ -1,16 +1,16 @@
 #
 # crash core analysis suite
 #
-Summary: crash utility for live systems and netdump, LKCD or mcore dumpfiles
+Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 3.7
-Release: 5
+Version: 3.8
+Release: 2
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: ftp://people.redhat.com/anderson/%{name}-%{version}.tar.gz
 ExclusiveOS: Linux
-ExclusiveArch: i386 ia64
+ExclusiveArch: i386 ia64 x86_64
 Buildroot: %{_tmppath}/%{name}-root
 BuildRequires: ncurses-devel zlib-devel
 Patch0: crash.patch
@@ -18,12 +18,12 @@ Patch0: crash.patch
 %description
 The core analysis suite is a self-contained tool that can be used to
 investigate either live systems, kernel core dumps created from the
-netdump package from Red Hat Linux, the mcore kernel patch offered by
-Mission Critical Linux, or the LKCD kernel patch.
+netdump and diskdump packages from Red Hat Linux, the mcore kernel patch
+offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version}
-%patch0 -p1 -b crash.patch
+# %patch0 -p1 -b crash.patch
 
 %build
 make RPMPKG="%{version}-%{release}"
@@ -42,6 +42,11 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Thu Jun 17 2004 Dave Anderson <anderson@redhat.com> 3.8-2
+- updated source package to crash-3.8.tar.gz 
+- diskdump support
+- x86_64 processor support 
+
 * Mon Sep 22 2003 Dave Anderson <anderson@redhat.com> 3.7-5
 - make bt recovery code start fix-up only upon reaching first faulting frame
 

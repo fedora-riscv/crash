@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 3.8
-Release: 3
+Release: 5
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -42,6 +42,12 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Wed Jul 14 2004 Dave Anderson <anderson@redhat.com> 3.8-5
+- bump release for fc3
+
+* Tue Jul 13 2004 Dave Anderson <anderson@redhat.com> 3.8-4
+- Fix for gcc 3.4.x/gdb issue where vmlinux was mistakenly presumed non-debug 
+
 * Fri Jun 25 2004 Dave Anderson <anderson@redhat.com> 3.8-3
 - remove (harmless) error message during ia64 diskdump invocation when
   an SMP system gets booted with maxcpus=1

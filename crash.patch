@@ -1,4 +1,4 @@
---- crash/main.c.orig	2004-06-25 15:29:38.000000000 -0400
+--- crash/main.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/main.c	2004-06-22 12:46:23.000000000 -0400
 @@ -48,6 +48,7 @@
          {"help", 0, 0, 0},
@@ -29,8 +29,8 @@
  
  		if (is_elf_file(argv[optind])) {
  			if (pc->namelist || pc->server_namelist) {
---- crash/memory.c.orig	2004-06-25 15:29:38.000000000 -0400
-+++ crash/memory.c	2004-06-22 12:57:28.000000000 -0400
+--- crash/memory.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/memory.c	2004-07-12 15:15:22.000000000 -0400
 @@ -229,6 +229,8 @@
  	MEMBER_OFFSET_INIT(page_inode, "page", "inode");
  	MEMBER_OFFSET_INIT(page_offset, "page", "offset");
@@ -57,6 +57,54 @@
  		MEMBER_OFFSET_INIT(kmem_list3_slabs_partial, 
  			"kmem_list3", "slabs_partial");
  		MEMBER_OFFSET_INIT(kmem_list3_slabs_full, 
+@@ -648,9 +653,9 @@
+ 	PG_reserved_flag_init();
+ 
+         if (VALID_MEMBER(page_pte)) {
+-		if (THIS_KERNEL_VERSION < 0x020600)
++		if (THIS_KERNEL_VERSION < LINUX(2,6,0))
+                 	vt->PG_slab = 10;
+-		else if (THIS_KERNEL_VERSION > 0x020600)
++		else if (THIS_KERNEL_VERSION >= LINUX(2,6,0))
+                 	vt->PG_slab = 7;
+ 	}
+ }
+@@ -2467,7 +2472,7 @@
+                 fprintf(fp, "%sDONTEXPAND", others++ ? "|" : "");
+         if (flags & VM_RESERVED)
+                 fprintf(fp, "%sRESERVED", others++ ? "|" : "");
+-	if (symbol_exists("nr_bigpages") && (THIS_KERNEL_VERSION == 0x020409)) {
++	if (symbol_exists("nr_bigpages") && (THIS_KERNEL_VERSION == LINUX(2,4,9))) {
+         	if (flags & VM_BIGPAGE)
+                 	fprintf(fp, "%sBIGPAGE", others++ ? "|" : "");
+         	if (flags & VM_BIGMAP)
+@@ -3586,7 +3591,7 @@
+ 						OFFSET(page_buffers));
+ 					if (tmp)
+ 						buffers++;
+-				} else if (THIS_KERNEL_VERSION > 0x020600) {
++				} else if (THIS_KERNEL_VERSION >= LINUX(2,6,0)) {
+ 	                                if ((flags >> v26_PG_private) & 1) 
+ 						buffers++;
+ 				} else
+@@ -3737,7 +3742,7 @@
+ 	                                fprintf(fp, "%sreserved", 
+ 						others++ ? "," : "");
+ 				fprintf(fp, "\n");
+-			} else if (THIS_KERNEL_VERSION > 0x020409) {
++			} else if (THIS_KERNEL_VERSION > LINUX(2,4,9)) {
+ 				fprintf(fp, "%lx\n", flags);
+ 			} else {
+ 	
+@@ -5361,7 +5366,7 @@
+ 	} else if (symbol_exists("buffermem")) {
+                 get_symbol_data("buffermem", sizeof(int), &tmp);
+ 		buffer_pages = BTOP(tmp);
+-	} else if ((THIS_KERNEL_VERSION > 0x020600) && 
++	} else if ((THIS_KERNEL_VERSION >= LINUX(2,6,0)) && 
+ 		symbol_exists("nr_blockdev_pages")) {
+ 		subtract_buffer_pages = buffer_pages = nr_blockdev_pages();
+ 	} else
 @@ -6169,10 +6174,12 @@
          }
  
@@ -206,7 +254,7 @@
  		BZERO(si->cpudata[i], sizeof(ulong) * vt->kmem_max_limit);
  
                  readmem(cpudata[i]+OFFSET(array_cache_avail),
---- crash/filesys.c.orig	2004-06-25 15:29:38.000000000 -0400
+--- crash/filesys.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/filesys.c	2004-06-24 15:56:31.000000000 -0400
 @@ -38,7 +38,8 @@
  static int find_booted_system_map(void);
@@ -334,7 +382,7 @@
 +
 +	return TRUE;
 +}
---- crash/help.c.orig	2004-06-25 15:29:38.000000000 -0400
+--- crash/help.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/help.c	2004-06-22 14:41:40.000000000 -0400
 @@ -975,7 +975,8 @@
  "        493      1   0  c0a86000  IN   0.0     0     0  [nfsd]",
@@ -346,7 +394,7 @@
  "    %s> ps -l",
  "    [280195]  PID: 2      TASK: c1468000  CPU: 0   COMMAND: \"keventd\"",
  "    [280195]  PID: 1986   TASK: c5af4000  CPU: 0   COMMAND: \"sshd\"",
---- crash/task.c.orig	2004-06-25 15:29:38.000000000 -0400
+--- crash/task.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/task.c	2004-06-25 14:32:38.000000000 -0400
 @@ -1866,16 +1866,15 @@
  {
@@ -380,9 +428,19 @@
  		return NO_TASK;
  	}
  }
---- crash/kernel.c.orig	2004-06-25 15:29:38.000000000 -0400
-+++ crash/kernel.c	2004-06-24 16:16:36.000000000 -0400
-@@ -404,6 +404,8 @@
+--- crash/kernel.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/kernel.c	2004-07-13 14:17:29.000000000 -0400
+@@ -363,6 +363,9 @@
+ {
+ 	char buf[BUFSIZE];
+ 	ulong linux_banner;
++        int argc;
++        char *arglist[MAXARGS];
++	char *p1, *p2;
+ 
+ 	if (pc->flags & KERNEL_DEBUG_QUERY)
+ 		return;
+@@ -404,6 +407,8 @@
  
  	verify_namelist();
  
@@ -391,7 +449,47 @@
  	if (strstr(kt->proc_version, "gcc version 3.3.2"))
  		kt->flags |= GCC_3_3_2;
  	else if (strstr(kt->proc_version, "gcc version 3.2.3"))
-@@ -3107,6 +3109,8 @@
+@@ -413,6 +418,39 @@
+ 	else if (strstr(kt->proc_version, "gcc version 2.96"))
+ 		kt->flags |= GCC_2_96;
+ 
++	/*
++	 *  Keeping the gcc version with #define's is getting out of hand.
++	 */
++	if ((p1 = strstr(kt->proc_version, "gcc version "))) {
++		BZERO(buf, BUFSIZE);
++		p1 += strlen("gcc version ");
++		p2 = buf;
++		while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.')) {
++			if (*p1 == '.')
++				*p2++ = ' ';
++			else
++				*p2++ = *p1;
++			p1++;
++		}
++		argc = parse_line(buf, arglist);
++
++		switch (argc)
++		{
++		case 0:
++		case 1:
++			break;
++		case 2:
++			kt->gcc_version[0] = atoi(arglist[0]);
++			kt->gcc_version[1] = atoi(arglist[1]);
++			break;
++		default:
++			kt->gcc_version[0] = atoi(arglist[0]);
++			kt->gcc_version[1] = atoi(arglist[1]);		
++			kt->gcc_version[2] = atoi(arglist[2]);
++			break;
++		}
++	}
++
+ 	return;
+ 
+ bad_match:
+@@ -3107,6 +3145,8 @@
  		fprintf(fp, "%sGCC_3_2_3", others++ ? "|" : "");
  	if (kt->flags & GCC_3_3_2)
  		fprintf(fp, "%sGCC_3_3_2", others++ ? "|" : "");
@@ -400,7 +498,96 @@
  	if (kt->flags & RA_SEEK)
  		fprintf(fp, "%sRA_SEEK", others++ ? "|" : "");
  	if (kt->flags & NO_RA_SEEK)
---- crash/configure.c.orig	2004-06-25 15:29:38.000000000 -0400
+@@ -3145,7 +3185,7 @@
+         fprintf(fp, "   module_list: %lx\n", kt->module_list);
+         fprintf(fp, " kernel_module: %lx\n", kt->kernel_module);
+ 	fprintf(fp, "mods_installed: %d\n", kt->mods_installed);
+-        if (ACTIVE())
++	if (!(pc->flags & KERNEL_DEBUG_QUERY) && ACTIVE()) 
+                 get_symbol_data("xtime", sizeof(struct timespec), &kt->date);
+         fprintf(fp, "          date: %s\n",
+                 strip_linefeeds(ctime(&kt->date.tv_sec)));
+@@ -3157,7 +3197,10 @@
+         fprintf(fp, "      .version: %s\n", uts->version);
+         fprintf(fp, "      .machine: %s\n", uts->machine);
+         fprintf(fp, "   .domainname: %s\n", uts->domainname);
+-	fprintf(fp, "kernel_version: %d.%d.%d\n", kt->kernel_version[0], kt->kernel_version[1], kt->kernel_version[2]);
++	fprintf(fp, "kernel_version: %d.%d.%d\n", kt->kernel_version[0], 
++		kt->kernel_version[1], kt->kernel_version[2]);
++	fprintf(fp, "   gcc_version: %d.%d.%d\n", kt->gcc_version[0], 
++		kt->gcc_version[1], kt->gcc_version[2]);
+ 	fprintf(fp, " runq_siblings: %d\n", kt->runq_siblings);
+ 	fprintf(fp, "  __rq_idx[32]: ");
+ 	for (i = 0; i < NR_CPUS; i++) 
+--- crash/gdb_interface.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/gdb_interface.c	2004-07-13 13:38:57.000000000 -0400
+@@ -132,6 +132,7 @@
+ gdb_session_init(void)
+ {
+ 	struct gnu_request *req;
++	int debug_data_pulled_in;
+ 
+         if (!have_partial_symbols() && !have_full_symbols())
+ 		no_debugging_data(FATAL);
+@@ -180,14 +181,34 @@
+         req->buf = GETBUF(BUFSIZE);
+ 
+ 	/*
+-	 *  Make sure the namelist has symbolic data...
+-	 */
++	 *  Make sure the namelist has symbolic data.  Later versions of
++	 *  gcc may require that debug data be pulled in by printing a 
++	 *  static kernel data structure.
++  	 */
++	debug_data_pulled_in = FALSE;
++retry:
++	BZERO(req->buf, BUFSIZE);
+         req->command = GNU_GET_DATATYPE;
+         req->name = "task_struct";
+-        req->flags |= GNU_RETURN_ON_ERROR;
++        req->flags = GNU_RETURN_ON_ERROR;
+         gdb_interface(req);
+-        if (req->flags & GNU_COMMAND_FAILED)
++
++        if (req->flags & GNU_COMMAND_FAILED) {
++		if (!debug_data_pulled_in) {
++			if (CRASHDEBUG(1))
++				error(INFO, 
++         "gdb_session_init: pulling in debug data by accessing init_mm.mmap\n");
++			debug_data_pulled_in = TRUE;
++			req->command = GNU_PASS_THROUGH;
++			req->flags = GNU_RETURN_ON_ERROR|GNU_NO_READMEM;
++			req->name = NULL;
++			sprintf(req->buf, "print init_mm.mmap");
++			gdb_interface(req);
++        		if (!(req->flags & GNU_COMMAND_FAILED)) 
++				goto retry;
++		}
+ 		no_debugging_data(WARNING);
++	}
+ 
+ 	if (pc->flags & KERNEL_DEBUG_QUERY) {
+ 		fprintf(fp, "\n%s: %s: contains debugging data\n\n",
+@@ -398,6 +419,8 @@
+                 console("%sGNU_RETURN_ON_ERROR", others++ ? "|" : "");
+         if (req->flags & GNU_FROM_TTY_OFF)
+                 console("%sGNU_FROM_TTY_OFF", others++ ? "|" : "");
++        if (req->flags & GNU_NO_READMEM)
++                console("%sGNU_NO_READMEM", others++ ? "|" : "");
+ 	console(")\n");
+ 
+         console("addr: %lx ", req->addr);
+@@ -687,6 +710,9 @@
+ 	if (write)
+ 		return FALSE;
+ 
++	if (pc->cur_req->flags & GNU_NO_READMEM)
++		return TRUE;
++
+ 	if (UNIQUE_COMMAND("dis"))
+ 		memtype = UVADDR;
+ 	else if (!IS_KVADDR(addr)) {
+--- crash/configure.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/configure.c	2004-06-21 13:48:18.000000000 -0400
 @@ -1053,7 +1053,7 @@
  	printf("#\n");
@@ -467,9 +654,35 @@
 -
 -
 -#endif
---- crash/x86.c.orig	2004-06-25 15:29:39.000000000 -0400
-+++ crash/x86.c	2004-06-22 13:57:05.000000000 -0400
-@@ -1500,7 +1500,6 @@
+--- crash/alpha.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/alpha.c	2004-07-08 13:40:24.000000000 -0400
+@@ -704,9 +704,10 @@
+ try_closest:
+ 	get_line_number(callpc, buf, FALSE);
+ 	if (strlen(buf)) {
+-	if (retries) {
+-		p = strstr(buf, ": ");
+-			*p = NULLCHAR;
++		if (retries) {
++			p = strstr(buf, ": ");
++			if (p)
++				*p = NULLCHAR;
+ 		} 
+ 		fprintf(fp, "    %s\n", buf);
+ 	} else {
+--- crash/x86.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/x86.c	2004-07-08 13:40:24.000000000 -0400
+@@ -1350,7 +1350,8 @@
+         if (strlen(buf)) {
+                 if (retries) {
+                         p = strstr(buf, ": ");
+-			*p = NULLCHAR;
++			if (p)
++				*p = NULLCHAR;
+                 }
+                 fprintf(fp, "    %s\n", buf);
+         } else {
+@@ -1500,7 +1501,6 @@
          	for (c = 0; c < NR_CPUS; c++) {
  			if (tt->softirq_ctx[c]) {
  				bt->hp->esp = tt->softirq_ctx[c];
@@ -477,7 +690,41 @@
  				fprintf(fp, "CPU %d SOFT IRQ STACK:\n", c);
  				if ((cnt = x86_eframe_search(bt)))
  					fprintf(fp, "\n");
---- crash/va_server.c.orig	2004-06-25 15:29:39.000000000 -0400
+--- crash/ppc.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/ppc.c	2004-07-08 13:40:24.000000000 -0400
+@@ -1467,7 +1467,8 @@
+         if (strlen(buf)) {
+                 if (retries) {
+                         p = strstr(buf, ": ");
+-                        *p = NULLCHAR;
++			if (p)
++                        	*p = NULLCHAR;
+                 }
+                 fprintf(fp, "    %s\n", buf);
+         } else {
+--- crash/ia64.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/ia64.c	2004-07-08 13:40:24.000000000 -0400
+@@ -3046,7 +3046,8 @@
+         if (strlen(buf)) {
+                 if (retries) {
+                         p = strstr(buf, ": ");
+-			*p = NULLCHAR;
++			if (p)
++				*p = NULLCHAR;
+                 }
+                 fprintf(fp, "    %s\n", buf);
+         } else {
+--- crash/x86_64.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/x86_64.c	2004-07-09 14:31:58.000000000 -0400
+@@ -1957,6 +1957,7 @@
+                 sym = closest_symbol(*up);
+ 
+                 if (STREQ(sym, "netconsole_netdump") || 
++		    STREQ(sym, "netpoll_start_netdump") ||
+ 		    STREQ(sym, "disk_dump")) {
+                         *rip = *up;
+                         *rsp = bt->stackbase + ((char *)(up) - bt->stackbuf);
+--- crash/va_server.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/va_server.c	2004-06-22 12:45:33.000000000 -0400
 @@ -310,7 +310,7 @@
  
@@ -488,7 +735,7 @@
  		return -1;
  	}
  
---- crash/va_server_v1.c.orig	2004-06-25 15:29:39.000000000 -0400
+--- crash/va_server_v1.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/va_server_v1.c	2004-06-22 12:45:33.000000000 -0400
 @@ -271,7 +271,7 @@
  
@@ -499,7 +746,7 @@
  		return -1;
  	}
  	ret = fseek(vas_file_p, (long)0, SEEK_SET);
---- crash/symbols.c.orig	2004-06-25 15:29:39.000000000 -0400
+--- crash/symbols.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/symbols.c	2004-06-22 12:54:05.000000000 -0400
 @@ -5425,6 +5425,10 @@
                  lenptr = &array_table.kmem_cache_s_name;
@@ -523,9 +770,33 @@
  	fprintf(fp, "                       log_buf: %d\n", 
  		ARRAY_LENGTH(log_buf));
  	fprintf(fp, "                      irq_desc: %d\n",
---- crash/lkcd_x86_trace.c.orig	2004-06-25 15:29:39.000000000 -0400
-+++ crash/lkcd_x86_trace.c	2004-06-24 16:16:36.000000000 -0400
-@@ -484,14 +484,14 @@
+--- crash/lkcd_x86_trace.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/lkcd_x86_trace.c	2004-07-13 14:17:29.000000000 -0400
+@@ -41,6 +41,8 @@
+ static int cache_framesize(int, kaddr_t funcaddr, int *, void **);
+ struct framesize_cache;
+ static int framesize_modify(struct framesize_cache *);
++struct framesize_mods;
++static int compiler_matches(struct framesize_mods *);
+ static sframe_t *alloc_sframe(trace_t *, int);
+ static void free_sframes(trace_t *);
+ static void free_trace_rec(trace_t *);
+@@ -477,22 +479,37 @@
+ /*
+  *  More kludgery for compiler oddities.
+  */
++#define COMPILER_VERSION_MASK  (1)   /* deprecated -- usable up to 3.3.3 */
++#define COMPILER_VERSION_EQUAL (2)
++#define COMPILER_VERSION_START (3)
++#define COMPILER_VERSION_RANGE (4)
++
+ struct framesize_mods {
+ 	char *funcname;
+ 	char *called_function;
+-	ulong compiler;
++	ulong compiler_flag;
++	ulong compiler1;
++	ulong compiler2;
  	int pre_adjust;
  	int post_adjust;
  } framesize_mods[] = {
@@ -533,28 +804,104 @@
 -	{ "svc_recv", "schedule_timeout", GCC_3_3_2, 0, 0 },
 -	{ "__down_interruptible", "schedule", GCC_3_3_2, 0, 0 },
 -	{ "netconsole_netdump", NULL, GCC_3_3_2, 0, -28 },
-+	{ "do_select", "schedule_timeout", GCC_3_3_2|GCC_3_3_3, 0, 0 },
-+	{ "svc_recv", "schedule_timeout", GCC_3_3_2|GCC_3_3_3, 0, 0 },
-+	{ "__down_interruptible", "schedule", GCC_3_3_2|GCC_3_3_3, 0, 0 },
-+	{ "netconsole_netdump", NULL, GCC_3_3_2|GCC_3_3_3, 0, -28 },
- 	{ "generic_file_write", NULL, GCC_2_96, 0, 20 },
- 	{ "block_prepare_write", NULL, GCC_2_96, 0, 72 },
- 	{ "receive_chars", NULL, GCC_2_96, 0, 48 },
+-	{ "generic_file_write", NULL, GCC_2_96, 0, 20 },
+-	{ "block_prepare_write", NULL, GCC_2_96, 0, 72 },
+-	{ "receive_chars", NULL, GCC_2_96, 0, 48 },
 -	{ "default_idle", NULL, GCC_3_3_2, -4, 0 },
-+	{ "default_idle", NULL, GCC_3_3_2|GCC_3_3_3, -4, 0 },
-  	{ NULL, NULL, 0, 0, 0 },
+- 	{ NULL, NULL, 0, 0, 0 },
++	{ "do_select", "schedule_timeout", 
++		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
++	{ "svc_recv", "schedule_timeout", 
++		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
++	{ "__down_interruptible", "schedule", 
++		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
++	{ "netconsole_netdump", NULL, 
++	       	COMPILER_VERSION_START, GCC(3,3,2), 0, 0, -28 },
++	{ "generic_file_write", NULL, 
++		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 20 },  
++	{ "block_prepare_write", NULL, 
++		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 72 }, 
++	{ "receive_chars", NULL, 
++		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 48 },
++	{ "default_idle", NULL, 
++		COMPILER_VERSION_START, GCC(3,3,2), 0, -4, 0 },
++ 	{ NULL, NULL, 0, 0, 0, 0, 0 },
  };
  
-@@ -1289,7 +1289,7 @@
+ static int
+@@ -506,7 +523,7 @@
+ 
+         for (fmp = &framesize_mods[0]; fmp->funcname; fmp++) {
+                 if (STREQ(funcname, fmp->funcname) &&
+-                    (fmp->compiler & (kt->flags & GCC_VERSION)))
++                    compiler_matches(fmp))
+                         break;
+         }
+ 
+@@ -520,13 +537,43 @@
+ 		fc->bp_adjust = fmp->post_adjust;
+ 
+ 	if (fmp->called_function) {
+-        	if (STREQ(fmp->called_function, x86_function_called_by(fc->pc)));
++        	if (STREQ(fmp->called_function,x86_function_called_by(fc->pc)));
+ 			fc->flags |= FRAMESIZE_VALIDATE;
+ 	}
+ 
+ 	return TRUE;
+ }
+ 
++static int
++compiler_matches(struct framesize_mods *fmp)
++{
++	switch (fmp->compiler_flag)
++	{
++	case COMPILER_VERSION_MASK:
++		if (fmp->compiler1 & (kt->flags & GCC_VERSION_DEPRECATED))
++			return TRUE;
++		break;
++
++	case COMPILER_VERSION_EQUAL:
++		if (THIS_GCC_VERSION == fmp->compiler1)
++			return TRUE;
++		break;
++
++	case COMPILER_VERSION_START:
++		if (THIS_GCC_VERSION >= fmp->compiler1)
++			return TRUE;
++		break;
++
++	case COMPILER_VERSION_RANGE:
++		if ((THIS_GCC_VERSION >= fmp->compiler1) &&
++		    (THIS_GCC_VERSION <= fmp->compiler2))
++			return TRUE;
++		break;
++	}
++
++	return FALSE;
++}
++
+ 
+ static int
+ dump_framesize_cache(FILE *ofp, struct framesize_cache *fcp)
+@@ -831,7 +878,7 @@
+ 	 */
+ 	if (STREQ(kl_funcname(pc), "schedule") && 
+ 	    !(bt->flags & BT_CONTEXT_SWITCH)) 
+-		frmsize -= kt->flags & GCC_3_2 ? 4 : 8;
++		frmsize -= THIS_GCC_VERSION == GCC(3,2,0) ? 4 : 8;
+ 
+         FRAMESIZE_CACHE_ENTER(pc, &frmsize);
+ #endif
+@@ -1289,7 +1336,7 @@
  			 *  just catch it here first.
  			 */
  			if (STREQ(funcname, "schedule") &&
 -			    (kt->flags & (GCC_3_2_3|GCC_3_3_2))) {
-+			    (kt->flags & (GCC_3_2_3|GCC_3_3_2|GCC_3_3_3))) {
++			    (THIS_GCC_VERSION >= GCC(3,2,3))) {
  				SEEK_VALID_RA();
  			/* 
  			 *  else FRAMESIZE_VALIDATE has been turned on
---- crash/netdump.c.orig	2004-06-25 15:29:39.000000000 -0400
+--- crash/netdump.c.orig	2004-07-14 09:38:12.000000000 -0400
 +++ crash/netdump.c	2004-06-22 12:43:12.000000000 -0400
 @@ -1167,6 +1167,7 @@
  	for (i = 0, up = (ulong *)bt->stackbuf; i < LONGS_PER_STACK; i++, up++){
@@ -564,8 +911,18 @@
  		    STREQ(sym, "disk_dump")) {
  			*eip = *up;
  			*esp = search ?
---- crash/defs.h.orig	2004-06-25 15:29:39.000000000 -0400
-+++ crash/defs.h	2004-06-24 16:16:58.000000000 -0400
+--- crash/unwind.c.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/unwind.c	2004-07-14 09:32:01.000000000 -0400
+@@ -42,6 +42,7 @@
+ #define GATE_ADDR (0xa000000000000000 + PAGE_SIZE)
+ #define CLEAR_SCRIPT_CACHE (TRUE)
+ 
++#define _ASM_IA64_FPU_H
+ #include "unwind.h"
+ #include "unwind_i.h"
+ #include "rse.h"
+--- crash/defs.h.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/defs.h	2004-07-13 16:15:24.000000000 -0400
 @@ -107,57 +107,57 @@
  /*
   *  program_context flags
@@ -691,11 +1048,35 @@
 +#define GCC_3_3_3     (0x8000)
  
 -#define GCC_VERSION (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2)
-+#define GCC_VERSION (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2|GCC_3_3_3)
++#define GCC_VERSION_DEPRECATED (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2|GCC_3_3_3)
  
  struct kernel_table {                   /* kernel data */
  	ulong flags;
-@@ -1271,6 +1272,8 @@
+@@ -414,7 +415,8 @@
+ 	struct timespec date;
+ 	char proc_version[BUFSIZE];
+ 	struct new_utsname utsname;
+-	int kernel_version[3];
++	uint kernel_version[3];
++	uint gcc_version[3];
+ 	int runq_siblings;
+ 	long __rq_idx[NR_CPUS];
+ 	long __cpu_idx[NR_CPUS];
+@@ -442,6 +444,13 @@
+ #define THIS_KERNEL_VERSION ((kt->kernel_version[0] << 16) + \
+ 			     (kt->kernel_version[1] << 8) + \
+ 			     (kt->kernel_version[2]))
++#define LINUX(x,y,z) (((uint)(x) << 16) + ((uint)(y) << 8) + (uint)(z))
++
++#define THIS_GCC_VERSION    ((kt->gcc_version[0] << 16) + \
++                             (kt->gcc_version[1] << 8) + \
++                             (kt->gcc_version[2]))
++#define GCC(x,y,z) (((uint)(x) << 16) + ((uint)(y) << 8) + (uint)(z))
++
+ #define IS_KERNEL_STATIC_TEXT(x) (((ulong)(x) >= kt->stext) && \
+ 		  	          ((ulong)(x) < kt->etext))
+ 
+@@ -1271,6 +1280,8 @@
  struct array_table {
  	int kmem_cache_s_name;
  	int kmem_cache_s_c_name;
@@ -704,7 +1085,7 @@
  	int irq_desc;
  	int irq_action;
  	int log_buf;
-@@ -1674,10 +1677,10 @@
+@@ -1674,10 +1685,10 @@
  #define _PAGE_PSE       0x080   /* 4 MB (or 2MB) page, Pentium+, if present.. */
  #define _PAGE_GLOBAL    0x100   /* Global TLB entry PPro+ */
  #define _PAGE_PROTNONE  0x080   /* If not present */
@@ -717,7 +1098,15 @@
  #define PAE_PAGEBASE(X)      (((unsigned long long)(X)) & ((unsigned long long)machdep->pagemask) & NX_BIT_MASK)
  
  #define SWP_TYPE(entry) (((entry) >> 1) & 0x3f)
-@@ -2788,6 +2791,7 @@
+@@ -2300,6 +2311,7 @@
+ #define GNU_RETURN_ON_ERROR      (0x8)
+ #define GNU_COMMAND_FAILED      (0x10)
+ #define GNU_FROM_TTY_OFF        (0x20)
++#define GNU_NO_READMEM          (0x40)
+ 
+ #undef TRUE
+ #undef FALSE
+@@ -2788,6 +2800,7 @@
  char *fill_inode_cache(ulong);
  void clear_inode_cache(void);
  int monitor_memory(long *, long *, long *, long *);
@@ -725,7 +1114,7 @@
  #define RADIX_TREE_COUNT   (1)
  #define RADIX_TREE_SEARCH  (2)
  #define RADIX_TREE_DUMP    (3)
-@@ -2966,44 +2970,44 @@
+@@ -2966,44 +2979,44 @@
  struct stack_hook *gather_text_list(struct bt_info *);
  int get_cpus_online(void);
  void back_trace(struct bt_info *);
@@ -806,3 +1195,69 @@
  
  #define BT_REF_HEXVAL         (0x1)
  #define BT_REF_SYMBOL         (0x2)
+--- crash/lkcd_vmdump_v1.h.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/lkcd_vmdump_v1.h	2004-07-13 16:17:04.000000000 -0400
+@@ -46,7 +46,9 @@
+ #ifndef MCLX
+ #include <linux/utsname.h>              /* for utsname structure            */
+ #endif
++#ifndef IA64
+ #include <asm/ptrace.h>                 /* for pt_regs                      */
++#endif
+ 
+ /* necessary header definitions in all cases */
+ #define DUMP_KIOBUF_NUMBER  0xdeadbeef  /* special number for kiobuf maps   */
+@@ -124,7 +126,9 @@
+ 	struct new_utsname   dh_utsname;
+ 
+ 	/* the dump registers */
++#ifndef IA64
+ 	struct pt_regs       dh_regs;
++#endif
+ 
+ 	/* the address of the current task */
+ 	struct task_struct  *dh_current_task;
+@@ -153,8 +157,10 @@
+ 
+ #endif /* CONFIG_VMDUMP */
+ 
++#ifdef __KERNEL__
+ extern void dump_init(uint64_t, uint64_t);
+ extern void dump_open(char *);
+ extern void dump_execute(char *, struct pt_regs *);
++#endif
+ 
+ #endif /* _VMDUMP_H */
+--- crash/lkcd_vmdump_v2_v3.h.orig	2004-07-14 09:38:12.000000000 -0400
++++ crash/lkcd_vmdump_v2_v3.h	2004-07-13 16:17:04.000000000 -0400
+@@ -108,7 +108,9 @@
+  *  data here are just placeholders...
+  */
+ 
++#ifndef IA64
+ #include <asm/ptrace.h>                          /* for pt_regs             */
++#endif
+ 
+ /* definitions */
+ #define DUMP_ASM_MAGIC_NUMBER     0xdeaddeadULL  /* magic number            */
+@@ -133,7 +135,9 @@
+         uint32_t             dha_eip;
+ 
+         /* the dump registers */
++#ifndef IA64
+         struct pt_regs       dha_regs;
++#endif
+ 
+ } dump_header_asm_t;
+ 
+@@ -235,8 +239,10 @@
+ 
+ #endif /* CONFIG_VMDUMP */
+ 
++#ifdef __KERNEL__
+ extern void dump_init(uint64_t, uint64_t);
+ extern void dump_open(char *);
+ extern void dump_execute(char *, struct pt_regs *);
++#endif
+ 
+ #endif /* _VMDUMP_H */

@@ -3,14 +3,14 @@
 #
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 3.8
-Release: 5
+Version: 3.10
+Release: 9
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: ftp://people.redhat.com/anderson/%{name}-%{version}.tar.gz
 ExclusiveOS: Linux
-ExclusiveArch: i386 ia64 x86_64
+ExclusiveArch: i386 ia64 x86_64 ppc64
 Buildroot: %{_tmppath}/%{name}-root
 BuildRequires: ncurses-devel zlib-devel
 Patch0: crash.patch
@@ -42,6 +42,28 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Thu Feb 10 2005 Dave Anderson <anderson@redhat.com> 3.10-9
+- Updated source package to crash-3.10.tar.gz, containing
+  IBM's final ppc64 processor support for RHEL4
+- Fixes potential "bt -a" hang on dumpfile where netdump IPI interrupted
+  an x86 process while executing the instructions just after it had entered
+  the kernel for a syscall, but before calling the handler.  BZ #139437
+- Update to handle backtraces in dumpfiles generated on IA64 with the
+  INIT switch (functionality intro'd in RHEL3-U5 kernel).  BZ #139429
+- Fix for handling ia64 and x86_64 machines booted with maxcpus=1 on
+  an SMP kernel.  BZ #139435
+- Update to handle backtraces in dumpfiles generated on x86_64 from the
+  NMI exception stack (functionality intro'd in RHEL3-U5 kernel).
+- "kmem -[sS]" beefed up to more accurately verify slab cache chains
+  and report errors found.
+- Fix for ia64 INIT switch-generated backtrace handling when
+  init_handler_platform() is inlined into ia64_init_handler();
+  properly handles both RHEL3 and RHEL4 kernel patches.
+  BZ #138350
+- Update to enhance ia64 gdb disassembly output so as to
+  symbolically display call targets from kernel module
+  text without requiring module debuginfo data.
+
 * Wed Jul 14 2004 Dave Anderson <anderson@redhat.com> 3.8-5
 - bump release for fc3
 

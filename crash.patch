@@ -1,1263 +1,1667 @@
---- crash/main.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/main.c	2004-06-22 12:46:23.000000000 -0400
-@@ -48,6 +48,7 @@
-         {"help", 0, 0, 0},
- 	{"data_debug", 0, 0, 0},
- 	{"no_data_debug", 0, 0, 0},
-+	{"no_kmem_cache", 0, 0, 0},
- 	{"machdep", 1, 0, 0},
- 	{"version", 0, 0, 0},
- 	{"buildinfo", 0, 0, 0},
-@@ -105,6 +106,10 @@
- 				pc->flags &= ~DATADEBUG;
- 
- 		        if (STREQ(long_options[option_index].name, 
-+			    "no_kmem_cache")) 
-+				vt->flags |= KMEM_CACHE_UNAVAIL;
-+
-+		        if (STREQ(long_options[option_index].name, 
- 			    "machdep")) 
- 				machdep->cmdline_arg = optarg;
- 
-@@ -225,7 +230,8 @@
-        		if (!file_exists(argv[optind], NULL)) {
-                 	error(INFO, "%s: %s\n", argv[optind], strerror(ENOENT));
-                 	program_usage(SHORT_FORM);
--        	}
-+        	} else if (!is_readable(argv[optind])) 
-+			program_usage(SHORT_FORM);
- 
- 		if (is_elf_file(argv[optind])) {
- 			if (pc->namelist || pc->server_namelist) {
---- crash/memory.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/memory.c	2004-07-12 15:15:22.000000000 -0400
-@@ -229,6 +229,8 @@
- 	MEMBER_OFFSET_INIT(page_inode, "page", "inode");
- 	MEMBER_OFFSET_INIT(page_offset, "page", "offset");
- 	MEMBER_OFFSET_INIT(page_count, "page", "count");
-+	if (INVALID_MEMBER(page_count))
-+		MEMBER_OFFSET_INIT(page_count, "page", "_count");
- 	MEMBER_OFFSET_INIT(page_flags, "page", "flags");
-         MEMBER_OFFSET_INIT(page_mapping, "page", "mapping");
-         MEMBER_OFFSET_INIT(page_index, "page", "index");
-@@ -301,6 +303,7 @@
- 			"kmem_cache_s", "slabs_free");
- 		MEMBER_OFFSET_INIT(kmem_cache_s_cpudata, 
- 			"kmem_cache_s", "cpudata");
-+                ARRAY_LENGTH_INIT(len, NULL, "kmem_cache_s.cpudata", NULL, 0);
- 		MEMBER_OFFSET_INIT(kmem_cache_s_colour_off, 
- 			"kmem_cache_s", "colour_off");
- 
-@@ -340,6 +343,8 @@
- 
- 		MEMBER_OFFSET_INIT(kmem_cache_s_lists, "kmem_cache_s", "lists");
- 		MEMBER_OFFSET_INIT(kmem_cache_s_array, "kmem_cache_s", "array");
-+                ARRAY_LENGTH_INIT(len, NULL, "kmem_cache_s.array", NULL, 0);
-+
- 		MEMBER_OFFSET_INIT(kmem_list3_slabs_partial, 
- 			"kmem_list3", "slabs_partial");
- 		MEMBER_OFFSET_INIT(kmem_list3_slabs_full, 
-@@ -648,9 +653,9 @@
- 	PG_reserved_flag_init();
- 
-         if (VALID_MEMBER(page_pte)) {
--		if (THIS_KERNEL_VERSION < 0x020600)
-+		if (THIS_KERNEL_VERSION < LINUX(2,6,0))
-                 	vt->PG_slab = 10;
--		else if (THIS_KERNEL_VERSION > 0x020600)
-+		else if (THIS_KERNEL_VERSION >= LINUX(2,6,0))
-                 	vt->PG_slab = 7;
- 	}
- }
-@@ -2467,7 +2472,7 @@
-                 fprintf(fp, "%sDONTEXPAND", others++ ? "|" : "");
-         if (flags & VM_RESERVED)
-                 fprintf(fp, "%sRESERVED", others++ ? "|" : "");
--	if (symbol_exists("nr_bigpages") && (THIS_KERNEL_VERSION == 0x020409)) {
-+	if (symbol_exists("nr_bigpages") && (THIS_KERNEL_VERSION == LINUX(2,4,9))) {
-         	if (flags & VM_BIGPAGE)
-                 	fprintf(fp, "%sBIGPAGE", others++ ? "|" : "");
-         	if (flags & VM_BIGMAP)
-@@ -3586,7 +3591,7 @@
- 						OFFSET(page_buffers));
- 					if (tmp)
- 						buffers++;
--				} else if (THIS_KERNEL_VERSION > 0x020600) {
-+				} else if (THIS_KERNEL_VERSION >= LINUX(2,6,0)) {
- 	                                if ((flags >> v26_PG_private) & 1) 
- 						buffers++;
- 				} else
-@@ -3737,7 +3742,7 @@
- 	                                fprintf(fp, "%sreserved", 
- 						others++ ? "," : "");
- 				fprintf(fp, "\n");
--			} else if (THIS_KERNEL_VERSION > 0x020409) {
-+			} else if (THIS_KERNEL_VERSION > LINUX(2,4,9)) {
- 				fprintf(fp, "%lx\n", flags);
- 			} else {
- 	
-@@ -5361,7 +5366,7 @@
- 	} else if (symbol_exists("buffermem")) {
-                 get_symbol_data("buffermem", sizeof(int), &tmp);
- 		buffer_pages = BTOP(tmp);
--	} else if ((THIS_KERNEL_VERSION > 0x020600) && 
-+	} else if ((THIS_KERNEL_VERSION >= LINUX(2,6,0)) && 
- 		symbol_exists("nr_blockdev_pages")) {
- 		subtract_buffer_pages = buffer_pages = nr_blockdev_pages();
- 	} else
-@@ -6169,10 +6174,12 @@
-         }
- 
- 	readmem(cache+OFFSET(kmem_cache_s_cpudata),
--        	KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
-+        	KVADDR, &cpudata[0], 
-+		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_cpudata),
-                 "cpudata array", FAULT_ON_ERROR);
- 
--	for (i = max_limit = 0; (i < NR_CPUS) && cpudata[i]; i++) {
-+	for (i = max_limit = 0; (i < ARRAY_LENGTH(kmem_cache_s_cpudata)) && 
-+	     cpudata[i]; i++) {
- 		readmem(cpudata[i]+OFFSET(cpucache_s_limit),
-         		KVADDR, &limit, sizeof(int),
-                 	"cpucache limit", FAULT_ON_ERROR);
-@@ -6187,10 +6194,12 @@
- kmem_cache_s_array:
- 
- 	readmem(cache+OFFSET(kmem_cache_s_array),
--        	KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
--                "array_cache array", FAULT_ON_ERROR);
-+        	KVADDR, &cpudata[0], 
-+		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_array),
-+                "array cache array", FAULT_ON_ERROR);
- 
--        for (i = max_limit = 0; (i < NR_CPUS) && cpudata[i]; i++) {
-+	for (i = max_limit = 0; (i < ARRAY_LENGTH(kmem_cache_s_array)) && 
-+	     cpudata[i]; i++) {
-                 readmem(cpudata[i]+OFFSET(array_cache_limit),
-                         KVADDR, &limit, sizeof(int),
-                         "array cache limit", FAULT_ON_ERROR);
-@@ -7665,9 +7674,14 @@
- 	ulong expected, cnt;
- 	int free_index;
- 	ulong kmembp;
-+	short *kbp;
- 
- 	BNEG(si->addrlist, sizeof(ulong) * (si->c_num+1));
- 
-+	if (CRASHDEBUG(1)) 
-+		fprintf(fp, "slab: %lx si->s_inuse: %ld si->c_num: %ld\n", 
-+			si->slab, si->s_inuse, si->c_num);
-+
- 	if (si->s_inuse == si->c_num )
- 		return;
- 
-@@ -7677,29 +7691,58 @@
-                 "kmem_bufctl array", FAULT_ON_ERROR);
- 
- 	if (CRASHDEBUG(1)) {
--		for (i = 0; i < si->c_num; i++)
-+		for (i = 0; (SIZE(kmem_bufctl_t) == sizeof(int)) && 
-+		     (i < si->c_num); i++) 
- 			fprintf(fp, "%d ", si->kmem_bufctl[i]);
-+
-+		for (kbp = (short *)&si->kmem_bufctl[0], i = 0; 
-+		     (SIZE(kmem_bufctl_t) == sizeof(short)) && (i < si->c_num);
-+		     i++) 
-+			fprintf(fp, "%d ", *(kbp + i));
-+
- 		fprintf(fp, "\n");
+--- crash/memory.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/memory.c	2005-01-06 14:56:46.000000000 -0500
+@@ -88,7 +88,9 @@
+ static void kmem_search(struct meminfo *);
+ static void kmem_cache_init(void);
+ static ulong max_cpudata_limit(ulong, ulong *);
++static int ignore_cache(struct meminfo *, char *);
+ static char *is_kmem_cache_addr(ulong, char *);
++static void kmem_cache_list(void);
+ static void dump_kmem_cache(struct meminfo *);
+ static void dump_kmem_cache_percpu_v1(struct meminfo *);
+ static void dump_kmem_cache_percpu_v2(struct meminfo *);
+@@ -104,6 +106,8 @@
+ static void dump_slab(struct meminfo *);
+ static void dump_slab_percpu_v1(struct meminfo *);
+ static void dump_slab_percpu_v2(struct meminfo *);
++static int verify_slab_v1(struct meminfo *, ulong, int);
++static int verify_slab_v2(struct meminfo *, ulong, int);
+ static void gather_slab_free_list(struct meminfo *);
+ static void gather_slab_free_list_percpu(struct meminfo *);
+ static void gather_cpudata_list_v1(struct meminfo *);
+@@ -3321,7 +3325,10 @@
+                 if (vt->flags & KMEM_CACHE_UNAVAIL)
+                      	error(FATAL, 
+ 			    "kmem cache slab subsystem not available\n");
+-		vt->dump_kmem_cache(&meminfo);
++		if (STREQ(meminfo.reqname, "list"))
++			kmem_cache_list();
++		else
++			vt->dump_kmem_cache(&meminfo);
  	}
  
- 	cnt = 0;
- 	expected = si->c_num - si->s_inuse;
- 
--	for (free_index = si->free; free_index != BUFCTL_END;
--	     free_index = si->kmem_bufctl[free_index]) {
--
--                if (cnt == si->c_num) {
--                        error(INFO,
-+	if (SIZE(kmem_bufctl_t) == sizeof(int)) {
-+		for (free_index = si->free; free_index != BUFCTL_END;
-+		     free_index = si->kmem_bufctl[free_index]) {
-+	
-+	                if (cnt == si->c_num) {
-+	                        error(INFO,
-                      "\"%s\" cache: too many objects found in slab free list\n",
--                                si->curname);
--                        si->errors++;
--                        return;
--                }
-+	                                si->curname);
-+	                        si->errors++;
-+	                        return;
-+	                }
-+	
-+			obj = si->s_mem + (free_index*si->size);
-+			si->addrlist[cnt] = obj; 
-+			cnt++;
-+		}
-+	} else if (SIZE(kmem_bufctl_t) == sizeof(short)) {
-+		kbp = (short *)&si->kmem_bufctl[0];
-+
-+                for (free_index = si->free; free_index != BUFCTL_END;
-+                     free_index = (int)*(kbp + free_index)) {
-+
-+                        if (cnt == si->c_num) {
-+                                error(INFO,
-+                     "\"%s\" cache: too many objects found in slab free list\n",                                        si->curname);
-+                                si->errors++;
-+                                return;
-+                        }
- 
--		obj = si->s_mem + (free_index*si->size);
--		si->addrlist[cnt] = obj; 
--		cnt++;
--	}
-+                        obj = si->s_mem + (free_index*si->size);
-+                        si->addrlist[cnt] = obj;
-+                        cnt++;
-+                }
-+	} else 
-+		error(FATAL, 
-+                "size of kmem_bufctl_t (%d) not sizeof(int) or sizeof(short)\n",
-+			SIZE(kmem_bufctl_t));
- 
- 	if (cnt != expected) {
- 		error(INFO, 
-@@ -7950,10 +7993,12 @@
-                 return;
- 
-         readmem(si->cache+OFFSET(kmem_cache_s_cpudata),
--                KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
-+                KVADDR, &cpudata[0], 
-+		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_cpudata),
-                 "cpudata array", FAULT_ON_ERROR);
- 
--        for (i = 0; (i < NR_CPUS) && cpudata[i]; i++) {
-+        for (i = 0; (i < ARRAY_LENGTH(kmem_cache_s_cpudata)) && 
-+	     cpudata[i]; i++) {
- 		BZERO(si->cpudata[i], sizeof(ulong) * vt->kmem_max_limit);
- 
-                 readmem(cpudata[i]+OFFSET(cpucache_s_avail),
-@@ -7996,10 +8041,12 @@
-         ulong cpudata[NR_CPUS];
- 
-         readmem(si->cache+OFFSET(kmem_cache_s_array),
--                KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
-+                KVADDR, &cpudata[0], 
-+		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_array),
-                 "array_cache array", FAULT_ON_ERROR);
- 
--        for (i = 0; (i < NR_CPUS) && cpudata[i]; i++) {
-+        for (i = 0; (i < ARRAY_LENGTH(kmem_cache_s_array)) && 
-+	     cpudata[i]; i++) {
- 		BZERO(si->cpudata[i], sizeof(ulong) * vt->kmem_max_limit);
- 
-                 readmem(cpudata[i]+OFFSET(array_cache_avail),
---- crash/filesys.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/filesys.c	2004-06-24 15:56:31.000000000 -0400
-@@ -38,7 +38,8 @@
- static int find_booted_system_map(void);
- static int verify_utsname(char *);
- static char **build_searchdirs(int, int *);
--static int redhat_kernel_directory(char *);
-+static int redhat_kernel_directory_v1(char *);
-+static int redhat_kernel_directory_v2(char *);
- static int redhat_debug_directory(char *);
- static int file_dump(ulong, ulong, ulong, int, int);
- static ulong *create_dentry_array(ulong, int *);
-@@ -311,10 +312,11 @@
- 		*preferred = 0;
- 
- 	/*
--	 *  Allow, at a minimum, the defaults plus an extra two directories for
--	 *  the /usr/src/redhat/BUILD/kernel-xxx and Red Hat debug directories.
-+	 *  Allow, at a minimum, the defaults plus an extra three directories 
-+	 *  for the two possible /usr/src/redhat/BUILD/kernel-xxx locations 
-+	 *  plus the Red Hat debug directory.
- 	 */  
--	cnt = DEFAULT_SEARCHDIRS + 2;  
-+	cnt = DEFAULT_SEARCHDIRS + 3;  
- 
-         if ((dirp = opendir("/usr/src"))) {
-                 for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) 
-@@ -364,7 +366,7 @@
- 		searchdirs[cnt] = NULL;
+ 	if (Sflag == 1) {
+@@ -3329,7 +3336,10 @@
+                      	error(FATAL, 
+ 			    "kmem cache slab subsystem not available\n");
+ 		meminfo.flags = VERBOSE;
+-		vt->dump_kmem_cache(&meminfo);
++		if (STREQ(meminfo.reqname, "list"))
++			kmem_cache_list();
++		else
++			vt->dump_kmem_cache(&meminfo);
  	}
  
--        if (redhat_kernel_directory(dirbuf)) {
-+        if (redhat_kernel_directory_v1(dirbuf)) {
-                 if ((searchdirs[cnt] = (char *) 
- 		    malloc(strlen(dirbuf)+2)) == NULL) {
-                         error(INFO, 
-@@ -376,6 +378,18 @@
-                 }
-         }
- 
-+        if (redhat_kernel_directory_v2(dirbuf)) {
-+                if ((searchdirs[cnt] = (char *)
-+                    malloc(strlen(dirbuf)+2)) == NULL) {
-+                        error(INFO,
-+                            "/usr/src/redhat directory entry malloc: %s\n",
-+                                strerror(errno));
-+                } else {
-+                        sprintf(searchdirs[cnt], "%s/", dirbuf);
-+                        cnt++;
-+                }
-+        }
-+
-         if (redhat_debug_directory(dirbuf)) {
-                 if ((searchdirs[cnt] = (char *)
-                      malloc(strlen(dirbuf)+2)) == NULL) {
-@@ -409,7 +423,7 @@
+ 	if (vflag == 1)
+@@ -5967,6 +5977,66 @@
  }
  
- static int
--redhat_kernel_directory(char *buf)
-+redhat_kernel_directory_v1(char *buf)
- {
- 	char *p1, *p2;
- 
-@@ -430,6 +444,35 @@
- }
- 
- static int
-+redhat_kernel_directory_v2(char *buf)
-+{
-+        char *p1, *p2;
-+
-+        if (!strstr(kt->proc_version, "Linux version "))
-+                return FALSE;
-+
-+        BZERO(buf, BUFSIZE);
-+        sprintf(buf, "/usr/src/redhat/BUILD/kernel-");
-+
-+        p1 = &kt->proc_version[strlen("Linux version ")];
-+        p2 = &buf[strlen(buf)];
-+
-+        while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.'))
-+                *p2++ = *p1++;
-+
-+        strcat(buf, "/linux-");
-+
-+        p1 = &kt->proc_version[strlen("Linux version ")];
-+        p2 = &buf[strlen(buf)];
-+
-+        while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.'))
-+                *p2++ = *p1++;
-+
-+        return TRUE;
-+}
-+
-+
-+static int
- redhat_debug_directory(char *buf)
- {
-         char *p1, *p2;
-@@ -504,6 +547,9 @@
- 		if (!dirp)
- 			continue;
- 	        for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-+			if (dp->d_name[0] == '.')
-+				continue;
-+
- 			sprintf(kernel, "%s%s", searchdirs[i], dp->d_name);
- 
- 			if (mount_point(kernel) ||
-@@ -3535,3 +3581,17 @@
- 
- 	return (void *) kslotp;
- }
-+
-+int
-+is_readable(char *filename)
-+{
-+	int fd;
-+
-+        if ((fd = open(filename, O_RDONLY)) < 0) {
-+		error(INFO, "%s: %s\n", filename, strerror(errno));
-+		return FALSE;
-+	} else
-+		close(fd);
-+
-+	return TRUE;
-+}
---- crash/help.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/help.c	2004-06-22 14:41:40.000000000 -0400
-@@ -975,7 +975,8 @@
- "        493      1   0  c0a86000  IN   0.0     0     0  [nfsd]",
- "        494      1   0  c0968000  IN   0.0     0     0  [nfsd]",
- " ",
--"  Show all tasks sorted by their last_run stamp:\n",
-+"  Show all tasks sorted by their task_struct's last_run or timestamp value,",
-+"  whichever applies:\n",
- "    %s> ps -l",
- "    [280195]  PID: 2      TASK: c1468000  CPU: 0   COMMAND: \"keventd\"",
- "    [280195]  PID: 1986   TASK: c5af4000  CPU: 0   COMMAND: \"sshd\"",
---- crash/task.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/task.c	2004-06-25 14:32:38.000000000 -0400
-@@ -1866,16 +1866,15 @@
- {
- 	int i, c;
- 	struct task_context *tcp;
--	ulong jiffies;
- 	char format[10];
- 	char buf[BUFSIZE];
- 
--        get_symbol_data("jiffies", sizeof(long), &jiffies);
--	sprintf(buf, pc->output_radix == 10 ? "%ld" : "%lx", jiffies);
--	
-+       	tcp = FIRST_CONTEXT();
-+	sprintf(buf, pc->output_radix == 10 ? "%lld" : "%llx", 
-+		task_last_run(tcp->task));
- 	c = strlen(buf);
- 	sprintf(format, "[%c%dll%c]  ", '%', c, 
--		pc->output_radix == 10 ? 'd' : 'x');
-+		pc->output_radix == 10 ? 'u' : 'x');
- 
- 	if (tc) {
- 		fprintf(fp, format, task_last_run(tc->task));
-@@ -4313,7 +4312,9 @@
- 	if (IS_KVADDR(idle_task)) 
- 		return idle_task;
- 	else { 
--		error(INFO, "cannot determine idle task for cpu %d\n", cpu);
-+		if (cpu < kt->cpus)
-+			error(INFO, 
-+				"cannot determine idle task for cpu %d\n", cpu);
- 		return NO_TASK;
- 	}
- }
---- crash/kernel.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/kernel.c	2004-07-13 14:17:29.000000000 -0400
-@@ -363,6 +363,9 @@
- {
- 	char buf[BUFSIZE];
- 	ulong linux_banner;
-+        int argc;
-+        char *arglist[MAXARGS];
-+	char *p1, *p2;
- 
- 	if (pc->flags & KERNEL_DEBUG_QUERY)
- 		return;
-@@ -404,6 +407,8 @@
- 
- 	verify_namelist();
- 
-+	if (strstr(kt->proc_version, "gcc version 3.3.3"))
-+		kt->flags |= GCC_3_3_3;
- 	if (strstr(kt->proc_version, "gcc version 3.3.2"))
- 		kt->flags |= GCC_3_3_2;
- 	else if (strstr(kt->proc_version, "gcc version 3.2.3"))
-@@ -413,6 +418,39 @@
- 	else if (strstr(kt->proc_version, "gcc version 2.96"))
- 		kt->flags |= GCC_2_96;
- 
-+	/*
-+	 *  Keeping the gcc version with #define's is getting out of hand.
-+	 */
-+	if ((p1 = strstr(kt->proc_version, "gcc version "))) {
-+		BZERO(buf, BUFSIZE);
-+		p1 += strlen("gcc version ");
-+		p2 = buf;
-+		while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.')) {
-+			if (*p1 == '.')
-+				*p2++ = ' ';
-+			else
-+				*p2++ = *p1;
-+			p1++;
-+		}
-+		argc = parse_line(buf, arglist);
-+
-+		switch (argc)
-+		{
-+		case 0:
-+		case 1:
-+			break;
-+		case 2:
-+			kt->gcc_version[0] = atoi(arglist[0]);
-+			kt->gcc_version[1] = atoi(arglist[1]);
-+			break;
-+		default:
-+			kt->gcc_version[0] = atoi(arglist[0]);
-+			kt->gcc_version[1] = atoi(arglist[1]);		
-+			kt->gcc_version[2] = atoi(arglist[2]);
-+			break;
-+		}
-+	}
-+
- 	return;
- 
- bad_match:
-@@ -3107,6 +3145,8 @@
- 		fprintf(fp, "%sGCC_3_2_3", others++ ? "|" : "");
- 	if (kt->flags & GCC_3_3_2)
- 		fprintf(fp, "%sGCC_3_3_2", others++ ? "|" : "");
-+	if (kt->flags & GCC_3_3_3)
-+		fprintf(fp, "%sGCC_3_3_3", others++ ? "|" : "");
- 	if (kt->flags & RA_SEEK)
- 		fprintf(fp, "%sRA_SEEK", others++ ? "|" : "");
- 	if (kt->flags & NO_RA_SEEK)
-@@ -3145,7 +3185,7 @@
-         fprintf(fp, "   module_list: %lx\n", kt->module_list);
-         fprintf(fp, " kernel_module: %lx\n", kt->kernel_module);
- 	fprintf(fp, "mods_installed: %d\n", kt->mods_installed);
--        if (ACTIVE())
-+	if (!(pc->flags & KERNEL_DEBUG_QUERY) && ACTIVE()) 
-                 get_symbol_data("xtime", sizeof(struct timespec), &kt->date);
-         fprintf(fp, "          date: %s\n",
-                 strip_linefeeds(ctime(&kt->date.tv_sec)));
-@@ -3157,7 +3197,10 @@
-         fprintf(fp, "      .version: %s\n", uts->version);
-         fprintf(fp, "      .machine: %s\n", uts->machine);
-         fprintf(fp, "   .domainname: %s\n", uts->domainname);
--	fprintf(fp, "kernel_version: %d.%d.%d\n", kt->kernel_version[0], kt->kernel_version[1], kt->kernel_version[2]);
-+	fprintf(fp, "kernel_version: %d.%d.%d\n", kt->kernel_version[0], 
-+		kt->kernel_version[1], kt->kernel_version[2]);
-+	fprintf(fp, "   gcc_version: %d.%d.%d\n", kt->gcc_version[0], 
-+		kt->gcc_version[1], kt->gcc_version[2]);
- 	fprintf(fp, " runq_siblings: %d\n", kt->runq_siblings);
- 	fprintf(fp, "  __rq_idx[32]: ");
- 	for (i = 0; i < NR_CPUS; i++) 
---- crash/gdb_interface.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/gdb_interface.c	2004-07-13 13:38:57.000000000 -0400
-@@ -132,6 +132,7 @@
- gdb_session_init(void)
- {
- 	struct gnu_request *req;
-+	int debug_data_pulled_in;
- 
-         if (!have_partial_symbols() && !have_full_symbols())
- 		no_debugging_data(FATAL);
-@@ -180,14 +181,34 @@
-         req->buf = GETBUF(BUFSIZE);
- 
- 	/*
--	 *  Make sure the namelist has symbolic data...
--	 */
-+	 *  Make sure the namelist has symbolic data.  Later versions of
-+	 *  gcc may require that debug data be pulled in by printing a 
-+	 *  static kernel data structure.
-+  	 */
-+	debug_data_pulled_in = FALSE;
-+retry:
-+	BZERO(req->buf, BUFSIZE);
-         req->command = GNU_GET_DATATYPE;
-         req->name = "task_struct";
--        req->flags |= GNU_RETURN_ON_ERROR;
-+        req->flags = GNU_RETURN_ON_ERROR;
-         gdb_interface(req);
--        if (req->flags & GNU_COMMAND_FAILED)
-+
-+        if (req->flags & GNU_COMMAND_FAILED) {
-+		if (!debug_data_pulled_in) {
-+			if (CRASHDEBUG(1))
-+				error(INFO, 
-+         "gdb_session_init: pulling in debug data by accessing init_mm.mmap\n");
-+			debug_data_pulled_in = TRUE;
-+			req->command = GNU_PASS_THROUGH;
-+			req->flags = GNU_RETURN_ON_ERROR|GNU_NO_READMEM;
-+			req->name = NULL;
-+			sprintf(req->buf, "print init_mm.mmap");
-+			gdb_interface(req);
-+        		if (!(req->flags & GNU_COMMAND_FAILED)) 
-+				goto retry;
-+		}
- 		no_debugging_data(WARNING);
-+	}
- 
- 	if (pc->flags & KERNEL_DEBUG_QUERY) {
- 		fprintf(fp, "\n%s: %s: contains debugging data\n\n",
-@@ -398,6 +419,8 @@
-                 console("%sGNU_RETURN_ON_ERROR", others++ ? "|" : "");
-         if (req->flags & GNU_FROM_TTY_OFF)
-                 console("%sGNU_FROM_TTY_OFF", others++ ? "|" : "");
-+        if (req->flags & GNU_NO_READMEM)
-+                console("%sGNU_NO_READMEM", others++ ? "|" : "");
- 	console(")\n");
- 
-         console("addr: %lx ", req->addr);
-@@ -687,6 +710,9 @@
- 	if (write)
- 		return FALSE;
- 
-+	if (pc->cur_req->flags & GNU_NO_READMEM)
-+		return TRUE;
-+
- 	if (UNIQUE_COMMAND("dis"))
- 		memtype = UVADDR;
- 	else if (!IS_KVADDR(addr)) {
---- crash/configure.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/configure.c	2004-06-21 13:48:18.000000000 -0400
-@@ -1053,7 +1053,7 @@
- 	printf("#\n");
- 	printf("# crash core analysis suite\n");
- 	printf("#\n");
--	printf("Summary: crash utility for live systems and netdump, LKCD or mcore dumpfiles\n");
-+	printf("Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles\n");
- 	printf("Name: %s\n", lower_case(target_data.program, buf));
- 	printf("Version: %s\n", Version);
- 	printf("Release: %s\n", Release);
-@@ -1073,8 +1073,8 @@
- 	printf("%%description\n");
- 	printf("The core analysis suite is a self-contained tool that can be used to\n");
- 	printf("investigate either live systems, kernel core dumps created from the\n");
--	printf("netdump package from Red Hat Linux, the mcore kernel patch offered by\n");
--	printf("Mission Critical Linux, or the LKCD kernel patch.\n");
-+	printf("netdump and diskdump packages from Red Hat Linux, the mcore kernel patch\n");
-+	printf("offered by Mission Critical Linux, or the LKCD kernel patch.\n");
- 	printf("\n");
- 	printf("%%prep\n");
-         printf("%%setup -n %%{name}-%%{version}-%%{release}\n"); 
-@@ -1098,44 +1098,3 @@
- 	printf("%%doc README\n");
- }
- 	
--
--#ifdef NOTDEF
--
--#
--# crash core analysis suite
--#
--Summary: crash utility for live systems and netdump, LKCD or mcore dumpfiles
--Name: crash
--Version: 3.3
--Release: 11
--Copyright: GPL
--Group: Development/Debuggers
--Source: %{name}-%{version}-%{release}.tar.gz
--URL: ftp://people.redhat.com/anderson/%{name}-%{version}-%{release}.tar.gz
--Distribution: Linux 2.2 or greater
--Vendor: Red Hat, Inc.
--Packager: Dave Anderson <anderson@redhat.com>
--ExclusiveOS: Linux
--ExclusiveArch: i386 alpha ia64 ppc
--
--%description
--The core analysis suite is a self-contained tool that can be used to
--investigate either live systems, kernel core dumps created from the
--netdump package from Red Hat Linux, the mcore kernel patch offered by
--Mission Critical Linux, or the LKCD kernel patch.
--
--%prep
--%setup -n %{name}-%{version}-%{release} 
--
--%build
--make
--
--%install
--make install
--
--%files
--/usr/local/bin/crash
--%doc README
--
--
--#endif
---- crash/alpha.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/alpha.c	2004-07-08 13:40:24.000000000 -0400
-@@ -704,9 +704,10 @@
- try_closest:
- 	get_line_number(callpc, buf, FALSE);
- 	if (strlen(buf)) {
--	if (retries) {
--		p = strstr(buf, ": ");
--			*p = NULLCHAR;
-+		if (retries) {
-+			p = strstr(buf, ": ");
-+			if (p)
-+				*p = NULLCHAR;
- 		} 
- 		fprintf(fp, "    %s\n", buf);
- 	} else {
---- crash/x86.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/x86.c	2004-07-08 13:40:24.000000000 -0400
-@@ -1350,7 +1350,8 @@
-         if (strlen(buf)) {
-                 if (retries) {
-                         p = strstr(buf, ": ");
--			*p = NULLCHAR;
-+			if (p)
-+				*p = NULLCHAR;
-                 }
-                 fprintf(fp, "    %s\n", buf);
-         } else {
-@@ -1500,7 +1501,6 @@
-         	for (c = 0; c < NR_CPUS; c++) {
- 			if (tt->softirq_ctx[c]) {
- 				bt->hp->esp = tt->softirq_ctx[c];
--				x86_eframe_search(bt);
- 				fprintf(fp, "CPU %d SOFT IRQ STACK:\n", c);
- 				if ((cnt = x86_eframe_search(bt)))
- 					fprintf(fp, "\n");
---- crash/ppc.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/ppc.c	2004-07-08 13:40:24.000000000 -0400
-@@ -1467,7 +1467,8 @@
-         if (strlen(buf)) {
-                 if (retries) {
-                         p = strstr(buf, ": ");
--                        *p = NULLCHAR;
-+			if (p)
-+                        	*p = NULLCHAR;
-                 }
-                 fprintf(fp, "    %s\n", buf);
-         } else {
---- crash/ia64.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/ia64.c	2004-07-08 13:40:24.000000000 -0400
-@@ -3046,7 +3046,8 @@
-         if (strlen(buf)) {
-                 if (retries) {
-                         p = strstr(buf, ": ");
--			*p = NULLCHAR;
-+			if (p)
-+				*p = NULLCHAR;
-                 }
-                 fprintf(fp, "    %s\n", buf);
-         } else {
---- crash/x86_64.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/x86_64.c	2004-07-09 14:31:58.000000000 -0400
-@@ -1957,6 +1957,7 @@
-                 sym = closest_symbol(*up);
- 
-                 if (STREQ(sym, "netconsole_netdump") || 
-+		    STREQ(sym, "netpoll_start_netdump") ||
- 		    STREQ(sym, "disk_dump")) {
-                         *rip = *up;
-                         *rsp = bt->stackbase + ((char *)(up) - bt->stackbuf);
---- crash/va_server.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/va_server.c	2004-06-22 12:45:33.000000000 -0400
-@@ -310,7 +310,7 @@
- 
- 	vas_file_p = fopen(crash_file, "r");
- 	if(vas_file_p == (FILE *)0) {
--		printf("read_maps: bad ret from fopen for %s, errno = %d\n", crash_file, ferror(vas_file_p));
-+		printf("read_maps: bad ret from fopen for %s: %s\n", crash_file, strerror(errno));
- 		return -1;
- 	}
- 
---- crash/va_server_v1.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/va_server_v1.c	2004-06-22 12:45:33.000000000 -0400
-@@ -271,7 +271,7 @@
- 
- 	vas_file_p = fopen(crash_file, "r");
- 	if(vas_file_p == (FILE *)0) {
--		printf("read_maps: bad ret from fopen for %s, errno = %d\n", crash_file, ferror(vas_file_p));
-+		printf("read_maps: bad ret from fopen for %s: %s\n", crash_file, strerror(errno));
- 		return -1;
- 	}
- 	ret = fseek(vas_file_p, (long)0, SEEK_SET);
---- crash/symbols.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/symbols.c	2004-06-22 12:54:05.000000000 -0400
-@@ -5425,6 +5425,10 @@
-                 lenptr = &array_table.kmem_cache_s_name;
-         else if (STREQ(s, "kmem_cache_s.c_name"))
-                 lenptr = &array_table.kmem_cache_s_c_name;
-+        else if (STREQ(s, "kmem_cache_s.array"))
-+                lenptr = &array_table.kmem_cache_s_array;
-+        else if (STREQ(s, "kmem_cache_s.cpudata"))
-+                lenptr = &array_table.kmem_cache_s_cpudata;
- 	else if (STREQ(s, "log_buf")) 
- 		lenptr = &array_table.log_buf;
- 	else if (STREQ(s, "irq_desc") || STREQ(s, "_irq_desc")) 
-@@ -6595,6 +6599,10 @@
-                 ARRAY_LENGTH(kmem_cache_s_name));
-         fprintf(fp, "           kmem_cache_s_c_name: %d\n",
-                 ARRAY_LENGTH(kmem_cache_s_c_name));
-+        fprintf(fp, "            kmem_cache_s_array: %d\n",
-+                ARRAY_LENGTH(kmem_cache_s_array));
-+        fprintf(fp, "          kmem_cache_s_cpudata: %d\n",
-+                ARRAY_LENGTH(kmem_cache_s_cpudata));
- 	fprintf(fp, "                       log_buf: %d\n", 
- 		ARRAY_LENGTH(log_buf));
- 	fprintf(fp, "                      irq_desc: %d\n",
---- crash/lkcd_x86_trace.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/lkcd_x86_trace.c	2004-07-13 14:17:29.000000000 -0400
-@@ -41,6 +41,8 @@
- static int cache_framesize(int, kaddr_t funcaddr, int *, void **);
- struct framesize_cache;
- static int framesize_modify(struct framesize_cache *);
-+struct framesize_mods;
-+static int compiler_matches(struct framesize_mods *);
- static sframe_t *alloc_sframe(trace_t *, int);
- static void free_sframes(trace_t *);
- static void free_trace_rec(trace_t *);
-@@ -477,22 +479,37 @@
  /*
-  *  More kludgery for compiler oddities.
-  */
-+#define COMPILER_VERSION_MASK  (1)   /* deprecated -- usable up to 3.3.3 */
-+#define COMPILER_VERSION_EQUAL (2)
-+#define COMPILER_VERSION_START (3)
-+#define COMPILER_VERSION_RANGE (4)
++ *  Note same functionality as above, but instead it just
++ *  dumps all slab cache names and their addresses.
++ */
++static void
++kmem_cache_list(void)
++{
++        ulong cache, cache_cache, name;
++	long next_offset, name_offset;
++	char *cache_buf;
++	char buf[BUFSIZE];
 +
- struct framesize_mods {
- 	char *funcname;
- 	char *called_function;
--	ulong compiler;
-+	ulong compiler_flag;
-+	ulong compiler1;
-+	ulong compiler2;
- 	int pre_adjust;
- 	int post_adjust;
- } framesize_mods[] = {
--	{ "do_select", "schedule_timeout", GCC_3_3_2, 0, 0 },
--	{ "svc_recv", "schedule_timeout", GCC_3_3_2, 0, 0 },
--	{ "__down_interruptible", "schedule", GCC_3_3_2, 0, 0 },
--	{ "netconsole_netdump", NULL, GCC_3_3_2, 0, -28 },
--	{ "generic_file_write", NULL, GCC_2_96, 0, 20 },
--	{ "block_prepare_write", NULL, GCC_2_96, 0, 72 },
--	{ "receive_chars", NULL, GCC_2_96, 0, 48 },
--	{ "default_idle", NULL, GCC_3_3_2, -4, 0 },
-- 	{ NULL, NULL, 0, 0, 0 },
-+	{ "do_select", "schedule_timeout", 
-+		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
-+	{ "svc_recv", "schedule_timeout", 
-+		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
-+	{ "__down_interruptible", "schedule", 
-+		COMPILER_VERSION_START, GCC(3,3,2), 0, 0, 0 },
-+	{ "netconsole_netdump", NULL, 
-+	       	COMPILER_VERSION_START, GCC(3,3,2), 0, 0, -28 },
-+	{ "generic_file_write", NULL, 
-+		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 20 },  
-+	{ "block_prepare_write", NULL, 
-+		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 72 }, 
-+	{ "receive_chars", NULL, 
-+		COMPILER_VERSION_EQUAL, GCC(2,96,0), 0, 0, 48 },
-+	{ "default_idle", NULL, 
-+		COMPILER_VERSION_START, GCC(3,3,2), 0, -4, 0 },
-+ 	{ NULL, NULL, 0, 0, 0, 0, 0 },
- };
++	if (vt->flags & KMEM_CACHE_UNAVAIL) {
++		error(INFO, "kmem cache slab subsystem not available\n");
++		return;
++	}
++
++        name_offset = vt->flags & (PERCPU_KMALLOC_V1|PERCPU_KMALLOC_V2) ?
++                OFFSET(kmem_cache_s_name) : OFFSET(kmem_cache_s_c_name);
++        next_offset = vt->flags & (PERCPU_KMALLOC_V1|PERCPU_KMALLOC_V2) ?
++                OFFSET(kmem_cache_s_next) : OFFSET(kmem_cache_s_c_nextp);
++
++        cache = cache_cache = symbol_value("cache_cache");
++
++	cache_buf = GETBUF(SIZE(kmem_cache_s));
++
++        do {
++	        readmem(cache, KVADDR, cache_buf, SIZE(kmem_cache_s),
++	        	"kmem_cache_s buffer", FAULT_ON_ERROR);
++
++	        if (vt->kmem_cache_namelen) {
++			BCOPY(cache_buf+name_offset, buf, 
++				vt->kmem_cache_namelen);
++	        } else {
++			name = ULONG(cache_buf + name_offset);
++	                if (!read_string(name, buf, BUFSIZE-1)) {
++				if (vt->flags & 
++				    (PERCPU_KMALLOC_V1|PERCPU_KMALLOC_V2))
++	                               	error(FATAL,
++	                      "cannot read kmem_cache_s.name string at %lx\n",
++	                                       	name);
++				else
++	                               	error(FATAL,
++	                      "cannot read kmem_cache_s.c_name string at %lx\n",
++	                                       	name);
++			}
++	        }
++
++		fprintf(fp, "%lx %s\n", cache, buf);
++
++		cache = ULONG(cache_buf + next_offset);
++
++		if (vt->flags & (PERCPU_KMALLOC_V1|PERCPU_KMALLOC_V2))
++			cache -= next_offset;
++
++        } while (cache != cache_cache);
++
++	FREEBUF(cache_buf);
++}
++
++/*
+  *  Translate an address to its physical page number, verify that the
+  *  page in fact belongs to the slab subsystem, and if so, return the 
+  *  name of the cache to which it belongs.
+@@ -6040,11 +6110,14 @@
+                 readmem(page+OFFSET(page_prev),
+                         KVADDR, &slab, sizeof(void *),
+                         "page.prev", FAULT_ON_ERROR);
+-
+         else if (VALID_MEMBER(page_list_prev))
+                 readmem(page+OFFSET(page_list_prev),
+                         KVADDR, &slab, sizeof(void *),
+                         "page.list.prev", FAULT_ON_ERROR);
++	else if (VALID_MEMBER(page_lru))
++                readmem(page+OFFSET(page_lru)+OFFSET(list_head_prev),
++                        KVADDR, &slab, sizeof(void *),
++                        "page.lru.prev", FAULT_ON_ERROR);
+         else
+                 error(FATAL, "unknown definition of struct page?\n");
  
- static int
-@@ -506,7 +523,7 @@
- 
-         for (fmp = &framesize_mods[0]; fmp->funcname; fmp++) {
-                 if (STREQ(funcname, fmp->funcname) &&
--                    (fmp->compiler & (kt->flags & GCC_VERSION)))
-+                    compiler_matches(fmp))
-                         break;
-         }
- 
-@@ -520,13 +537,43 @@
- 		fc->bp_adjust = fmp->post_adjust;
- 
- 	if (fmp->called_function) {
--        	if (STREQ(fmp->called_function, x86_function_called_by(fc->pc)));
-+        	if (STREQ(fmp->called_function,x86_function_called_by(fc->pc)));
- 			fc->flags |= FRAMESIZE_VALIDATE;
- 	}
- 
- 	return TRUE;
+@@ -6231,6 +6304,41 @@
+ 	return max_limit;
  }
  
++/*
++ *  Determine whether the current slab cache is contained in
++ *  the comma-separated list from a "kmem -I list1,list2 ..."
++ *  command entry.
++ */
 +static int
-+compiler_matches(struct framesize_mods *fmp)
++ignore_cache(struct meminfo *si, char *name)
 +{
-+	switch (fmp->compiler_flag)
-+	{
-+	case COMPILER_VERSION_MASK:
-+		if (fmp->compiler1 & (kt->flags & GCC_VERSION_DEPRECATED))
-+			return TRUE;
-+		break;
++	int i, argc;
++	char *p1;
++	char *arglist[MAXARGS];
++	char buf[BUFSIZE];
 +
-+	case COMPILER_VERSION_EQUAL:
-+		if (THIS_GCC_VERSION == fmp->compiler1)
-+			return TRUE;
-+		break;
++	if (!si->ignore)
++		return FALSE;
 +
-+	case COMPILER_VERSION_START:
-+		if (THIS_GCC_VERSION >= fmp->compiler1)
-+			return TRUE;
-+		break;
++	strcpy(buf, si->ignore);
 +
-+	case COMPILER_VERSION_RANGE:
-+		if ((THIS_GCC_VERSION >= fmp->compiler1) &&
-+		    (THIS_GCC_VERSION <= fmp->compiler2))
++	p1 = buf;
++	while (*p1) {
++		if (*p1 == ',')
++			*p1 = ' ';
++		p1++;
++	}
++
++	argc = parse_line(buf, arglist);
++
++	for (i = 0; i < argc; i++) {
++		if (STREQ(name, arglist[i]))
 +			return TRUE;
-+		break;
 +	}
 +
 +	return FALSE;
 +}
 +
  
- static int
- dump_framesize_cache(FILE *ofp, struct framesize_cache *fcp)
-@@ -831,7 +878,7 @@
- 	 */
- 	if (STREQ(kl_funcname(pc), "schedule") && 
- 	    !(bt->flags & BT_CONTEXT_SWITCH)) 
--		frmsize -= kt->flags & GCC_3_2 ? 4 : 8;
-+		frmsize -= THIS_GCC_VERSION == GCC(3,2,0) ? 4 : 8;
- 
-         FRAMESIZE_CACHE_ENTER(pc, &frmsize);
- #endif
-@@ -1289,7 +1336,7 @@
- 			 *  just catch it here first.
- 			 */
- 			if (STREQ(funcname, "schedule") &&
--			    (kt->flags & (GCC_3_2_3|GCC_3_3_2))) {
-+			    (THIS_GCC_VERSION >= GCC(3,2,3))) {
- 				SEEK_VALID_RA();
- 			/* 
- 			 *  else FRAMESIZE_VALIDATE has been turned on
---- crash/netdump.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/netdump.c	2004-06-22 12:43:12.000000000 -0400
-@@ -1167,6 +1167,7 @@
- 	for (i = 0, up = (ulong *)bt->stackbuf; i < LONGS_PER_STACK; i++, up++){
- 		sym = closest_symbol(*up);
- 		if (STREQ(sym, "netconsole_netdump") || 
-+		    STREQ(sym, "netpoll_start_netdump") ||
- 		    STREQ(sym, "disk_dump")) {
- 			*eip = *up;
- 			*esp = search ?
---- crash/unwind.c.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/unwind.c	2004-07-14 09:32:01.000000000 -0400
-@@ -42,6 +42,7 @@
- #define GATE_ADDR (0xa000000000000000 + PAGE_SIZE)
- #define CLEAR_SCRIPT_CACHE (TRUE)
- 
-+#define _ASM_IA64_FPU_H
- #include "unwind.h"
- #include "unwind_i.h"
- #include "rse.h"
---- crash/defs.h.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/defs.h	2004-07-13 16:15:24.000000000 -0400
-@@ -107,57 +107,57 @@
  /*
-  *  program_context flags
+  *  dump_kmem_cache() displays basic information about kmalloc() slabs.
+@@ -6390,8 +6498,8 @@
+ 		if (reqname && !STREQ(reqname, buf)) 
+ 			goto next_cache;
+ 
+-		if (STREQ(si->ignore, buf)) {
+-			fprintf(fp, "%lx  %-19s [IGNORED]\n", si->cache, buf);
++		if (ignore_cache(si, buf)) {
++			fprintf(fp, "%lx %-18s [IGNORED]\n", si->cache, buf);
+ 			goto next_cache;
+ 		}
+ 
+@@ -6588,16 +6696,13 @@
+ 		if (reqname && !STREQ(reqname, buf)) 
+ 			goto next_cache;
+ 
+-                if (STREQ(si->ignore, buf)) {
+-                        fprintf(fp, "%lx  %-19s [IGNORED]\n", si->cache, buf);
++                if (ignore_cache(si, buf)) {
++                        fprintf(fp, "%lx %-18s [IGNORED]\n", si->cache, buf);
+                         goto next_cache;
+                 }
+ 
+ 		si->curname = buf;
+ 
+-		if (CRASHDEBUG(1))
+-			fprintf(fp, "cache: %lx %s\n", si->cache, si->curname);
+-
+ 	        readmem(si->cache+OFFSET(kmem_cache_s_objsize),
+ 	        	KVADDR, &tmp_val, sizeof(uint),
+ 	                "objsize", FAULT_ON_ERROR);
+@@ -6804,16 +6909,13 @@
+ 		if (reqname && !STREQ(reqname, buf)) 
+ 			goto next_cache;
+ 
+-                if (STREQ(si->ignore, buf)) {
+-                        fprintf(fp, "%lx  %-19s [IGNORED]\n", si->cache, buf);
++                if (ignore_cache(si, buf)) {
++                        fprintf(fp, "%lx %-18s [IGNORED]\n", si->cache, buf);
+                         goto next_cache;
+                 }
+ 
+ 		si->curname = buf;
+ 
+-		if (CRASHDEBUG(3))
+-			fprintf(fp, "cache: %lx %s\n", si->cache, si->curname);
+-
+ 	        readmem(si->cache+OFFSET(kmem_cache_s_objsize),
+ 	        	KVADDR, &tmp_val, sizeof(uint),
+ 	                "objsize", FAULT_ON_ERROR);
+@@ -6883,7 +6985,7 @@
+ 				case KMEM_SLAB_ADDR:
+ 					fprintf(fp, "   %lx ", 
+ 						(ulong)si->spec_addr);
+-					fprintf(fp, "(slab_s)\n");
++					fprintf(fp, "(slab)\n");
+ 					break;
+ 
+ 				case KMEM_ON_SLAB:
+@@ -7073,6 +7175,8 @@
+ 
+ #define SLAB_CHAINS (3)
+ 
++static char *slab_chain_name_v1[] = {"full", "partial", "free"};
++
+ static void
+ do_slab_chain_percpu_v1(long cmd, struct meminfo *si)
+ {
+@@ -7080,6 +7184,7 @@
+ 	int list_borked;
+ 	char *slab_s_buf;
+ 	ulong specified_slab;
++	ulong last;
+ 	ulong slab_chains[SLAB_CHAINS];
+ 
+ 	list_borked = 0;
+@@ -7096,6 +7201,12 @@
+ 		slab_chains[2] = si->cache + OFFSET(kmem_cache_s_slabs_free);
+ 	}
+ 
++	if (CRASHDEBUG(1)) {
++		fprintf(fp, "[ %s: %lx ", si->curname, si->cache);
++		fprintf(fp, "full: %lx partial: %lx free: %lx ]\n",
++			slab_chains[0], slab_chains[1], slab_chains[2]);
++	}
++
+ 	switch (cmd)
+ 	{
+ 	case SLAB_GET_COUNTS:
+@@ -7112,9 +7223,16 @@
+ 			if (!slab_chains[s])
+ 				continue;
+ 
+-	                readmem(slab_chains[s],
+-	                        KVADDR, &si->slab, sizeof(ulong),
+-	                        "first slab", FAULT_ON_ERROR);
++	                if (!readmem(slab_chains[s],
++	                    KVADDR, &si->slab, sizeof(ulong),
++	                    "first slab", QUIET|RETURN_ON_ERROR)) {
++                		error(INFO, 
++				    "%s: %s list: bad slab pointer: %lx\n",
++                        		si->curname, slab_chain_name_v1[s],
++					slab_chains[s]);
++				list_borked = 1;
++				continue;
++			}
+ 	
+ 			if (slab_data_saved(si)) {
+ 				FREEBUF(slab_s_buf);
+@@ -7124,11 +7242,19 @@
+ 			if (si->slab == slab_chains[s]) 
+ 				continue;
+ 	
++			last = slab_chains[s];
++
+ 			do {
+ 	                        if (received_SIGINT()) {
+ 					FREEBUF(slab_s_buf);
+ 	                                restart(0);
+ 				}
++
++				if (!verify_slab_v1(si, last, s)) {
++					list_borked = 1;
++					continue;
++				}
++				last = si->slab - OFFSET(slab_s_list);
+ 	
+ 		                readmem(si->slab, KVADDR, slab_s_buf, 
+ 					SIZE(slab_s), "slab_s buffer", 
+@@ -7159,9 +7285,7 @@
+        						error(NOTE, 
+ 	  	                      "%s: slab chain inconsistency: %s list\n",
+ 							si->curname,
+-						    	s == 0 ?  "full" :
+-						    	s == 1 ? "partial" : 
+-							"free");
++							slab_chain_name_v1[s]);
+        						list_borked = 1;
+      					}
+ 				}
+@@ -7170,7 +7294,8 @@
+ 		}
+ 
+ 		FREEBUF(slab_s_buf);
+-		save_slab_data(si);
++		if (!list_borked)
++			save_slab_data(si);
+ 		break;
+ 
+ 	case SLAB_WALKTHROUGH:
+@@ -7183,14 +7308,24 @@
+ 				continue;
+ 
+ 	        	if (!specified_slab) {
+-	                	readmem(slab_chains[s],
+-	                        	KVADDR, &si->slab, sizeof(ulong),
+-	                        	"slabs", FAULT_ON_ERROR);
+-			}
++	                	if (!readmem(slab_chains[s],
++	                            KVADDR, &si->slab, sizeof(ulong),
++	                            "slabs", QUIET|RETURN_ON_ERROR)) {
++                			error(INFO, 
++				         "%s: %s list: bad slab pointer: %lx\n",
++                        			si->curname, 
++						slab_chain_name_v1[s],
++						slab_chains[s]);
++					list_borked = 1;
++					continue;
++				}
++				last = slab_chains[s];
++			} else
++				last = 0;
+ 	
+ 			if (si->slab == slab_chains[s])
+ 				continue;
+-	
++
+ 			if (CRASHDEBUG(1)) {
+ 				fprintf(fp, "search cache: [%s] ", si->curname);
+ 				if (si->flags & ADDRESS_SPECIFIED) 
+@@ -7201,6 +7336,12 @@
+ 		        do {
+ 	                        if (received_SIGINT())
+ 	                                restart(0);
++
++				if (!verify_slab_v1(si, last, s)) {
++					list_borked = 1;
++					continue;
++				}
++				last = si->slab - OFFSET(slab_s_list);
+ 	
+ 		                dump_slab_percpu_v1(si);
+ 		
+@@ -7214,7 +7355,7 @@
+ 		
+ 				si->slab -= OFFSET(slab_s_list);
+ 	
+-		        } while (si->slab != slab_chains[s]);
++		        } while (si->slab != slab_chains[s] && !list_borked);
+ 		}
+ 
+ 		break;
+@@ -7222,8 +7363,94 @@
+ }
+ 
+ /*
++ *  Try to preclude any attempt to translate a bogus slab structure.
++ */
++
++static int
++verify_slab_v1(struct meminfo *si, ulong last, int s)
++{
++	char slab_s_buf[BUFSIZE];
++	struct kernel_list_head *list_head;
++	unsigned int inuse;
++	ulong s_mem;
++	char *list;
++	int errcnt;
++
++	list = slab_chain_name_v1[s];
++
++	errcnt = 0;
++
++        if (!readmem(si->slab, KVADDR, slab_s_buf,
++            SIZE(slab_s), "slab_s buffer", QUIET|RETURN_ON_ERROR)) {
++                error(INFO, "%s: %s list: bad slab pointer: %lx\n",
++                        si->curname, list, si->slab);
++		return FALSE;
++        }                        
++
++        list_head = (struct kernel_list_head *)
++		(slab_s_buf + OFFSET(slab_s_list));
++
++	if (!IS_KVADDR((ulong)list_head->next) || 
++	    !accessible((ulong)list_head->next)) {
++                error(INFO, "%s: %s list: slab: %lx  bad next pointer: %lx\n",
++                        si->curname, list, si->slab,
++			(ulong)list_head->next);
++		errcnt++;
++	}
++
++	if (last && (last != (ulong)list_head->prev)) {
++                error(INFO, "%s: %s list: slab: %lx  bad prev pointer: %lx\n",
++                        si->curname, list, si->slab,
++                        (ulong)list_head->prev);
++		errcnt++;
++	}
++
++	inuse = UINT(slab_s_buf + OFFSET(slab_s_inuse));
++	if (inuse > si->c_num) {
++                error(INFO, "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        si->curname, list, si->slab, inuse);
++		errcnt++;
++	}
++	switch (s) 
++	{
++	case 0: /* full -- or one singular list, so we can't test this */
++		break;
++
++	case 1: /* partial */
++		if ((inuse == 0) || (inuse == si->c_num)) {
++                	error(INFO, 
++		 	    "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        	si->curname,  list, si->slab, inuse);
++			errcnt++;
++		}
++		break;
++
++	case 2: /* free */
++		if (inuse > 0) {
++                	error(INFO, 
++		 	    "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        	si->curname, list, si->slab, inuse);
++			errcnt++;
++		}
++		break;
++	}
++
++	s_mem = ULONG(slab_s_buf + OFFSET(slab_s_s_mem));
++	if (!IS_KVADDR(s_mem) || !accessible(s_mem)) {
++                error(INFO, "%s: %s list: slab: %lx  bad s_mem pointer: %lx\n",
++                        si->curname, list, si->slab, s_mem);
++		errcnt++;
++	}
++
++	return(errcnt ? FALSE : TRUE);
++}
++
++/*
+  *  Updated for 2.6 slab substructure.
   */
--#define LIVE_SYSTEM                 (0x1)
--#define TTY                         (0x2)
--#define RUNTIME                     (0x4)
--#define IN_FOREACH                  (0x8)
--#define MCLXCD                     (0x10)
--#define CMDLINE_IFILE              (0x20)
--#define MFD_RDWR                   (0x40)
--#define DFD_RDWR                   (0x80)
--#define SILENT                    (0x100)
--#define REMOTE_DAEMON             (0x200)
--#define HASH                      (0x400)
--#define SCROLL                    (0x800)
--#define NO_CONSOLE               (0x1000)
--#define RUNTIME_IFILE            (0x2000)
--#define DROP_CORE                (0x4000)
--#define LKCD                     (0x8000)
--#define GDB_INIT                (0x10000)
--#define IN_GDB                  (0x20000)
--#define RCLOCAL_IFILE           (0x40000)
--#define RCHOME_IFILE            (0x80000)
--#define GET_TIMESTAMP          (0x100000)
--#define READLINE               (0x200000) 
--#define _SIGINT_               (0x400000)
--#define IN_RESTART             (0x800000)
--#define KERNEL_DEBUG_QUERY    (0x1000000)
--#define DEVMEM                (0x2000000)
--#define REM_LIVE_SYSTEM       (0x4000000)
--#define NAMELIST_LOCAL        (0x8000000)
--#define MEMSRC_LOCAL         (0x10000000)
--#define NAMELIST_SAVED       (0x20000000)
--#define DUMPFILE_SAVED       (0x40000000)
--#define UNLINK_NAMELIST      (0x80000000) 
--#define NAMELIST_UNLINKED   (0x100000000)
--#define REM_MCLXCD          (0x200000000)
--#define REM_LKCD            (0x400000000)
--#define NAMELIST_NO_GZIP    (0x800000000)
--#define UNLINK_MODULES     (0x1000000000)
--#define S390D              (0x2000000000)
--#define REM_S390D          (0x4000000000)
--#define S390XD             (0x8000000000)
--#define REM_S390XD        (0x10000000000)
--#define NETDUMP           (0x20000000000)
--#define REM_NETDUMP       (0x40000000000)
--#define SYSMAP            (0x80000000000)
--#define SYSMAP_ARG       (0x100000000000)
--#define MEMMOD           (0x200000000000)
--#define MODPRELOAD       (0x400000000000)
--#define DISKDUMP         (0x800000000000)
--#define DATADEBUG       (0x1000000000000)
--#define FINDKERNEL      (0x2000000000000)
--#define VERSION_QUERY   (0x4000000000000)
-+#define LIVE_SYSTEM                 (0x1ULL)
-+#define TTY                         (0x2ULL)
-+#define RUNTIME                     (0x4ULL)
-+#define IN_FOREACH                  (0x8ULL)
-+#define MCLXCD                     (0x10ULL)
-+#define CMDLINE_IFILE              (0x20ULL)
-+#define MFD_RDWR                   (0x40ULL)
-+#define DFD_RDWR                   (0x80ULL)
-+#define SILENT                    (0x100ULL)
-+#define REMOTE_DAEMON             (0x200ULL)
-+#define HASH                      (0x400ULL)
-+#define SCROLL                    (0x800ULL)
-+#define NO_CONSOLE               (0x1000ULL)
-+#define RUNTIME_IFILE            (0x2000ULL)
-+#define DROP_CORE                (0x4000ULL)
-+#define LKCD                     (0x8000ULL)
-+#define GDB_INIT                (0x10000ULL)
-+#define IN_GDB                  (0x20000ULL)
-+#define RCLOCAL_IFILE           (0x40000ULL)
-+#define RCHOME_IFILE            (0x80000ULL)
-+#define GET_TIMESTAMP          (0x100000ULL)
-+#define READLINE               (0x200000ULL) 
-+#define _SIGINT_               (0x400000ULL)
-+#define IN_RESTART             (0x800000ULL)
-+#define KERNEL_DEBUG_QUERY    (0x1000000ULL)
-+#define DEVMEM                (0x2000000ULL)
-+#define REM_LIVE_SYSTEM       (0x4000000ULL)
-+#define NAMELIST_LOCAL        (0x8000000ULL)
-+#define MEMSRC_LOCAL         (0x10000000ULL)
-+#define NAMELIST_SAVED       (0x20000000ULL)
-+#define DUMPFILE_SAVED       (0x40000000ULL)
-+#define UNLINK_NAMELIST      (0x80000000ULL) 
-+#define NAMELIST_UNLINKED   (0x100000000ULL)
-+#define REM_MCLXCD          (0x200000000ULL)
-+#define REM_LKCD            (0x400000000ULL)
-+#define NAMELIST_NO_GZIP    (0x800000000ULL)
-+#define UNLINK_MODULES     (0x1000000000ULL)
-+#define S390D              (0x2000000000ULL)
-+#define REM_S390D          (0x4000000000ULL)
-+#define S390XD             (0x8000000000ULL)
-+#define REM_S390XD        (0x10000000000ULL)
-+#define NETDUMP           (0x20000000000ULL)
-+#define REM_NETDUMP       (0x40000000000ULL)
-+#define SYSMAP            (0x80000000000ULL)
-+#define SYSMAP_ARG       (0x100000000000ULL)
-+#define MEMMOD           (0x200000000000ULL)
-+#define MODPRELOAD       (0x400000000000ULL)
-+#define DISKDUMP         (0x800000000000ULL)
-+#define DATADEBUG       (0x1000000000000ULL)
-+#define FINDKERNEL      (0x2000000000000ULL)
-+#define VERSION_QUERY   (0x4000000000000ULL)
- 
- #define ACTIVE()            (pc->flags & LIVE_SYSTEM)
- #define DUMPFILE()          (!(pc->flags & LIVE_SYSTEM))
-@@ -252,7 +252,7 @@
- 	char *program_version;          /* this program's version */
- 	char *gdb_version;              /* embedded gdb version */
- 	char *prompt;                   /* this program's prompt */
--	long long flags;                /* flags from above */
-+	unsigned long long flags;       /* flags from above */
- 	char *namelist;         	/* linux namelist */
- 	char *dumpfile;         	/* dumpfile or /dev/kmem */ 
- 	char *live_memsrc;              /* live memory driver */
-@@ -394,8 +394,9 @@
- #define KMOD_V2       (0x2000)
- #define KALLSYMS_V2   (0x2000)
- #define TVEC_BASES_V2 (0x4000)
-+#define GCC_3_3_3     (0x8000)
- 
--#define GCC_VERSION (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2)
-+#define GCC_VERSION_DEPRECATED (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2|GCC_3_3_3)
- 
- struct kernel_table {                   /* kernel data */
- 	ulong flags;
-@@ -414,7 +415,8 @@
- 	struct timespec date;
- 	char proc_version[BUFSIZE];
- 	struct new_utsname utsname;
--	int kernel_version[3];
-+	uint kernel_version[3];
-+	uint gcc_version[3];
- 	int runq_siblings;
- 	long __rq_idx[NR_CPUS];
- 	long __cpu_idx[NR_CPUS];
-@@ -442,6 +444,13 @@
- #define THIS_KERNEL_VERSION ((kt->kernel_version[0] << 16) + \
- 			     (kt->kernel_version[1] << 8) + \
- 			     (kt->kernel_version[2]))
-+#define LINUX(x,y,z) (((uint)(x) << 16) + ((uint)(y) << 8) + (uint)(z))
 +
-+#define THIS_GCC_VERSION    ((kt->gcc_version[0] << 16) + \
-+                             (kt->gcc_version[1] << 8) + \
-+                             (kt->gcc_version[2]))
-+#define GCC(x,y,z) (((uint)(x) << 16) + ((uint)(y) << 8) + (uint)(z))
++static char *slab_chain_name_v2[] = {"partial", "full", "free"};
 +
- #define IS_KERNEL_STATIC_TEXT(x) (((ulong)(x) >= kt->stext) && \
- 		  	          ((ulong)(x) < kt->etext))
+ static void
+ do_slab_chain_percpu_v2(long cmd, struct meminfo *si)
+ {
+@@ -7231,6 +7458,7 @@
+ 	int list_borked;
+ 	char *slab_buf;
+ 	ulong specified_slab;
++	ulong last;
+ 	ulong slab_chains[SLAB_CHAINS];
  
-@@ -1271,6 +1280,8 @@
- struct array_table {
- 	int kmem_cache_s_name;
- 	int kmem_cache_s_c_name;
-+	int kmem_cache_s_array;
-+	int kmem_cache_s_cpudata;
- 	int irq_desc;
- 	int irq_action;
- 	int log_buf;
-@@ -1674,10 +1685,10 @@
- #define _PAGE_PSE       0x080   /* 4 MB (or 2MB) page, Pentium+, if present.. */
- #define _PAGE_GLOBAL    0x100   /* Global TLB entry PPro+ */
- #define _PAGE_PROTNONE  0x080   /* If not present */
--#define _PAGE_NX        ((ulonglong)0x8000000000000000)
-+#define _PAGE_NX        (0x8000000000000000ULL)
+ 	list_borked = 0;
+@@ -7244,6 +7472,12 @@
+         slab_chains[2] = si->cache + OFFSET(kmem_cache_s_lists) +
+                 OFFSET(kmem_list3_slabs_free);
  
- #define NONPAE_PAGEBASE(X)   (((unsigned long)(X)) & (unsigned long)machdep->pagemask)
--#define NX_BIT_MASK          ((unsigned long long)0x7fffffffffffffff)
-+#define NX_BIT_MASK          (0x7fffffffffffffffULL)
- #define PAE_PAGEBASE(X)      (((unsigned long long)(X)) & ((unsigned long long)machdep->pagemask) & NX_BIT_MASK)
++        if (CRASHDEBUG(1)) {
++                fprintf(fp, "[ %s: %lx ", si->curname, si->cache);
++                fprintf(fp, "partial: %lx full: %lx free: %lx ]\n",
++                        slab_chains[0], slab_chains[1], slab_chains[2]);
++        }
++
+ 	switch (cmd)
+ 	{
+ 	case SLAB_GET_COUNTS:
+@@ -7259,9 +7493,17 @@
+ 			if (!slab_chains[s])
+ 				continue;
  
- #define SWP_TYPE(entry) (((entry) >> 1) & 0x3f)
-@@ -2300,6 +2311,7 @@
- #define GNU_RETURN_ON_ERROR      (0x8)
- #define GNU_COMMAND_FAILED      (0x10)
- #define GNU_FROM_TTY_OFF        (0x20)
-+#define GNU_NO_READMEM          (0x40)
+-	                readmem(slab_chains[s],
+-	                        KVADDR, &si->slab, sizeof(ulong),
+-	                        "first slab", FAULT_ON_ERROR);
++	                if (!readmem(slab_chains[s],
++	                    KVADDR, &si->slab, sizeof(ulong),
++	                    "first slab", QUIET|RETURN_ON_ERROR)) {
++                                error(INFO, 
++				    "%s: %s list: bad slab pointer: %lx\n",
++                                        si->curname,
++					slab_chain_name_v2[s],
++                                        slab_chains[s]);
++				list_borked = 1;
++				continue;
++			}
+ 	
+ 			if (slab_data_saved(si)) {
+ 				FREEBUF(slab_buf);
+@@ -7271,11 +7513,19 @@
+ 			if (si->slab == slab_chains[s]) 
+ 				continue;
+ 	
++			last = slab_chains[s];
++
+ 			do {
+ 	                        if (received_SIGINT()) {
+ 					FREEBUF(slab_buf);
+ 	                                restart(0);
+ 				}
++
++				if (!verify_slab_v2(si, last, s)) {
++					list_borked = 1;
++					continue;
++				}
++				last = si->slab - OFFSET(slab_list);
+ 	
+ 		                readmem(si->slab, KVADDR, slab_buf, 
+ 					SIZE(slab), "slab buffer", 
+@@ -7306,9 +7556,7 @@
+        						error(NOTE, 
+ 	  	                      "%s: slab chain inconsistency: %s list\n",
+ 							si->curname,
+-						    	s == 0 ?  "full" :
+-						    	s == 1 ? "partial" : 
+-							"free");
++							slab_chain_name_v2[s]);
+        						list_borked = 1;
+      					}
+ 				}
+@@ -7317,7 +7565,8 @@
+ 		}
+ 
+ 		FREEBUF(slab_buf);
+-		save_slab_data(si);
++		if (!list_borked)
++			save_slab_data(si);
+ 		break;
+ 
+ 	case SLAB_WALKTHROUGH:
+@@ -7330,11 +7579,21 @@
+ 				continue;
+ 
+ 	        	if (!specified_slab) {
+-	                	readmem(slab_chains[s],
+-	                        	KVADDR, &si->slab, sizeof(ulong),
+-	                        	"slabs", FAULT_ON_ERROR);
+-			}
+-	
++	                	if (!readmem(slab_chains[s],
++	                            KVADDR, &si->slab, sizeof(ulong),
++	                            "slabs", QUIET|RETURN_ON_ERROR)) {
++                                        error(INFO,
++                                         "%s: %s list: bad slab pointer: %lx\n",
++                                                si->curname,
++						slab_chain_name_v2[s],
++                                                slab_chains[s]);
++					list_borked = 1;
++					continue;
++				}
++				last = slab_chains[s];
++			} else
++				last = 0;
++			
+ 			if (si->slab == slab_chains[s])
+ 				continue;
+ 	
+@@ -7349,6 +7608,12 @@
+ 	                        if (received_SIGINT())
+ 	                                restart(0);
+ 	
++                                if (!verify_slab_v2(si, last, s)) {
++                                        list_borked = 1;
++                                        continue;
++                                }
++                                last = si->slab - OFFSET(slab_list);
++
+ 		                dump_slab_percpu_v2(si);
+ 		
+ 		                if (si->found) {
+@@ -7361,13 +7626,98 @@
+ 		
+ 				si->slab -= OFFSET(slab_list);
+ 	
+-		        } while (si->slab != slab_chains[s]);
++		        } while (si->slab != slab_chains[s] && !list_borked);
+ 		}
+ 
+ 		break;
+ 	}
+ }
+ 
++/*
++ *  Try to preclude any attempt to translate a bogus slab structure.
++ */
++static int
++verify_slab_v2(struct meminfo *si, ulong last, int s)
++{
++	char slab_buf[BUFSIZE];
++	struct kernel_list_head *list_head;
++	unsigned int inuse;
++	ulong s_mem;
++	char *list;
++	int errcnt;
++
++	list = slab_chain_name_v2[s];
++
++	errcnt = 0;
++
++        if (!readmem(si->slab, KVADDR, slab_buf,
++            SIZE(slab), "slab buffer", QUIET|RETURN_ON_ERROR)) {
++                error(INFO, "%s: %s list: bad slab pointer: %lx\n",
++                        si->curname, list, si->slab);
++		return FALSE;
++        }                        
++
++        list_head = (struct kernel_list_head *)(slab_buf + OFFSET(slab_list));
++	if (!IS_KVADDR((ulong)list_head->next) || 
++	    !accessible((ulong)list_head->next)) {
++                error(INFO, "%s: %s list: slab: %lx  bad next pointer: %lx\n",
++                        si->curname, list, si->slab,
++			(ulong)list_head->next);
++		errcnt++;
++	}
++
++	if (last && (last != (ulong)list_head->prev)) {
++                error(INFO, "%s: %s list: slab: %lx  bad prev pointer: %lx\n",
++                        si->curname, list, si->slab,
++                        (ulong)list_head->prev);
++		errcnt++;
++	}
++
++	inuse = UINT(slab_buf + OFFSET(slab_inuse));
++	if (inuse > si->c_num) {
++                error(INFO, "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        si->curname, list, si->slab, inuse);
++		errcnt++;
++	}
++	switch (s) 
++	{
++	case 0: /* partial */
++                if ((inuse == 0) || (inuse == si->c_num)) {
++                	error(INFO, 
++		 	    "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        	si->curname, list, si->slab, inuse);
++			errcnt++;
++		}
++		break;
++
++	case 1: /* full */
++		if (inuse != si->c_num) {
++                	error(INFO, 
++		 	    "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        	si->curname, list, si->slab, inuse);
++			errcnt++;
++		}
++		break;
++
++	case 2: /* free */
++		if (inuse > 0) {
++                	error(INFO, 
++		 	    "%s: %s list: slab: %lx  bad inuse counter: %ld\n",
++                        	si->curname, list, si->slab, inuse);
++			errcnt++;
++		}
++		break;
++	}
++
++	s_mem = ULONG(slab_buf + OFFSET(slab_s_mem));
++	if (!IS_KVADDR(s_mem) || !accessible(s_mem)) {
++                error(INFO, "%s: %s list: slab: %lx  bad s_mem pointer: %lx\n",
++                        si->curname, list, si->slab, s_mem);
++		errcnt++;
++	}
++
++	return(errcnt ? FALSE : TRUE);
++}
+ 
+ /*
+  *  If it's a dumpfile, save the essential slab data to avoid re-reading 
+@@ -7579,7 +7929,7 @@
+                 if (INSLAB_PERCPU(si->slab, si) && 
+ 		    (si->spec_addr >= si->slab) &&
+                     (si->spec_addr < (si->slab+tmp))) {
+-			if (si->spec_addr >= (si->slab + SIZE(slab_s)))
++			if (si->spec_addr >= (si->slab + SIZE(slab)))
+ 				si->found = KMEM_BUFCTL_ADDR;
+ 			else
+                 		si->found = KMEM_SLAB_ADDR;
+--- crash/help.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/help.c	2005-01-28 15:26:13.000000000 -0500
+@@ -3578,8 +3578,9 @@
+ "       -li  walks through the inactive_list and verifies nr_inactive_pages.",
+ "       -La  same as -la, but also dumps each page in the active_list.",
+ "       -Li  same as -li, but also dumps each page in the inactive_list.",
+-" slab-name  when used with -s or -S, limits the command to only the slab",
+-"            of name \"slab-cache\".",
++" slab-name  when used with -s or -S, limits the command to only the slab cache",
++"            of name \"slab-name\".  If the slab-name argument is \"list\", then",
++"            all slab cache names and addresses are listed.",
+ "        -P  declares that the following address argument is a physical address.",
+ "   address  when used without any flag, the address can be a kernel virtual,",
+ "            or physical address; a search is made through the symbol table,",
+@@ -5257,8 +5258,8 @@
+ " ",
+ "  These are the current prerequisites: ",
+ "",
+-"  o  At this point, x86, ia64, x86_64, alpha and ppc-based kernels are ",
+-"     supported.  Other architectures will be addressed in the future.",
++"  o  At this point, x86, ia64, x86_64, alpha and ppc64-based kernels are ",
++"     supported.  Other architectures may be addressed in the future.",
+ "",
+ "  o  One size fits all -- the utility can be run on any Linux kernel version ",
+ "     from 2.2.5-15 through 2.6.*.",
+--- crash/task.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/task.c	2005-01-28 15:26:13.000000000 -0500
+@@ -2842,6 +2842,10 @@
+ 			fprintf(fp, "(HARDWARE RESET)");
+ 		else if (machdep->flags & SYSRQ)
+ 			fprintf(fp, "(SYSRQ)");
++		else if (machdep->flags & INIT)
++			fprintf(fp, "(INIT)");
++		else if (kt->cpu_flags[tc->processor] & NMI)
++			fprintf(fp, "(NMI)");
+ 		else if (tc->task == tt->panic_task)
+ 			fprintf(fp, "(PANIC)");
+ 		else
+--- crash/kernel.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/kernel.c	2005-01-28 15:26:13.000000000 -0500
+@@ -3252,6 +3252,9 @@
+ 	for (i = 0; i < NR_CPUS; i++) 
+ 		fprintf(fp, "%s%.*lx ", (i % 4) == 0 ? "\n    " : "",
+ 			LONG_PRLEN, kt->__per_cpu_offset[i]);
++	fprintf(fp, "\n cpu_flags[NR_CPUS]:");
++	for (i = 0; i < NR_CPUS; i++) 
++		fprintf(fp, "%lx ", kt->cpu_flags[i]);
+ 	fprintf(fp, "\n");
+ }
+ 
+--- crash/ia64.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/ia64.c	2005-02-09 16:12:05.000000000 -0500
+@@ -56,6 +56,7 @@
+ static struct line_number_hook ia64_line_number_hooks[];
+ static ulong ia64_get_stackbase(ulong);
+ static ulong ia64_get_stacktop(ulong);
++static void parse_cmdline_arg(void);
+ 
+ struct unw_frame_info;
+ static void dump_unw_frame_info(struct unw_frame_info *);
+@@ -112,12 +113,11 @@
+                 machdep->last_ptbl_read = 0;
+ 		machdep->verify_paddr = ia64_verify_paddr;
+ 		machdep->ptrs_per_pgd = PTRS_PER_PGD;
+-                if (machdep->cmdline_arg)
+-                        machdep->machspec->phys_start =
+-                            htol(machdep->cmdline_arg, RETURN_ON_ERROR, NULL);
+-                else
+-                        machdep->machspec->phys_start = UNKNOWN_PHYS_START;
+-		machdep->flags |= DEVMEMRD;
++                machdep->machspec->phys_start = UNKNOWN_PHYS_START;
++                if (machdep->cmdline_arg) 
++			parse_cmdline_arg();
++		if (ACTIVE())
++			machdep->flags |= DEVMEMRD;
+                 break;     
+ 
+         case PRE_GDB:
+@@ -218,6 +218,108 @@
+ 	}
+ }
+ 
++/*
++ *  --machdep <addr> defaults to the physical start location.
++ *
++ *  Otherwise, it's got to be a "item=value" string, separated
++ *  by commas if more than one is passed in.
++ */
++
++void
++parse_cmdline_arg(void)
++{
++	int i, c, errflag;
++	char *p;
++	char buf[BUFSIZE];
++	char *arglist[MAXARGS];
++	ulong value;
++        struct machine_specific *ms;
++
++        ms = &ia64_machine_specific;
++
++	if (!strstr(machdep->cmdline_arg, "=")) {
++		errflag = 0;
++        	value = htol(machdep->cmdline_arg,
++                	RETURN_ON_ERROR|QUIET, &errflag);
++		if (!errflag) {
++        		ms->phys_start = value;
++			error(NOTE, "setting phys_start to: 0x%lx\n",
++				ms->phys_start);
++		} else
++			error(WARNING, "ignoring --machdep option: %s\n\n",
++				machdep->cmdline_arg);
++		return;
++        }
++
++	strcpy(buf, machdep->cmdline_arg);
++
++	for (p = buf; *p; p++) {
++		if (*p == ',')
++			 *p = ' ';
++	}
++
++	c = parse_line(buf, arglist);
++
++	for (i = 0; i < c; i++) {
++		errflag = 0;
++
++		if (STRNEQ(arglist[i], "phys_start=")) {
++			p = arglist[i] + strlen("phys_start=");
++			if (strlen(p)) {
++        			value = htol(p, RETURN_ON_ERROR|QUIET, 
++					&errflag);
++				if (!errflag) {
++        				ms->phys_start = value;
++					error(NOTE, 
++					    "setting phys_start to: 0x%lx\n",
++						ms->phys_start);
++					continue;
++				}
++			}
++		} else if (STRNEQ(arglist[i], "init_stack_size=")) {
++			p = arglist[i] + strlen("init_stack_size=");
++			if (strlen(p)) {
++				value = stol(p, RETURN_ON_ERROR|QUIET, 
++					&errflag);
++				if (!errflag) {
++					ms->ia64_init_stack_size = (int)value;
++					error(NOTE, 
++		    	    	      "setting init_stack_size to: 0x%x (%d)\n",
++				    		ms->ia64_init_stack_size,
++				    		ms->ia64_init_stack_size);
++					continue;
++				}
++			}
++		}
++
++		error(WARNING, "ignoring --machdep option: %s\n", arglist[i]);
++	} 
++
++	if (c)
++		fprintf(fp, "\n");
++}
++
++
++int
++ia64_in_init_stack(ulong addr)
++{
++	ulong init_stack_addr;
++
++	if (!symbol_exists("ia64_init_stack"))
++		return FALSE;
++
++	/* 
++	 *  ia64_init_stack could be aliased to region 5 
++	 */
++	init_stack_addr = ia64_VTOP(symbol_value("ia64_init_stack"));
++	addr = ia64_VTOP(addr);
++	if ((addr < init_stack_addr) ||
++	    (addr >= (init_stack_addr+machdep->machspec->ia64_init_stack_size)))
++		return FALSE;
++
++	return TRUE;
++}
++
+ void
+ ia64_dump_machdep_table(ulong arg)
+ {
+@@ -309,6 +411,8 @@
+ 		fprintf(fp, "%sSYSRQ", others++ ? "|" : "");
+ 	if (machdep->flags & DEVMEMRD)
+ 		fprintf(fp, "%sDEVMEMRD", others++ ? "|" : "");
++	if (machdep->flags & INIT)
++		fprintf(fp, "%sINIT", others++ ? "|" : "");
+         fprintf(fp, ")\n");
+         fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
+ 	fprintf(fp, "  identity_map_base: %lx\n", machdep->identity_map_base);
+@@ -446,6 +550,9 @@
+         else
+                 fprintf(fp, "%lx\n", (ulong)ms->unwind_debug);
+ 
++	fprintf(fp, "               ia64_init_stack_size: %d\n", 
++		ms->ia64_init_stack_size);
++
+ 	if (verbose)
+ 		ia64_display_memmap();
+ }
+@@ -1077,9 +1184,9 @@
+ {
+         char buf1[BUFSIZE];
+         char buf2[BUFSIZE];
+-        char *colon, *p1;
++        char *colon, *p1, *p2;
+         int argc;
+-	int revise, stop_bit;
++	int revise_bracket, stop_bit;
+         char *argv[MAXARGS];
+         ulong value;
+ 
+@@ -1105,25 +1212,24 @@
+         strcpy(buf1, inbuf);
+         argc = parse_line(buf1, argv);
+ 
+-	revise = stop_bit = 0;
++	revise_bracket = stop_bit = 0;
+ 	if ((FIRSTCHAR(argv[argc-1]) == '<') &&
+             (LASTCHAR(argv[argc-1]) == '>')) {
+-		revise = TRUE;
++		revise_bracket = TRUE;
+ 		stop_bit = FALSE;
+ 	} else if ((FIRSTCHAR(argv[argc-1]) == '<') &&
+             strstr(argv[argc-1], ">;;")) {
+-		revise = TRUE;
++		revise_bracket = TRUE;
+ 		stop_bit = TRUE;
+ 	}
+ 
+-        if (revise) {
++        if (revise_bracket) {
+                 p1 = rindex(inbuf, '<');
+-                while ((p1 > inbuf) && !STRNEQ(p1, " 0x"))
++                while ((p1 > inbuf) && !STRNEQ(p1, "0x"))
+                         p1--;
+ 
+-                if (!STRNEQ(p1, " 0x"))
++                if (!STRNEQ(p1, "0x"))
+                         return FALSE;
+-                p1++;
+ 
+                 if (!extract_hex(p1, &value, NULLCHAR, TRUE))
+                         return FALSE;
+@@ -1133,10 +1239,46 @@
+ 			stop_bit ? ";;" : "");
+ 
+                 sprintf(p1, "%s", buf1);
+-        }
+ 
+-        console("    %s", inbuf);
++        } else if (STRNEQ(argv[argc-2], "br.call.") &&
++		 STRNEQ(argv[argc-1], "b0=0x")) {
++		/*  
++		 *  Update module function calls of these formats:
++	 	 *
++		 *     br.call.sptk.many b0=0xa0000000003d5e40;;
++		 *     br.call.sptk.many b0=0xa00000000001dfc0
++		 *
++		 *  to show a bracketed function name if the destination
++		 *  address is a known symbol with no offset.
++		 */
++		if ((p1 = strstr(argv[argc-1], ";;")) &&
++		    (p2 = strstr(inbuf, ";;\n"))) {
++			*p1 = NULLCHAR;
++			p1 = &argv[argc-1][3];
++
++                	if (extract_hex(p1, &value, NULLCHAR, TRUE)) {
++				sprintf(buf1, " <%s>;;\n",
++					value_to_symstr(value, buf2, 
++					pc->output_radix));
++				if (IS_MODULE_VADDR(value) &&
++				    !strstr(buf2, "+"))
++					sprintf(p2, buf1);
++			} 
++		} else {
++			p1 = &argv[argc-1][3];
++			p2 = &LASTCHAR(inbuf);
++                	if (extract_hex(p1, &value, '\n', TRUE)) {
++				sprintf(buf1, " <%s>\n",
++					value_to_symstr(value, buf2, 
++					pc->output_radix));
++				if (IS_MODULE_VADDR(value) &&
++				    !strstr(buf2, "+"))
++					sprintf(p2, buf1);
++			}
++		}
++	}
+ 
++        console("    %s", inbuf);
+ 
+ 	return TRUE;
+ }
+@@ -2540,6 +2682,13 @@
+ 	                                "unimpl_pa_mask", FAULT_ON_ERROR);
+ 		}
+ 	}
++
++        if (symbol_exists("ia64_init_stack") && !ms->ia64_init_stack_size) 
++		ms->ia64_init_stack_size = get_array_length("ia64_init_stack", 
++			NULL, 0);
++
++	if (DUMPFILE() && ia64_in_init_stack(SWITCH_STACK_ADDR(CURRENT_TASK())))
++		machdep->flags |= INIT;
+ }
+ 
+ /*
+--- crash/x86_64.c.orig	2005-02-09 16:13:25.000000000 -0500
++++ crash/x86_64.c	2005-01-28 15:26:13.000000000 -0500
+@@ -64,6 +64,7 @@
+ static void x86_64_init_kernel_pgd(void);
+ static void x86_64_cpu_pda_init(void);
+ static void x86_64_ist_init(void);
++static void x86_64_post_init(void);
+ 
+ 
+ struct machine_specific x86_64_machine_specific = { 0 };
+@@ -172,6 +173,7 @@
+ 		break;
+ 
+ 	case POST_INIT:
++		x86_64_post_init();
+ 		break;
+ 	}
+ }
+@@ -482,6 +484,55 @@
+ 	}
+ }
+ 
++static void 
++x86_64_post_init(void)
++{ 
++        int c, i, clues;
++        struct machine_specific *ms;
++	ulong *up;
++	struct syment *spt, *spc;
++	ulong offset;
++
++	/*
++	 *  Check whether each cpu was stopped by an NMI.
++	 */
++        ms = machdep->machspec;
++
++        for (c = 0; c < kt->cpus; c++) {
++                if (ms->stkinfo.ebase[c][NMI_STACK] == 0)
++                        break;
++
++                if (!readmem(ms->stkinfo.ebase[c][NMI_STACK], 
++		    KVADDR, ms->irqstack,
++		    ms->stkinfo.esize,
++                    "NMI exception stack contents", 
++		    RETURN_ON_ERROR|QUIET)) 
++			continue;
++
++       		for (i = clues = 0; i < (ms->stkinfo.esize)/sizeof(ulong); i++){
++                	up = (ulong *)(&ms->irqstack[i*sizeof(ulong)]);
++
++                	if (!is_kernel_text(*up) ||
++                            !(spt = value_search(*up, &offset)))
++				continue;
++
++			if (STREQ(spt->name, "try_crashdump") ||
++			    STREQ(spt->name, "die_nmi")) 
++				clues++;
++
++                    	if ((STREQ(spt->name, "nmi_watchdog_tick") ||
++                     	     STREQ(spt->name, "default_do_nmi"))) {
++                        	spc = x86_64_function_called_by((*up)-5);
++                        	if (spc && STREQ(spc->name, "die_nmi"))
++                                	clues += 2;
++			}
++		}
++
++		if (clues >= 2) 
++			kt->cpu_flags[c] |= NMI;
++        }
++}
++
+ /*
+  *  No x86_64 swapper_pg_dir; initialize the vt->kernel_pgd[NR_CPUS] array
+  *  with the lazily-sync'd init_level4_pgt page address.  The level4 page
+@@ -1128,7 +1179,8 @@
+ 		return BACKTRACE_ENTRY_DISPLAYED;
+ 	}
+ 
+-	if (!offset && !(bt->flags & BT_EXCEPTION_FRAME)) { 
++	if (!offset && !(bt->flags & BT_EXCEPTION_FRAME) &&
++	    !(bt->flags & BT_START)) { 
+ 		if (STREQ(name, "child_rip")) {
+ 			if (symbol_exists("kernel_thread"))
+ 				name = "kernel_thread";
+@@ -1164,6 +1216,8 @@
+ 
+ 	if (bt->flags & BT_EXCEPTION_FRAME)
+ 		rsp = bt->stkptr;
++	else if (bt->flags & BT_START)
++		rsp = bt->stkptr;
+ 	else
+ 		rsp = bt->stackbase + (stkindex * sizeof(long));
+ 
+@@ -1320,6 +1374,10 @@
+ 	irq_eframe = 0;
+ 	bt->call_target = NULL;
+ 	rsp = bt->stkptr;
++	if (!rsp) {
++		error(INFO, "cannot determine starting stack pointer\n");
++		return;
++	}
+ 	ms = machdep->machspec;
+ 	if (BT_REFERENCE_CHECK(bt))
+ 		ofp = pc->nullfp;
+@@ -1333,7 +1391,12 @@
+ 			STREQ(closest_symbol(bt->instptr), "thread_return") ?
+ 			" (schedule)" : "",
+ 			bt->instptr);
+-        }
++        } else if (bt->flags & BT_START) {
++                x86_64_print_stack_entry(bt, ofp, level,
++                        0, bt->instptr);
++		bt->flags &= ~BT_START;
++		level++;
++	}
+ 
+ 
+         if ((estack = x86_64_in_exception_stack(bt))) {
+@@ -1403,7 +1466,8 @@
+ 			bt->stackbuf + (bt->stacktop - bt->stackbase) - 
+ 			SIZE(pt_regs), bt, ofp);
+ 
+-		fprintf(fp, "--- <exception stack> ---\n");
++		if (!BT_REFERENCE_CHECK(bt))
++			fprintf(fp, "--- <exception stack> ---\n");
+ 
+                 /* 
+ 		 *  stack = (unsigned long *) estack_end[-2]; 
+@@ -1411,13 +1475,24 @@
+ 		up = (ulong *)(&bt->stackbuf[bt->stacktop - bt->stackbase]);
+ 		up -= 2;
+ 		rsp = bt->stkptr = *up;
+-		up -= 5;
++		up -= 3;
+ 		bt->instptr = *up;  
+ 		if (cs & 3)
+ 			done = TRUE;   /* user-mode exception */
+ 		else
+ 			done = FALSE;  /* kernel-mode exception */
+ 		bt->frameptr = 0;
++
++		/*
++		 *  Print the return values from the estack end.
++		 */
++		if (!done) {
++                	bt->flags |= BT_START;
++                	x86_64_print_stack_entry(bt, ofp, level,
++                        	0, bt->instptr);
++                	bt->flags &= ~BT_START;
++			level++;
++		}
+ 	}
+ 
+ 	/*
+@@ -1466,7 +1541,8 @@
+                         }
+                 }
+ 
+-                fprintf(fp, "--- <IRQ stack> ---\n");
++		if (!BT_REFERENCE_CHECK(bt))
++                	fprintf(fp, "--- <IRQ stack> ---\n");
+ 
+                 /*
+ 		 *  stack = (unsigned long *) (irqstack_end[-1]);
+@@ -1950,6 +2026,7 @@
+ 	int panic_task;
+         int i, panic, stage;
+         char *sym;
++	struct syment *sp;
+         ulong *up;
+ 	struct bt_info bt_local, *bt;
+         struct machine_specific *ms;
+@@ -1999,12 +2076,27 @@
+                 if (STREQ(sym, "netconsole_netdump") || 
+ 		    STREQ(sym, "netpoll_start_netdump") ||
+ 		    STREQ(sym, "start_disk_dump") ||
+-		    STREQ(sym, "disk_dump")) {
++		    STREQ(sym, "disk_dump") ||
++		    STREQ(sym, "try_crashdump")) {
+                         *rip = *up;
+                         *rsp = bt->stackbase + ((char *)(up) - bt->stackbuf);
+                         return;
+                 }
+ 
++                if ((stage == 2) && 
++                    (STREQ(sym, "nmi_watchdog_tick") ||
++                     STREQ(sym, "default_do_nmi"))) {
++			sp = x86_64_function_called_by((*up)-5);
++			if (!sp || !STREQ(sp->name, "die_nmi")) 
++				continue;
++                        *rip = *up;
++                        *rsp = bt->stackbase + ((char *)(up) - bt->stackbuf);
++			bt_in->flags |= BT_START;
++			*rip = symbol_value("die_nmi");
++			*rsp = (*rsp) - (7*sizeof(ulong));
++                        return;
++                }
++
+                 if (STREQ(sym, "panic")) {
+                         *rip = *up;
+                         *rsp = bt->stackbase + ((char *)(up) - bt->stackbuf);
+@@ -2062,7 +2154,19 @@
+ 		stage = 1;
+ 		goto next_stack;
+ 
++        /*
++         *  Check the NMI exception stack.
++         */
+ 	case 1:
++		bt->stackbase = ms->stkinfo.ebase[bt->tc->processor][NMI_STACK];
++		bt->stacktop = ms->stkinfo.ebase[bt->tc->processor][NMI_STACK] +
++                       ms->stkinfo.esize;
++		bt->stackbuf = ms->irqstack;
++		alter_stackbuf(bt);
++		stage = 2;
++		goto next_stack;
++
++	case 2:
+ 		break;
+ 	}
+ 
+--- crash/unwind.c.orig	2005-02-09 16:13:26.000000000 -0500
++++ crash/unwind.c	2005-02-07 16:02:44.000000000 -0500
+@@ -31,6 +31,10 @@
+  *  unwind_v[123].o object files.
+  */
+ 
++/*
++ *  2004-09-14 J. Nomura    Added OS_INIT handling
++ */
++
+ /* #include <asm/ptrace.h>  can't include this -- it's changing over time! */
+ 
+ #include "defs.h"
+@@ -56,6 +60,13 @@
+ static void dump_unwind_table(struct unw_table *);
+ static int unw_init_from_blocked_task(struct unw_frame_info *, 
+ 	struct bt_info *);
++static void unw_init_from_interruption(struct unw_frame_info *,
++	struct bt_info *, ulong, ulong);
++static int unw_switch_from_osinit_v1(struct unw_frame_info *,
++	struct bt_info *);
++static int unw_switch_from_osinit_v2(struct unw_frame_info *,
++	struct bt_info *);
++static unsigned long get_init_stack_ulong(unsigned long addr);
+ static void unw_init_frame_info(struct unw_frame_info *, 
+ 	struct bt_info *, ulong);
+ static int find_save_locs(struct unw_frame_info *);
+@@ -406,8 +417,8 @@
+ 		else
+ 			*nat_addr &= ~nat_mask;
+ 	} else {
+-		if ((GET_STACK_ULONG(nat_addr) & nat_mask) == 0) {
+-			*val = GET_STACK_ULONG(addr);
++		if ((IA64_GET_STACK_ULONG(nat_addr) & nat_mask) == 0) {
++			*val = IA64_GET_STACK_ULONG(addr);
+ 			*nat = 0;
+ 		} else {
+ 			*val = 0;	/* if register is a NaT, *addr may contain kernel data! */
+@@ -457,7 +468,7 @@
+ 	if (write)
+ 		*addr = *val;
+ 	else
+-		*val = GET_STACK_ULONG(addr);
++		*val = IA64_GET_STACK_ULONG(addr);
+ 	return 0;
+ }
+ 
+@@ -695,7 +706,7 @@
+ 			*info->cfm_loc =
+ 				(*info->cfm_loc & ~(0x3fUL << 52)) | ((*val & 0x3f) << 52);
+ 		else
+-			*val = (GET_STACK_ULONG(info->cfm_loc) >> 52) & 0x3f;
++			*val = (IA64_GET_STACK_ULONG(info->cfm_loc) >> 52) & 0x3f;
+ 		return 0;
+ 
+ 	      case UNW_AR_FPSR:
+@@ -739,7 +750,7 @@
+ 	if (write)
+ 		*addr = *val;
+ 	else
+-		*val = GET_STACK_ULONG(addr);
++		*val = IA64_GET_STACK_ULONG(addr);
+ 	return 0;
+ }
+ 
+@@ -764,7 +775,7 @@
+ 	if (write)
+ 		*addr = *val;
+ 	else
+-		*val = GET_STACK_ULONG(addr);
++		*val = IA64_GET_STACK_ULONG(addr);
+ 	return 0;
+ }
+ 
+@@ -1644,6 +1655,7 @@
+         frame = 0;
+ 
+         do {
++restart:
+                 unw_get_ip(info, &ip);
+                 unw_get_sp(info, &sp);
+                 unw_get_bsp(info, &bsp);
+@@ -1695,6 +1707,26 @@
+ 		    STREQ(name, "start_kernel_thread"))
+                         break;
+ 
++		/* 
++		 * "init_handler_platform" indicates that this task was
++		 * interrupted by INIT and its stack was switched. 
++		 */
++		if (STREQ(name, "init_handler_platform")) {
++			unw_switch_from_osinit_v1(info, bt);
++			frame++;
++			goto restart;
++		}
++
++		/*
++		 * In some cases, init_handler_platform is inlined into
++		 * ia64_init_handler.  
++		 */
++		if (STREQ(name, "ia64_init_handler")) {
++			unw_switch_from_osinit_v2(info, bt);
++			frame++;
++			goto restart;
++		}
++
+                 frame++;
+ 
+         } while (unw_unwind(info) >= 0);
+@@ -1797,6 +1829,16 @@
+ 	dump_struct("unw_table", (ulong)table, RADIX(16));
+ }
+ 
++static unsigned long 
++get_init_stack_ulong(unsigned long addr) 
++{
++        unsigned long tmp;
++
++        readmem(addr, KVADDR, &tmp, sizeof(unsigned long),
++                "get_init_stack_ulong", FAULT_ON_ERROR);
++
++        return tmp;
++}
+ 
+ static int
+ unw_init_from_blocked_task(struct unw_frame_info *info, struct bt_info *bt)
+@@ -1804,13 +1846,129 @@
+ 	ulong sw;
+ 
+ 	sw = SWITCH_STACK_ADDR(bt->task);
+-	if (!INSTACK(sw, bt))
++	if (!INSTACK(sw, bt) && !ia64_in_init_stack(sw))
+ 		return FALSE;
+ 
+         unw_init_frame_info(info, bt, sw);
+ 	return TRUE;
+ }
+ 
++/*
++ * unw_init_from_interruption
++ *   Initialize frame info from specified pt_regs/switch_stack.
++ *
++ *   Similar to unw_init_frame_info() except that:
++ *     - do not use readmem to access stack
++ *       (because stack may be modified by unw_init_from_saved_regs)
++ *     - use ar.ifs and ar.iip instead of ar.pfs and b0, respectively
++ *     - use sof(size-of-frame) of ar.ifs to caluculate bsp,
++ *       instead of sol(size-of-local) of ar.pfs
++ *       (because of cover instruction in kernel minstate save macro)
++ */
++static void
++unw_init_from_interruption(struct unw_frame_info *info, struct bt_info *bt, ulong pt, ulong sw)
++{
++//	unsigned long rbslimit, rbstop, stklimit, stktop, sof, ar_pfs;
++	unsigned long rbslimit, rbstop, stklimit, stktop, sof;
++	ulong t;
++
++	t = bt->task;
++
++	memset(info, 0, sizeof(*info));
++
++	rbslimit = (unsigned long) t + IA64_RBS_OFFSET;
++	rbstop = IA64_GET_STACK_ULONG(sw + OFFSET(switch_stack_ar_bspstore));
++	if (rbstop - (unsigned long) t >= IA64_STK_OFFSET)
++		rbstop = rbslimit;
++
++	stklimit = (unsigned long) t + IA64_STK_OFFSET;
++	stktop   = IA64_GET_STACK_ULONG(pt + offsetof(struct pt_regs, r12));
++	if (stktop <= rbstop)
++		stktop = rbstop;
++
++	info->regstk.limit = rbslimit;
++	info->regstk.top   = rbstop;
++	info->memstk.limit = stklimit;
++	info->memstk.top   = stktop;
++	info->task = (struct task_struct *)bt;
++	info->sw  = (struct switch_stack *)sw;
++	info->sp = info->psp = stktop;
++	info->pr = IA64_GET_STACK_ULONG(sw + OFFSET(switch_stack_pr));
++
++	info->cfm_loc = (unsigned long *) (pt + offsetof(struct pt_regs, cr_ifs));
++	info->unat_loc = (unsigned long *) (pt + offsetof(struct pt_regs, ar_unat));
++	info->pfs_loc = (unsigned long *) (pt + offsetof(struct pt_regs, ar_pfs));
++	/* register stack is covered */
++	sof = IA64_GET_STACK_ULONG(info->cfm_loc) & 0x7f;
++	info->bsp = (unsigned long)
++		ia64_rse_skip_regs((unsigned long *) info->regstk.top, -sof);
++	/* interrupted ip is saved in iip */
++	info->ip = IA64_GET_STACK_ULONG(pt + offsetof(struct pt_regs, cr_iip));
++#if defined(UNWIND_V2) || defined(UNWIND_V3)
++	info->pt = pt;
++#endif
++
++	find_save_locs(info);
++}
++
++/*
++ * unw_switch_from_osinit
++ *   switch back to interrupted context
++ *
++ *   assumption: init_handler_platform() has 3 arguments,
++ *               2nd arg is pt_regs and 3rd arg is switch_stack.
++ */
++static int
++unw_switch_from_osinit_v1(struct unw_frame_info *info, struct bt_info *bt)
++{
++	unsigned long pt, sw;
++	char is_nat;
++
++	/* pt_regs is the 2nd argument of init_handler_platform */
++	if (unw_get_gr(info, 33, &pt, &is_nat)) {
++		fprintf(fp, "gr 33 get error\n");
++		return FALSE;
++	}
++	/* switch_stack is the 3rd argument of init_handler_platform */
++	if (unw_get_gr(info, 34, &sw, &is_nat)) {
++		fprintf(fp, "gr 33 get error\n");
++		return FALSE;
++	}
++
++	unw_init_from_interruption(info, bt, pt, sw);
++	ia64_exception_frame(pt, bt);
++
++	return TRUE;
++}
++
++static int
++unw_switch_from_osinit_v2(struct unw_frame_info *info, struct bt_info *bt)
++{
++	unsigned long pt, sw;
++	char is_nat;
++
++	/* pt_regs is the 1st argument of ia64_init_handler */
++	if (unw_get_gr(info, 32, &pt, &is_nat)) {
++		fprintf(fp, "gr 32 get error\n");
++
++		return FALSE;
++	}
++	/* switch_stack is the 2nd argument of ia64_init_handler */
++	if (unw_get_gr(info, 33, &sw, &is_nat)) {
++		fprintf(fp, "gr 33 get error\n");
++		return FALSE;
++	}
++
++	/* Fix me! */
++	sw = info->psp + 16;
++	pt = sw + STRUCT_SIZE("switch_stack");
++
++	unw_init_from_interruption(info, bt, pt, sw);
++	ia64_exception_frame(pt, bt);
++
++	return TRUE;
++}
++
+ static void
+ unw_init_frame_info (struct unw_frame_info *info, struct bt_info *bt, ulong sw)
+ {
+@@ -1851,12 +2009,12 @@
+ 	info->sw  = (struct switch_stack *)sw;
+ 	info->sp = info->psp = (unsigned long) (sw + SIZE(switch_stack)) - 16;
+         info->cfm_loc = (ulong *)(sw + OFFSET(switch_stack_ar_pfs));
+-    	ar_pfs = GET_STACK_ULONG(info->cfm_loc); 
++    	ar_pfs = IA64_GET_STACK_ULONG(info->cfm_loc); 
+ 	sol = (ar_pfs >> 7) & 0x7f;
+ 	info->bsp = (unsigned long) 
+ 		ia64_rse_skip_regs((unsigned long *) info->regstk.top, -sol);
+-        info->ip = GET_STACK_ULONG(sw + OFFSET(switch_stack_b0)); 
+-        info->pr = GET_STACK_ULONG(sw + OFFSET(switch_stack_pr)); 
++        info->ip = IA64_GET_STACK_ULONG(sw + OFFSET(switch_stack_b0)); 
++        info->pr = IA64_GET_STACK_ULONG(sw + OFFSET(switch_stack_pr)); 
+ 
+ 	find_save_locs(info);
+ }
+@@ -1973,7 +2131,7 @@
+ 		       	info->ip);
+ 		return -1;
+ 	}
+-	ip = info->ip = GET_STACK_ULONG(info->rp_loc);
++	ip = info->ip = IA64_GET_STACK_ULONG(info->rp_loc);
+ 	if (ip < GATE_ADDR + PAGE_SIZE) {
+ 		/*
+ 		 * We don't have unwind info for the gate page, 
+@@ -1997,26 +2155,26 @@
+ 	if ((info->flags & UNW_FLAG_INTERRUPT_FRAME)) {
+ #ifdef UNWIND_V1
+ 		if ((pr & (1UL << pNonSys)) != 0)
+-			num_regs = GET_STACK_ULONG(info->cfm_loc) & 0x7f;		/* size of frame */
++			num_regs = IA64_GET_STACK_ULONG(info->cfm_loc) & 0x7f;		/* size of frame */
+ 		info->pfs_loc =
+ 			(unsigned long *) (info->sp + 16 + struct_offset(struct pt_regs, ar_pfs));
+ #endif
+ #ifdef UNWIND_V2
+                 info->pt = info->sp + 16;
+                 if ((pr & (1UL << pNonSys)) != 0)
+-                        num_regs = GET_STACK_ULONG(info->cfm_loc) & 0x7f;               /* size of frame */
++                        num_regs = IA64_GET_STACK_ULONG(info->cfm_loc) & 0x7f;               /* size of frame */
+                 info->pfs_loc =
+                         (unsigned long *) (info->pt + offsetof(struct pt_regs, ar_pfs));
+ #endif
+ #ifdef UNWIND_V3
+                 info->pt = info->sp + 16;
+                 if ((pr & (1UL << pNonSys)) != 0)
+-                        num_regs = GET_STACK_ULONG(info->cfm_loc) & 0x7f;               /* size of frame */
++                        num_regs = IA64_GET_STACK_ULONG(info->cfm_loc) & 0x7f;               /* size of frame */
+                 info->pfs_loc =
+                         (unsigned long *) (info->pt + offsetof(struct pt_regs, ar_pfs));
+ #endif
+ 	} else
+-		num_regs = (GET_STACK_ULONG(info->cfm_loc) >> 7) & 0x7f;	/* size of locals */
++		num_regs = (IA64_GET_STACK_ULONG(info->cfm_loc) >> 7) & 0x7f;	/* size of locals */
+ 	info->bsp = (unsigned long) ia64_rse_skip_regs((unsigned long *) info->bsp, -num_regs);
+ 	if (info->bsp < info->regstk.limit || info->bsp > info->regstk.top) {
+ 		error(INFO, "unwind: bsp (0x%lx) out of range [0x%lx-0x%lx]\n",
+@@ -2026,7 +2184,8 @@
+ 
+ 	/* restore the sp: */
+ 	info->sp = info->psp;
+-	if (info->sp < info->memstk.top || info->sp > info->memstk.limit) {
++	if ((info->sp < info->memstk.top || info->sp > info->memstk.limit)
++		&& !ia64_in_init_stack(info->sp)) {
+ 		error(INFO, "unwind: sp (0x%lx) out of range [0x%lx-0x%lx]\n",
+ 			info->sp, info->memstk.top, info->memstk.limit);
+ 		return -1;
+@@ -2135,7 +2294,7 @@
+ 				break;
+ 			}
+ #endif
+-			s[dst] = GET_STACK_ULONG(s[val]);
++			s[dst] = IA64_GET_STACK_ULONG(s[val]);
+ 			break;
+ 		}
+ 	}
+--- crash/defs.h.orig	2005-02-09 16:13:26.000000000 -0500
++++ crash/defs.h	2005-01-28 15:26:12.000000000 -0500
+@@ -62,7 +62,7 @@
+ #include <sys/wait.h>
+ #include <sys/time.h>
+ 
+-#define BASELEVEL_REVISION  "3.8"
++#define BASELEVEL_REVISION  "3.10"
  
  #undef TRUE
  #undef FALSE
-@@ -2788,6 +2800,7 @@
- char *fill_inode_cache(ulong);
- void clear_inode_cache(void);
- int monitor_memory(long *, long *, long *, long *);
-+int is_readable(char *);
- #define RADIX_TREE_COUNT   (1)
- #define RADIX_TREE_SEARCH  (2)
- #define RADIX_TREE_DUMP    (3)
-@@ -2966,44 +2979,44 @@
- struct stack_hook *gather_text_list(struct bt_info *);
- int get_cpus_online(void);
- void back_trace(struct bt_info *);
--#define BT_RAW                     (0x1)
--#define BT_SYMBOLIC_ARGS           (0x2)
--#define BT_FULL                    (0x4)
--#define BT_TEXT_SYMBOLS            (0x8)
--#define BT_TEXT_SYMBOLS_PRINT     (0x10)
--#define BT_TEXT_SYMBOLS_NOPRINT   (0x20)
--#define BT_USE_GDB                (0x40)
--#define BT_EXCEPTION_FRAME        (0x80)
--#define BT_LINE_NUMBERS          (0x100)
--#define BT_USER_EFRAME           (0x200)
--#define BT_SAVE_LASTSP           (0x400)
--#define BT_FROM_EXCEPTION        (0x800)
--#define BT_FROM_CALLFRAME       (0x1000)
--#define BT_EFRAME_SEARCH        (0x2000)
--#define BT_SPECULATE            (0x4000)
--#define BT_RESCHEDULE           (0x8000)
-+#define BT_RAW                     (0x1ULL)
-+#define BT_SYMBOLIC_ARGS           (0x2ULL)
-+#define BT_FULL                    (0x4ULL)
-+#define BT_TEXT_SYMBOLS            (0x8ULL)
-+#define BT_TEXT_SYMBOLS_PRINT     (0x10ULL)
-+#define BT_TEXT_SYMBOLS_NOPRINT   (0x20ULL)
-+#define BT_USE_GDB                (0x40ULL)
-+#define BT_EXCEPTION_FRAME        (0x80ULL)
-+#define BT_LINE_NUMBERS          (0x100ULL)
-+#define BT_USER_EFRAME           (0x200ULL)
-+#define BT_SAVE_LASTSP           (0x400ULL)
-+#define BT_FROM_EXCEPTION        (0x800ULL)
-+#define BT_FROM_CALLFRAME       (0x1000ULL)
-+#define BT_EFRAME_SEARCH        (0x2000ULL)
-+#define BT_SPECULATE            (0x4000ULL)
-+#define BT_RESCHEDULE           (0x8000ULL)
- #define BT_SCHEDULE      (BT_RESCHEDULE)
--#define BT_RET_FROM_SMP_FORK   (0x10000)
--#define BT_STRACE              (0x20000)
--#define BT_KSTACKP             (0x40000)
--#define BT_LOOP_TRAP           (0x80000)
--#define BT_BUMP_FRAME_LEVEL   (0x100000)
--#define BT_EFRAME_COUNT       (0x200000)
--#define BT_CPU_IDLE           (0x400000)
--#define BT_WRAP_TRAP          (0x800000)
--#define BT_KERNEL_THREAD     (0x1000000)
-+#define BT_RET_FROM_SMP_FORK   (0x10000ULL)
-+#define BT_STRACE              (0x20000ULL)
-+#define BT_KSTACKP             (0x40000ULL)
-+#define BT_LOOP_TRAP           (0x80000ULL)
-+#define BT_BUMP_FRAME_LEVEL   (0x100000ULL)
-+#define BT_EFRAME_COUNT       (0x200000ULL)
-+#define BT_CPU_IDLE           (0x400000ULL)
-+#define BT_WRAP_TRAP          (0x800000ULL)
-+#define BT_KERNEL_THREAD     (0x1000000ULL)
- #define BT_ERROR_MASK  (BT_LOOP_TRAP|BT_WRAP_TRAP|BT_KERNEL_THREAD|BT_CPU_IDLE)
--#define BT_UNWIND_ERROR      (0x2000000)
--#define BT_OLD_BACK_TRACE    (0x4000000)
--#define BT_FRAMESIZE_DEBUG   (0x8000000)
--#define BT_CONTEXT_SWITCH   (0x10000000)
--#define BT_HARDIRQ          (0x20000000)
--#define BT_SOFTIRQ          (0x40000000)
--#define BT_CHECK_CALLER     (0x80000000)
--#define BT_EXCEPTION_STACK (0x100000000)
--#define BT_IRQSTACK        (0x200000000)
--#define BT_DUMPFILE_SEARCH (0x400000000)
--#define BT_EFRAME_SEARCH2  (0x800000000)
-+#define BT_UNWIND_ERROR      (0x2000000ULL)
-+#define BT_OLD_BACK_TRACE    (0x4000000ULL)
-+#define BT_FRAMESIZE_DEBUG   (0x8000000ULL)
-+#define BT_CONTEXT_SWITCH   (0x10000000ULL)
-+#define BT_HARDIRQ          (0x20000000ULL)
-+#define BT_SOFTIRQ          (0x40000000ULL)
-+#define BT_CHECK_CALLER     (0x80000000ULL)
-+#define BT_EXCEPTION_STACK (0x100000000ULL)
-+#define BT_IRQSTACK        (0x200000000ULL)
-+#define BT_DUMPFILE_SEARCH (0x400000000ULL)
-+#define BT_EFRAME_SEARCH2  (0x800000000ULL)
+@@ -446,6 +446,8 @@
+ 	long __rq_idx[NR_CPUS];
+ 	long __cpu_idx[NR_CPUS];
+ 	long __per_cpu_offset[NR_CPUS];
++	long cpu_flags[NR_CPUS];
++#define NMI 0x1
+ };
+ 
+ /*
+@@ -674,6 +676,7 @@
+ #define FRAMESIZE_DEBUG (0x10000000)
+ #define MACHDEP_BT_TEXT  (0x8000000)
+ #define DEVMEMRD         (0x4000000)
++#define INIT             (0x2000000)
+ #define SYSRQ_TASK(X)   ((machdep->flags & SYSRQ) && is_task_active(X))
+ 
+ extern struct machdep_table *machdep;
+@@ -2030,6 +2033,9 @@
+ #define UNKNOWN_PHYS_START ((ulong)(-1))
+ #define DEFAULT_PHYS_START (KERNEL_TR_PAGE_SIZE * 1)
+ 
++#define IA64_GET_STACK_ULONG(OFF) \
++        ((INSTACK(OFF,bt)) ? (GET_STACK_ULONG(OFF)) : get_init_stack_ulong((unsigned long)OFF))
++
+ #endif  /* IA64 */
+ 
+ #ifdef PPC64
+@@ -3106,6 +3112,7 @@
+ #define BT_IRQSTACK        (0x200000000ULL)
+ #define BT_DUMPFILE_SEARCH (0x400000000ULL)
+ #define BT_EFRAME_SEARCH2  (0x800000000ULL)
++#define BT_START          (0x1000000000ULL)
  
  #define BT_REF_HEXVAL         (0x1)
  #define BT_REF_SYMBOL         (0x2)
---- crash/lkcd_vmdump_v1.h.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/lkcd_vmdump_v1.h	2004-07-13 16:17:04.000000000 -0400
-@@ -46,7 +46,9 @@
- #ifndef MCLX
- #include <linux/utsname.h>              /* for utsname structure            */
- #endif
-+#ifndef IA64
- #include <asm/ptrace.h>                 /* for pt_regs                      */
-+#endif
+@@ -3229,6 +3236,8 @@
+ 	int isize;
+ };
  
- /* necessary header definitions in all cases */
- #define DUMP_KIOBUF_NUMBER  0xdeadbeef  /* special number for kiobuf maps   */
-@@ -124,7 +126,9 @@
- 	struct new_utsname   dh_utsname;
++#define NMI_STACK 2    /* ebase[] offset to NMI exception stack */
++
+ struct machine_specific {
+         char *pml4;
+ 	char *irqstack;
+@@ -3318,6 +3327,7 @@
+ int ia64_IS_VMALLOC_ADDR(ulong);
+ #define display_idt_table() \
+ 	error(FATAL, "-d option TBD on ia64 architecture\n");
++int ia64_in_init_stack(ulong addr);
  
- 	/* the dump registers */
-+#ifndef IA64
- 	struct pt_regs       dh_regs;
-+#endif
+ #define OLD_UNWIND       (0x1)   /* CONFIG_IA64_NEW_UNWIND not turned on */
+ #define NEW_UNWIND       (0x2)   /* CONFIG_IA64_NEW_UNWIND turned on */
+@@ -3359,8 +3369,10 @@
+ 	void (*unwind)(struct bt_info *);
+ 	void (*dump_unwind_stats)(void);
+ 	int (*unwind_debug)(ulong);
++	int ia64_init_stack_size;
+ };
  
- 	/* the address of the current task */
- 	struct task_struct  *dh_current_task;
-@@ -153,8 +157,10 @@
- 
- #endif /* CONFIG_VMDUMP */
- 
-+#ifdef __KERNEL__
- extern void dump_init(uint64_t, uint64_t);
- extern void dump_open(char *);
- extern void dump_execute(char *, struct pt_regs *);
-+#endif
- 
- #endif /* _VMDUMP_H */
---- crash/lkcd_vmdump_v2_v3.h.orig	2004-07-14 09:38:12.000000000 -0400
-+++ crash/lkcd_vmdump_v2_v3.h	2004-07-13 16:17:04.000000000 -0400
-@@ -108,7 +108,9 @@
-  *  data here are just placeholders...
++
+ /*
+  *  unwind.c
   */
+--- crash/Makefile.orig	2005-02-09 16:13:26.000000000 -0500
++++ crash/Makefile	2005-02-09 16:13:25.000000000 -0500
+@@ -153,10 +153,10 @@
+ GDB_6.1_FILES=${GDB}/gdb/Makefile.in ${GDB}/Makefile.in \
+           ${GDB}/gdb/main.c ${GDB}/gdb/symtab.c ${GDB}/gdb/target.c \
+           ${GDB}/gdb/symfile.c ${GDB}/gdb/elfread.c \
+-          ${GDB}/gdb/ui-file.c ${GDB}/gdb/utils.c
++          ${GDB}/gdb/ui-file.c ${GDB}/gdb/utils.c ${GDB}/gdb/dwarf2read.c
+ GDB_6.1_OFILES=${GDB}/gdb/main.o ${GDB}/gdb/symtab.o \
+           ${GDB}/gdb/target.o ${GDB}/gdb/symfile.o ${GDB}/gdb/elfread.o \
+-          ${GDB}/gdb/ui-file.o ${GDB}/gdb/utils.o 
++          ${GDB}/gdb/ui-file.o ${GDB}/gdb/utils.o ${GDB}/gdb/dwarf2read.o
  
-+#ifndef IA64
- #include <asm/ptrace.h>                          /* for pt_regs             */
-+#endif
- 
- /* definitions */
- #define DUMP_ASM_MAGIC_NUMBER     0xdeaddeadULL  /* magic number            */
-@@ -133,7 +135,9 @@
-         uint32_t             dha_eip;
- 
-         /* the dump registers */
-+#ifndef IA64
-         struct pt_regs       dha_regs;
-+#endif
- 
- } dump_header_asm_t;
- 
-@@ -235,8 +239,10 @@
- 
- #endif /* CONFIG_VMDUMP */
- 
-+#ifdef __KERNEL__
- extern void dump_init(uint64_t, uint64_t);
- extern void dump_open(char *);
- extern void dump_execute(char *, struct pt_regs *);
-+#endif
- 
- #endif /* _VMDUMP_H */
+ # 
+ # GDB_FLAGS is passed up from the gdb Makefile.
+--- crash/crash.8.orig	2005-02-09 16:13:26.000000000 -0500
++++ crash/crash.8	2005-01-31 10:55:43.000000000 -0500
+@@ -104,9 +104,8 @@
+ .TP
+ .BI \-d \ num
+ .B Crash
+-sets its internal debug level
+-.I num
+-.  The higher the number, the more debugging data will be printed while
++sets its internal debug level.
++The higher the number, the more debugging data will be printed while
+ .B crash
+ runs.
+ .TP

@@ -1,0 +1,162 @@
+--- crash/memory.c.orig	2003-09-10 14:06:01.000000000 -0400
++++ crash/memory.c	2003-09-10 14:06:46.000000000 -0400
+@@ -6170,6 +6170,7 @@
+ 		si->flags &= ~SLAB_WALKTHROUGH;
+ 		si->cpucached_cache = 0;
+         	si->num_slabs = si->inuse = 0;
++		gather_cpudata_list(si); 
+ 
+ 		slab_s_buf = GETBUF(SIZE(slab_s));
+ 
+@@ -6204,7 +6205,9 @@
+ 				tmp = INT(slab_s_buf + OFFSET(slab_s_inuse));
+ 				si->inuse += tmp;
+ 	
+-				gather_cpudata_list(si);
++				if (ACTIVE())
++					gather_cpudata_list(si); 
++
+ 				si->s_mem = ULONG(slab_s_buf + 
+ 					OFFSET(slab_s_s_mem));
+ 				gather_slab_cached_count(si);
+--- crash/task.c.orig	2003-09-10 14:06:05.000000000 -0400
++++ crash/task.c	2003-09-10 14:06:50.000000000 -0400
+@@ -3921,7 +3921,7 @@
+ 				cnt++;
+ 		}
+         } else if (VALID_MEMBER(runqueue_cpu)) {
+-		for (i = 0; i < NR_CPUS; i++) {
++		for (i = 0; i < kt->cpus; i++) {
+                         runqaddr = runq + (SIZE(runqueue) * rq_idx(i));
+                         readmem(runqaddr, KVADDR, runqbuf,
+                                 SIZE(runqueue), "runqueues curr",
+--- crash/lkcd_x86_trace.c.orig	2003-09-19 10:32:11.000000000 -0400
++++ crash/lkcd_x86_trace.c	2003-09-22 14:19:44.000000000 -0400
+@@ -891,6 +891,19 @@
+ #define KERNEL_EFRAME_SZ	13	/* no ss and esp */
+ #define USER_EFRAME_SZ		15
+ 
++#ifdef REDHAT
++#undef __KERNEL_CS
++#undef __KERNEL_DS
++#undef __USER_CS
++#undef __USER_DS
++
++#define __KERNEL_CS     0x10
++#define __KERNEL_DS     0x18
++
++#define __USER_CS       0x23
++#define __USER_DS       0x2B
++#endif
++
+ /* 
+  * Check if the exception frame is of kernel or user type 
+  * Is checking only DS and CS values sufficient ?
+@@ -900,6 +913,11 @@
+ 	if (((regs->xcs & 0xffff) == __KERNEL_CS) && 
+ 			((regs->xds & 0xffff) == __KERNEL_DS))
+ 		return KERNEL_EFRAME;
++#ifdef REDHAT
++	else if (((regs->xcs & 0xffff) == 0x60) && 
++			((regs->xds & 0xffff) == 0x68))
++		return KERNEL_EFRAME;
++#endif
+ 	else if (((regs->xcs & 0xffff) == __USER_CS) && 
+ 			((regs->xds & 0xffff) == __USER_DS))
+ 		return USER_EFRAME;
+@@ -1100,7 +1118,9 @@
+ 			 *  a valid RA at a higher stack address.	
+ 			 */
+                         if ((bt->flags & BT_SPECULATE) &&
+-			    !STREQ(funcname, "context_switch")) 
++			    !STREQ(funcname, "context_switch") &&
++			    !STREQ(funcname, "die") &&
++		            !(bt->frameptr && ((bp+4) < bt->frameptr))) 
+ 				SEEK_VALID_RA();
+ 		}
+ #else
+@@ -1188,7 +1208,7 @@
+ 					ra, sp, bp, asp, 0, 0, 0, 0);
+ 				return(trace->nframes);
+ #ifdef REDHAT
+-                        } else if (strstr(func_name, "cpu_idle")) {
++                        } else if (STREQ(func_name, "cpu_idle")) {
+                                 ra = 0;
+                                 bp = sp = saddr - 4;
+                                 asp = curframe->asp;
+@@ -1634,8 +1654,12 @@
+ 
+         if ((frmp = trace->frame)) {
+                 do {
+-			if (frmp->error) 
++			if (frmp->error) {
+ 				errcnt++;
++				if (!(bt->flags & BT_SPECULATE) && 
++				    !bt->frameptr)
++					bt->frameptr = frmp->fp;
++			}
+ 		        if (BT_REFERENCE_CHECK(bt))
+ 				do_bt_reference_check(bt, frmp);
+         		frmp = frmp->next;
+--- crash/defs.h.orig	2003-09-22 10:40:29.000000000 -0400
++++ crash/defs.h	2003-09-19 15:10:42.000000000 -0400
+@@ -503,6 +503,7 @@
+         struct stack_hook *hp;
+         struct stack_hook *textlist;
+         struct reference *ref;
++	ulong frameptr;
+         ulong debug;
+ };
+ 
+--- crash/x86.c.orig	2003-09-19 10:32:26.000000000 -0400
++++ crash/x86.c	2003-09-19 10:28:17.000000000 -0400
+@@ -1401,15 +1401,28 @@
+ 
+ 		/* check for kernel exception frame */
+ 
+-		if (INSTACK(pt->reg_value[INT_EFRAME_EBP], bt) &&
+-		    ((short)pt->reg_value[INT_EFRAME_CS] == 0x10) &&
++		if (((short)pt->reg_value[INT_EFRAME_CS] == 0x10) &&
+ 		    ((short)pt->reg_value[INT_EFRAME_DS] == 0x18) &&
+                     ((short)pt->reg_value[INT_EFRAME_ES] == 0x18) &&
+ 		    IS_KVADDR(pt->reg_value[INT_EFRAME_EIP])) {
++			if (!(machdep->flags & OMIT_FRAME_PTR) && 
++			    !INSTACK(pt->reg_value[INT_EFRAME_EBP], bt)) 
++				continue;
+                         rv = bt->stackbase + sizeof(ulong) * (first - stack);
+                         break;
+ 		}
+ 
++                if (((short)pt->reg_value[INT_EFRAME_CS] == 0x60) &&
++                    ((short)pt->reg_value[INT_EFRAME_DS] == 0x68) &&
++                    ((short)pt->reg_value[INT_EFRAME_ES] == 0x68) &&
++                    IS_KVADDR(pt->reg_value[INT_EFRAME_EIP])) {
++			if (!(machdep->flags & OMIT_FRAME_PTR) && 
++			    !INSTACK(pt->reg_value[INT_EFRAME_EBP], bt)) 
++				continue;
++                        rv = bt->stackbase + sizeof(ulong) * (first - stack);
++                        break;
++                }
++
+ 		/* check for user exception frame */
+ 
+ 		if (((short)pt->reg_value[INT_EFRAME_CS] == 0x23) &&
+@@ -1417,8 +1430,7 @@
+ 		    ((short)pt->reg_value[INT_EFRAME_ES] == 0x2b) &&
+ 		    ((short)pt->reg_value[INT_EFRAME_SS] == 0x2b) &&
+ 		    IS_UVADDR(pt->reg_value[INT_EFRAME_EIP], bt->tc) &&
+-		    IS_UVADDR(pt->reg_value[INT_EFRAME_ESP], bt->tc) &&
+-		    IS_UVADDR(pt->reg_value[INT_EFRAME_EBP], bt->tc)) {
++		    IS_UVADDR(pt->reg_value[INT_EFRAME_ESP], bt->tc)) {
+                         rv = bt->stackbase + sizeof(ulong) * (first - stack);
+                         break;
+ 		}
+@@ -1454,7 +1466,7 @@
+                 cs = pt->reg_value[INT_EFRAME_CS];
+                 if (cs == 0x23) {
+                         mode = "USER-MODE";
+-                } else if (cs == 0x10) {
++                } else if ((cs == 0x10) || (cs == 0x60)) {
+                         mode = "KERNEL-MODE";
+                 } else {
+                         mode = "UNKNOWN-MODE";

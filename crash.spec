@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 3.8
-Release: 2
+Release: 3
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -23,7 +23,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version}
-# %patch0 -p1 -b crash.patch
+%patch0 -p1 -b crash.patch
 
 %build
 make RPMPKG="%{version}-%{release}"
@@ -42,6 +42,11 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Fri Jun 25 2004 Dave Anderson <anderson@redhat.com> 3.8-3
+- remove (harmless) error message during ia64 diskdump invocation when
+  an SMP system gets booted with maxcpus=1
+- several 2.6 kernel specific updates
+
 * Thu Jun 17 2004 Dave Anderson <anderson@redhat.com> 3.8-2
 - updated source package to crash-3.8.tar.gz 
 - diskdump support

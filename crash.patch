@@ -1,0 +1,808 @@
+--- crash/main.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/main.c	2004-06-22 12:46:23.000000000 -0400
+@@ -48,6 +48,7 @@
+         {"help", 0, 0, 0},
+ 	{"data_debug", 0, 0, 0},
+ 	{"no_data_debug", 0, 0, 0},
++	{"no_kmem_cache", 0, 0, 0},
+ 	{"machdep", 1, 0, 0},
+ 	{"version", 0, 0, 0},
+ 	{"buildinfo", 0, 0, 0},
+@@ -105,6 +106,10 @@
+ 				pc->flags &= ~DATADEBUG;
+ 
+ 		        if (STREQ(long_options[option_index].name, 
++			    "no_kmem_cache")) 
++				vt->flags |= KMEM_CACHE_UNAVAIL;
++
++		        if (STREQ(long_options[option_index].name, 
+ 			    "machdep")) 
+ 				machdep->cmdline_arg = optarg;
+ 
+@@ -225,7 +230,8 @@
+        		if (!file_exists(argv[optind], NULL)) {
+                 	error(INFO, "%s: %s\n", argv[optind], strerror(ENOENT));
+                 	program_usage(SHORT_FORM);
+-        	}
++        	} else if (!is_readable(argv[optind])) 
++			program_usage(SHORT_FORM);
+ 
+ 		if (is_elf_file(argv[optind])) {
+ 			if (pc->namelist || pc->server_namelist) {
+--- crash/memory.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/memory.c	2004-06-22 12:57:28.000000000 -0400
+@@ -229,6 +229,8 @@
+ 	MEMBER_OFFSET_INIT(page_inode, "page", "inode");
+ 	MEMBER_OFFSET_INIT(page_offset, "page", "offset");
+ 	MEMBER_OFFSET_INIT(page_count, "page", "count");
++	if (INVALID_MEMBER(page_count))
++		MEMBER_OFFSET_INIT(page_count, "page", "_count");
+ 	MEMBER_OFFSET_INIT(page_flags, "page", "flags");
+         MEMBER_OFFSET_INIT(page_mapping, "page", "mapping");
+         MEMBER_OFFSET_INIT(page_index, "page", "index");
+@@ -301,6 +303,7 @@
+ 			"kmem_cache_s", "slabs_free");
+ 		MEMBER_OFFSET_INIT(kmem_cache_s_cpudata, 
+ 			"kmem_cache_s", "cpudata");
++                ARRAY_LENGTH_INIT(len, NULL, "kmem_cache_s.cpudata", NULL, 0);
+ 		MEMBER_OFFSET_INIT(kmem_cache_s_colour_off, 
+ 			"kmem_cache_s", "colour_off");
+ 
+@@ -340,6 +343,8 @@
+ 
+ 		MEMBER_OFFSET_INIT(kmem_cache_s_lists, "kmem_cache_s", "lists");
+ 		MEMBER_OFFSET_INIT(kmem_cache_s_array, "kmem_cache_s", "array");
++                ARRAY_LENGTH_INIT(len, NULL, "kmem_cache_s.array", NULL, 0);
++
+ 		MEMBER_OFFSET_INIT(kmem_list3_slabs_partial, 
+ 			"kmem_list3", "slabs_partial");
+ 		MEMBER_OFFSET_INIT(kmem_list3_slabs_full, 
+@@ -6169,10 +6174,12 @@
+         }
+ 
+ 	readmem(cache+OFFSET(kmem_cache_s_cpudata),
+-        	KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
++        	KVADDR, &cpudata[0], 
++		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_cpudata),
+                 "cpudata array", FAULT_ON_ERROR);
+ 
+-	for (i = max_limit = 0; (i < NR_CPUS) && cpudata[i]; i++) {
++	for (i = max_limit = 0; (i < ARRAY_LENGTH(kmem_cache_s_cpudata)) && 
++	     cpudata[i]; i++) {
+ 		readmem(cpudata[i]+OFFSET(cpucache_s_limit),
+         		KVADDR, &limit, sizeof(int),
+                 	"cpucache limit", FAULT_ON_ERROR);
+@@ -6187,10 +6194,12 @@
+ kmem_cache_s_array:
+ 
+ 	readmem(cache+OFFSET(kmem_cache_s_array),
+-        	KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
+-                "array_cache array", FAULT_ON_ERROR);
++        	KVADDR, &cpudata[0], 
++		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_array),
++                "array cache array", FAULT_ON_ERROR);
+ 
+-        for (i = max_limit = 0; (i < NR_CPUS) && cpudata[i]; i++) {
++	for (i = max_limit = 0; (i < ARRAY_LENGTH(kmem_cache_s_array)) && 
++	     cpudata[i]; i++) {
+                 readmem(cpudata[i]+OFFSET(array_cache_limit),
+                         KVADDR, &limit, sizeof(int),
+                         "array cache limit", FAULT_ON_ERROR);
+@@ -7665,9 +7674,14 @@
+ 	ulong expected, cnt;
+ 	int free_index;
+ 	ulong kmembp;
++	short *kbp;
+ 
+ 	BNEG(si->addrlist, sizeof(ulong) * (si->c_num+1));
+ 
++	if (CRASHDEBUG(1)) 
++		fprintf(fp, "slab: %lx si->s_inuse: %ld si->c_num: %ld\n", 
++			si->slab, si->s_inuse, si->c_num);
++
+ 	if (si->s_inuse == si->c_num )
+ 		return;
+ 
+@@ -7677,29 +7691,58 @@
+                 "kmem_bufctl array", FAULT_ON_ERROR);
+ 
+ 	if (CRASHDEBUG(1)) {
+-		for (i = 0; i < si->c_num; i++)
++		for (i = 0; (SIZE(kmem_bufctl_t) == sizeof(int)) && 
++		     (i < si->c_num); i++) 
+ 			fprintf(fp, "%d ", si->kmem_bufctl[i]);
++
++		for (kbp = (short *)&si->kmem_bufctl[0], i = 0; 
++		     (SIZE(kmem_bufctl_t) == sizeof(short)) && (i < si->c_num);
++		     i++) 
++			fprintf(fp, "%d ", *(kbp + i));
++
+ 		fprintf(fp, "\n");
+ 	}
+ 
+ 	cnt = 0;
+ 	expected = si->c_num - si->s_inuse;
+ 
+-	for (free_index = si->free; free_index != BUFCTL_END;
+-	     free_index = si->kmem_bufctl[free_index]) {
+-
+-                if (cnt == si->c_num) {
+-                        error(INFO,
++	if (SIZE(kmem_bufctl_t) == sizeof(int)) {
++		for (free_index = si->free; free_index != BUFCTL_END;
++		     free_index = si->kmem_bufctl[free_index]) {
++	
++	                if (cnt == si->c_num) {
++	                        error(INFO,
+                      "\"%s\" cache: too many objects found in slab free list\n",
+-                                si->curname);
+-                        si->errors++;
+-                        return;
+-                }
++	                                si->curname);
++	                        si->errors++;
++	                        return;
++	                }
++	
++			obj = si->s_mem + (free_index*si->size);
++			si->addrlist[cnt] = obj; 
++			cnt++;
++		}
++	} else if (SIZE(kmem_bufctl_t) == sizeof(short)) {
++		kbp = (short *)&si->kmem_bufctl[0];
++
++                for (free_index = si->free; free_index != BUFCTL_END;
++                     free_index = (int)*(kbp + free_index)) {
++
++                        if (cnt == si->c_num) {
++                                error(INFO,
++                     "\"%s\" cache: too many objects found in slab free list\n",                                        si->curname);
++                                si->errors++;
++                                return;
++                        }
+ 
+-		obj = si->s_mem + (free_index*si->size);
+-		si->addrlist[cnt] = obj; 
+-		cnt++;
+-	}
++                        obj = si->s_mem + (free_index*si->size);
++                        si->addrlist[cnt] = obj;
++                        cnt++;
++                }
++	} else 
++		error(FATAL, 
++                "size of kmem_bufctl_t (%d) not sizeof(int) or sizeof(short)\n",
++			SIZE(kmem_bufctl_t));
+ 
+ 	if (cnt != expected) {
+ 		error(INFO, 
+@@ -7950,10 +7993,12 @@
+                 return;
+ 
+         readmem(si->cache+OFFSET(kmem_cache_s_cpudata),
+-                KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
++                KVADDR, &cpudata[0], 
++		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_cpudata),
+                 "cpudata array", FAULT_ON_ERROR);
+ 
+-        for (i = 0; (i < NR_CPUS) && cpudata[i]; i++) {
++        for (i = 0; (i < ARRAY_LENGTH(kmem_cache_s_cpudata)) && 
++	     cpudata[i]; i++) {
+ 		BZERO(si->cpudata[i], sizeof(ulong) * vt->kmem_max_limit);
+ 
+                 readmem(cpudata[i]+OFFSET(cpucache_s_avail),
+@@ -7996,10 +8041,12 @@
+         ulong cpudata[NR_CPUS];
+ 
+         readmem(si->cache+OFFSET(kmem_cache_s_array),
+-                KVADDR, &cpudata[0], sizeof(ulong) * NR_CPUS,
++                KVADDR, &cpudata[0], 
++		sizeof(ulong) * ARRAY_LENGTH(kmem_cache_s_array),
+                 "array_cache array", FAULT_ON_ERROR);
+ 
+-        for (i = 0; (i < NR_CPUS) && cpudata[i]; i++) {
++        for (i = 0; (i < ARRAY_LENGTH(kmem_cache_s_array)) && 
++	     cpudata[i]; i++) {
+ 		BZERO(si->cpudata[i], sizeof(ulong) * vt->kmem_max_limit);
+ 
+                 readmem(cpudata[i]+OFFSET(array_cache_avail),
+--- crash/filesys.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/filesys.c	2004-06-24 15:56:31.000000000 -0400
+@@ -38,7 +38,8 @@
+ static int find_booted_system_map(void);
+ static int verify_utsname(char *);
+ static char **build_searchdirs(int, int *);
+-static int redhat_kernel_directory(char *);
++static int redhat_kernel_directory_v1(char *);
++static int redhat_kernel_directory_v2(char *);
+ static int redhat_debug_directory(char *);
+ static int file_dump(ulong, ulong, ulong, int, int);
+ static ulong *create_dentry_array(ulong, int *);
+@@ -311,10 +312,11 @@
+ 		*preferred = 0;
+ 
+ 	/*
+-	 *  Allow, at a minimum, the defaults plus an extra two directories for
+-	 *  the /usr/src/redhat/BUILD/kernel-xxx and Red Hat debug directories.
++	 *  Allow, at a minimum, the defaults plus an extra three directories 
++	 *  for the two possible /usr/src/redhat/BUILD/kernel-xxx locations 
++	 *  plus the Red Hat debug directory.
+ 	 */  
+-	cnt = DEFAULT_SEARCHDIRS + 2;  
++	cnt = DEFAULT_SEARCHDIRS + 3;  
+ 
+         if ((dirp = opendir("/usr/src"))) {
+                 for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) 
+@@ -364,7 +366,7 @@
+ 		searchdirs[cnt] = NULL;
+ 	}
+ 
+-        if (redhat_kernel_directory(dirbuf)) {
++        if (redhat_kernel_directory_v1(dirbuf)) {
+                 if ((searchdirs[cnt] = (char *) 
+ 		    malloc(strlen(dirbuf)+2)) == NULL) {
+                         error(INFO, 
+@@ -376,6 +378,18 @@
+                 }
+         }
+ 
++        if (redhat_kernel_directory_v2(dirbuf)) {
++                if ((searchdirs[cnt] = (char *)
++                    malloc(strlen(dirbuf)+2)) == NULL) {
++                        error(INFO,
++                            "/usr/src/redhat directory entry malloc: %s\n",
++                                strerror(errno));
++                } else {
++                        sprintf(searchdirs[cnt], "%s/", dirbuf);
++                        cnt++;
++                }
++        }
++
+         if (redhat_debug_directory(dirbuf)) {
+                 if ((searchdirs[cnt] = (char *)
+                      malloc(strlen(dirbuf)+2)) == NULL) {
+@@ -409,7 +423,7 @@
+ }
+ 
+ static int
+-redhat_kernel_directory(char *buf)
++redhat_kernel_directory_v1(char *buf)
+ {
+ 	char *p1, *p2;
+ 
+@@ -430,6 +444,35 @@
+ }
+ 
+ static int
++redhat_kernel_directory_v2(char *buf)
++{
++        char *p1, *p2;
++
++        if (!strstr(kt->proc_version, "Linux version "))
++                return FALSE;
++
++        BZERO(buf, BUFSIZE);
++        sprintf(buf, "/usr/src/redhat/BUILD/kernel-");
++
++        p1 = &kt->proc_version[strlen("Linux version ")];
++        p2 = &buf[strlen(buf)];
++
++        while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.'))
++                *p2++ = *p1++;
++
++        strcat(buf, "/linux-");
++
++        p1 = &kt->proc_version[strlen("Linux version ")];
++        p2 = &buf[strlen(buf)];
++
++        while (((*p1 >= '0') && (*p1 <= '9')) || (*p1 == '.'))
++                *p2++ = *p1++;
++
++        return TRUE;
++}
++
++
++static int
+ redhat_debug_directory(char *buf)
+ {
+         char *p1, *p2;
+@@ -504,6 +547,9 @@
+ 		if (!dirp)
+ 			continue;
+ 	        for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
++			if (dp->d_name[0] == '.')
++				continue;
++
+ 			sprintf(kernel, "%s%s", searchdirs[i], dp->d_name);
+ 
+ 			if (mount_point(kernel) ||
+@@ -3535,3 +3581,17 @@
+ 
+ 	return (void *) kslotp;
+ }
++
++int
++is_readable(char *filename)
++{
++	int fd;
++
++        if ((fd = open(filename, O_RDONLY)) < 0) {
++		error(INFO, "%s: %s\n", filename, strerror(errno));
++		return FALSE;
++	} else
++		close(fd);
++
++	return TRUE;
++}
+--- crash/help.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/help.c	2004-06-22 14:41:40.000000000 -0400
+@@ -975,7 +975,8 @@
+ "        493      1   0  c0a86000  IN   0.0     0     0  [nfsd]",
+ "        494      1   0  c0968000  IN   0.0     0     0  [nfsd]",
+ " ",
+-"  Show all tasks sorted by their last_run stamp:\n",
++"  Show all tasks sorted by their task_struct's last_run or timestamp value,",
++"  whichever applies:\n",
+ "    %s> ps -l",
+ "    [280195]  PID: 2      TASK: c1468000  CPU: 0   COMMAND: \"keventd\"",
+ "    [280195]  PID: 1986   TASK: c5af4000  CPU: 0   COMMAND: \"sshd\"",
+--- crash/task.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/task.c	2004-06-25 14:32:38.000000000 -0400
+@@ -1866,16 +1866,15 @@
+ {
+ 	int i, c;
+ 	struct task_context *tcp;
+-	ulong jiffies;
+ 	char format[10];
+ 	char buf[BUFSIZE];
+ 
+-        get_symbol_data("jiffies", sizeof(long), &jiffies);
+-	sprintf(buf, pc->output_radix == 10 ? "%ld" : "%lx", jiffies);
+-	
++       	tcp = FIRST_CONTEXT();
++	sprintf(buf, pc->output_radix == 10 ? "%lld" : "%llx", 
++		task_last_run(tcp->task));
+ 	c = strlen(buf);
+ 	sprintf(format, "[%c%dll%c]  ", '%', c, 
+-		pc->output_radix == 10 ? 'd' : 'x');
++		pc->output_radix == 10 ? 'u' : 'x');
+ 
+ 	if (tc) {
+ 		fprintf(fp, format, task_last_run(tc->task));
+@@ -4313,7 +4312,9 @@
+ 	if (IS_KVADDR(idle_task)) 
+ 		return idle_task;
+ 	else { 
+-		error(INFO, "cannot determine idle task for cpu %d\n", cpu);
++		if (cpu < kt->cpus)
++			error(INFO, 
++				"cannot determine idle task for cpu %d\n", cpu);
+ 		return NO_TASK;
+ 	}
+ }
+--- crash/kernel.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/kernel.c	2004-06-24 16:16:36.000000000 -0400
+@@ -404,6 +404,8 @@
+ 
+ 	verify_namelist();
+ 
++	if (strstr(kt->proc_version, "gcc version 3.3.3"))
++		kt->flags |= GCC_3_3_3;
+ 	if (strstr(kt->proc_version, "gcc version 3.3.2"))
+ 		kt->flags |= GCC_3_3_2;
+ 	else if (strstr(kt->proc_version, "gcc version 3.2.3"))
+@@ -3107,6 +3109,8 @@
+ 		fprintf(fp, "%sGCC_3_2_3", others++ ? "|" : "");
+ 	if (kt->flags & GCC_3_3_2)
+ 		fprintf(fp, "%sGCC_3_3_2", others++ ? "|" : "");
++	if (kt->flags & GCC_3_3_3)
++		fprintf(fp, "%sGCC_3_3_3", others++ ? "|" : "");
+ 	if (kt->flags & RA_SEEK)
+ 		fprintf(fp, "%sRA_SEEK", others++ ? "|" : "");
+ 	if (kt->flags & NO_RA_SEEK)
+--- crash/configure.c.orig	2004-06-25 15:29:38.000000000 -0400
++++ crash/configure.c	2004-06-21 13:48:18.000000000 -0400
+@@ -1053,7 +1053,7 @@
+ 	printf("#\n");
+ 	printf("# crash core analysis suite\n");
+ 	printf("#\n");
+-	printf("Summary: crash utility for live systems and netdump, LKCD or mcore dumpfiles\n");
++	printf("Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles\n");
+ 	printf("Name: %s\n", lower_case(target_data.program, buf));
+ 	printf("Version: %s\n", Version);
+ 	printf("Release: %s\n", Release);
+@@ -1073,8 +1073,8 @@
+ 	printf("%%description\n");
+ 	printf("The core analysis suite is a self-contained tool that can be used to\n");
+ 	printf("investigate either live systems, kernel core dumps created from the\n");
+-	printf("netdump package from Red Hat Linux, the mcore kernel patch offered by\n");
+-	printf("Mission Critical Linux, or the LKCD kernel patch.\n");
++	printf("netdump and diskdump packages from Red Hat Linux, the mcore kernel patch\n");
++	printf("offered by Mission Critical Linux, or the LKCD kernel patch.\n");
+ 	printf("\n");
+ 	printf("%%prep\n");
+         printf("%%setup -n %%{name}-%%{version}-%%{release}\n"); 
+@@ -1098,44 +1098,3 @@
+ 	printf("%%doc README\n");
+ }
+ 	
+-
+-#ifdef NOTDEF
+-
+-#
+-# crash core analysis suite
+-#
+-Summary: crash utility for live systems and netdump, LKCD or mcore dumpfiles
+-Name: crash
+-Version: 3.3
+-Release: 11
+-Copyright: GPL
+-Group: Development/Debuggers
+-Source: %{name}-%{version}-%{release}.tar.gz
+-URL: ftp://people.redhat.com/anderson/%{name}-%{version}-%{release}.tar.gz
+-Distribution: Linux 2.2 or greater
+-Vendor: Red Hat, Inc.
+-Packager: Dave Anderson <anderson@redhat.com>
+-ExclusiveOS: Linux
+-ExclusiveArch: i386 alpha ia64 ppc
+-
+-%description
+-The core analysis suite is a self-contained tool that can be used to
+-investigate either live systems, kernel core dumps created from the
+-netdump package from Red Hat Linux, the mcore kernel patch offered by
+-Mission Critical Linux, or the LKCD kernel patch.
+-
+-%prep
+-%setup -n %{name}-%{version}-%{release} 
+-
+-%build
+-make
+-
+-%install
+-make install
+-
+-%files
+-/usr/local/bin/crash
+-%doc README
+-
+-
+-#endif
+--- crash/x86.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/x86.c	2004-06-22 13:57:05.000000000 -0400
+@@ -1500,7 +1500,6 @@
+         	for (c = 0; c < NR_CPUS; c++) {
+ 			if (tt->softirq_ctx[c]) {
+ 				bt->hp->esp = tt->softirq_ctx[c];
+-				x86_eframe_search(bt);
+ 				fprintf(fp, "CPU %d SOFT IRQ STACK:\n", c);
+ 				if ((cnt = x86_eframe_search(bt)))
+ 					fprintf(fp, "\n");
+--- crash/va_server.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/va_server.c	2004-06-22 12:45:33.000000000 -0400
+@@ -310,7 +310,7 @@
+ 
+ 	vas_file_p = fopen(crash_file, "r");
+ 	if(vas_file_p == (FILE *)0) {
+-		printf("read_maps: bad ret from fopen for %s, errno = %d\n", crash_file, ferror(vas_file_p));
++		printf("read_maps: bad ret from fopen for %s: %s\n", crash_file, strerror(errno));
+ 		return -1;
+ 	}
+ 
+--- crash/va_server_v1.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/va_server_v1.c	2004-06-22 12:45:33.000000000 -0400
+@@ -271,7 +271,7 @@
+ 
+ 	vas_file_p = fopen(crash_file, "r");
+ 	if(vas_file_p == (FILE *)0) {
+-		printf("read_maps: bad ret from fopen for %s, errno = %d\n", crash_file, ferror(vas_file_p));
++		printf("read_maps: bad ret from fopen for %s: %s\n", crash_file, strerror(errno));
+ 		return -1;
+ 	}
+ 	ret = fseek(vas_file_p, (long)0, SEEK_SET);
+--- crash/symbols.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/symbols.c	2004-06-22 12:54:05.000000000 -0400
+@@ -5425,6 +5425,10 @@
+                 lenptr = &array_table.kmem_cache_s_name;
+         else if (STREQ(s, "kmem_cache_s.c_name"))
+                 lenptr = &array_table.kmem_cache_s_c_name;
++        else if (STREQ(s, "kmem_cache_s.array"))
++                lenptr = &array_table.kmem_cache_s_array;
++        else if (STREQ(s, "kmem_cache_s.cpudata"))
++                lenptr = &array_table.kmem_cache_s_cpudata;
+ 	else if (STREQ(s, "log_buf")) 
+ 		lenptr = &array_table.log_buf;
+ 	else if (STREQ(s, "irq_desc") || STREQ(s, "_irq_desc")) 
+@@ -6595,6 +6599,10 @@
+                 ARRAY_LENGTH(kmem_cache_s_name));
+         fprintf(fp, "           kmem_cache_s_c_name: %d\n",
+                 ARRAY_LENGTH(kmem_cache_s_c_name));
++        fprintf(fp, "            kmem_cache_s_array: %d\n",
++                ARRAY_LENGTH(kmem_cache_s_array));
++        fprintf(fp, "          kmem_cache_s_cpudata: %d\n",
++                ARRAY_LENGTH(kmem_cache_s_cpudata));
+ 	fprintf(fp, "                       log_buf: %d\n", 
+ 		ARRAY_LENGTH(log_buf));
+ 	fprintf(fp, "                      irq_desc: %d\n",
+--- crash/lkcd_x86_trace.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/lkcd_x86_trace.c	2004-06-24 16:16:36.000000000 -0400
+@@ -484,14 +484,14 @@
+ 	int pre_adjust;
+ 	int post_adjust;
+ } framesize_mods[] = {
+-	{ "do_select", "schedule_timeout", GCC_3_3_2, 0, 0 },
+-	{ "svc_recv", "schedule_timeout", GCC_3_3_2, 0, 0 },
+-	{ "__down_interruptible", "schedule", GCC_3_3_2, 0, 0 },
+-	{ "netconsole_netdump", NULL, GCC_3_3_2, 0, -28 },
++	{ "do_select", "schedule_timeout", GCC_3_3_2|GCC_3_3_3, 0, 0 },
++	{ "svc_recv", "schedule_timeout", GCC_3_3_2|GCC_3_3_3, 0, 0 },
++	{ "__down_interruptible", "schedule", GCC_3_3_2|GCC_3_3_3, 0, 0 },
++	{ "netconsole_netdump", NULL, GCC_3_3_2|GCC_3_3_3, 0, -28 },
+ 	{ "generic_file_write", NULL, GCC_2_96, 0, 20 },
+ 	{ "block_prepare_write", NULL, GCC_2_96, 0, 72 },
+ 	{ "receive_chars", NULL, GCC_2_96, 0, 48 },
+-	{ "default_idle", NULL, GCC_3_3_2, -4, 0 },
++	{ "default_idle", NULL, GCC_3_3_2|GCC_3_3_3, -4, 0 },
+  	{ NULL, NULL, 0, 0, 0 },
+ };
+ 
+@@ -1289,7 +1289,7 @@
+ 			 *  just catch it here first.
+ 			 */
+ 			if (STREQ(funcname, "schedule") &&
+-			    (kt->flags & (GCC_3_2_3|GCC_3_3_2))) {
++			    (kt->flags & (GCC_3_2_3|GCC_3_3_2|GCC_3_3_3))) {
+ 				SEEK_VALID_RA();
+ 			/* 
+ 			 *  else FRAMESIZE_VALIDATE has been turned on
+--- crash/netdump.c.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/netdump.c	2004-06-22 12:43:12.000000000 -0400
+@@ -1167,6 +1167,7 @@
+ 	for (i = 0, up = (ulong *)bt->stackbuf; i < LONGS_PER_STACK; i++, up++){
+ 		sym = closest_symbol(*up);
+ 		if (STREQ(sym, "netconsole_netdump") || 
++		    STREQ(sym, "netpoll_start_netdump") ||
+ 		    STREQ(sym, "disk_dump")) {
+ 			*eip = *up;
+ 			*esp = search ?
+--- crash/defs.h.orig	2004-06-25 15:29:39.000000000 -0400
++++ crash/defs.h	2004-06-24 16:16:58.000000000 -0400
+@@ -107,57 +107,57 @@
+ /*
+  *  program_context flags
+  */
+-#define LIVE_SYSTEM                 (0x1)
+-#define TTY                         (0x2)
+-#define RUNTIME                     (0x4)
+-#define IN_FOREACH                  (0x8)
+-#define MCLXCD                     (0x10)
+-#define CMDLINE_IFILE              (0x20)
+-#define MFD_RDWR                   (0x40)
+-#define DFD_RDWR                   (0x80)
+-#define SILENT                    (0x100)
+-#define REMOTE_DAEMON             (0x200)
+-#define HASH                      (0x400)
+-#define SCROLL                    (0x800)
+-#define NO_CONSOLE               (0x1000)
+-#define RUNTIME_IFILE            (0x2000)
+-#define DROP_CORE                (0x4000)
+-#define LKCD                     (0x8000)
+-#define GDB_INIT                (0x10000)
+-#define IN_GDB                  (0x20000)
+-#define RCLOCAL_IFILE           (0x40000)
+-#define RCHOME_IFILE            (0x80000)
+-#define GET_TIMESTAMP          (0x100000)
+-#define READLINE               (0x200000) 
+-#define _SIGINT_               (0x400000)
+-#define IN_RESTART             (0x800000)
+-#define KERNEL_DEBUG_QUERY    (0x1000000)
+-#define DEVMEM                (0x2000000)
+-#define REM_LIVE_SYSTEM       (0x4000000)
+-#define NAMELIST_LOCAL        (0x8000000)
+-#define MEMSRC_LOCAL         (0x10000000)
+-#define NAMELIST_SAVED       (0x20000000)
+-#define DUMPFILE_SAVED       (0x40000000)
+-#define UNLINK_NAMELIST      (0x80000000) 
+-#define NAMELIST_UNLINKED   (0x100000000)
+-#define REM_MCLXCD          (0x200000000)
+-#define REM_LKCD            (0x400000000)
+-#define NAMELIST_NO_GZIP    (0x800000000)
+-#define UNLINK_MODULES     (0x1000000000)
+-#define S390D              (0x2000000000)
+-#define REM_S390D          (0x4000000000)
+-#define S390XD             (0x8000000000)
+-#define REM_S390XD        (0x10000000000)
+-#define NETDUMP           (0x20000000000)
+-#define REM_NETDUMP       (0x40000000000)
+-#define SYSMAP            (0x80000000000)
+-#define SYSMAP_ARG       (0x100000000000)
+-#define MEMMOD           (0x200000000000)
+-#define MODPRELOAD       (0x400000000000)
+-#define DISKDUMP         (0x800000000000)
+-#define DATADEBUG       (0x1000000000000)
+-#define FINDKERNEL      (0x2000000000000)
+-#define VERSION_QUERY   (0x4000000000000)
++#define LIVE_SYSTEM                 (0x1ULL)
++#define TTY                         (0x2ULL)
++#define RUNTIME                     (0x4ULL)
++#define IN_FOREACH                  (0x8ULL)
++#define MCLXCD                     (0x10ULL)
++#define CMDLINE_IFILE              (0x20ULL)
++#define MFD_RDWR                   (0x40ULL)
++#define DFD_RDWR                   (0x80ULL)
++#define SILENT                    (0x100ULL)
++#define REMOTE_DAEMON             (0x200ULL)
++#define HASH                      (0x400ULL)
++#define SCROLL                    (0x800ULL)
++#define NO_CONSOLE               (0x1000ULL)
++#define RUNTIME_IFILE            (0x2000ULL)
++#define DROP_CORE                (0x4000ULL)
++#define LKCD                     (0x8000ULL)
++#define GDB_INIT                (0x10000ULL)
++#define IN_GDB                  (0x20000ULL)
++#define RCLOCAL_IFILE           (0x40000ULL)
++#define RCHOME_IFILE            (0x80000ULL)
++#define GET_TIMESTAMP          (0x100000ULL)
++#define READLINE               (0x200000ULL) 
++#define _SIGINT_               (0x400000ULL)
++#define IN_RESTART             (0x800000ULL)
++#define KERNEL_DEBUG_QUERY    (0x1000000ULL)
++#define DEVMEM                (0x2000000ULL)
++#define REM_LIVE_SYSTEM       (0x4000000ULL)
++#define NAMELIST_LOCAL        (0x8000000ULL)
++#define MEMSRC_LOCAL         (0x10000000ULL)
++#define NAMELIST_SAVED       (0x20000000ULL)
++#define DUMPFILE_SAVED       (0x40000000ULL)
++#define UNLINK_NAMELIST      (0x80000000ULL) 
++#define NAMELIST_UNLINKED   (0x100000000ULL)
++#define REM_MCLXCD          (0x200000000ULL)
++#define REM_LKCD            (0x400000000ULL)
++#define NAMELIST_NO_GZIP    (0x800000000ULL)
++#define UNLINK_MODULES     (0x1000000000ULL)
++#define S390D              (0x2000000000ULL)
++#define REM_S390D          (0x4000000000ULL)
++#define S390XD             (0x8000000000ULL)
++#define REM_S390XD        (0x10000000000ULL)
++#define NETDUMP           (0x20000000000ULL)
++#define REM_NETDUMP       (0x40000000000ULL)
++#define SYSMAP            (0x80000000000ULL)
++#define SYSMAP_ARG       (0x100000000000ULL)
++#define MEMMOD           (0x200000000000ULL)
++#define MODPRELOAD       (0x400000000000ULL)
++#define DISKDUMP         (0x800000000000ULL)
++#define DATADEBUG       (0x1000000000000ULL)
++#define FINDKERNEL      (0x2000000000000ULL)
++#define VERSION_QUERY   (0x4000000000000ULL)
+ 
+ #define ACTIVE()            (pc->flags & LIVE_SYSTEM)
+ #define DUMPFILE()          (!(pc->flags & LIVE_SYSTEM))
+@@ -252,7 +252,7 @@
+ 	char *program_version;          /* this program's version */
+ 	char *gdb_version;              /* embedded gdb version */
+ 	char *prompt;                   /* this program's prompt */
+-	long long flags;                /* flags from above */
++	unsigned long long flags;       /* flags from above */
+ 	char *namelist;         	/* linux namelist */
+ 	char *dumpfile;         	/* dumpfile or /dev/kmem */ 
+ 	char *live_memsrc;              /* live memory driver */
+@@ -394,8 +394,9 @@
+ #define KMOD_V2       (0x2000)
+ #define KALLSYMS_V2   (0x2000)
+ #define TVEC_BASES_V2 (0x4000)
++#define GCC_3_3_3     (0x8000)
+ 
+-#define GCC_VERSION (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2)
++#define GCC_VERSION (GCC_3_2|GCC_3_2_3|GCC_2_96|GCC_3_3_2|GCC_3_3_3)
+ 
+ struct kernel_table {                   /* kernel data */
+ 	ulong flags;
+@@ -1271,6 +1272,8 @@
+ struct array_table {
+ 	int kmem_cache_s_name;
+ 	int kmem_cache_s_c_name;
++	int kmem_cache_s_array;
++	int kmem_cache_s_cpudata;
+ 	int irq_desc;
+ 	int irq_action;
+ 	int log_buf;
+@@ -1674,10 +1677,10 @@
+ #define _PAGE_PSE       0x080   /* 4 MB (or 2MB) page, Pentium+, if present.. */
+ #define _PAGE_GLOBAL    0x100   /* Global TLB entry PPro+ */
+ #define _PAGE_PROTNONE  0x080   /* If not present */
+-#define _PAGE_NX        ((ulonglong)0x8000000000000000)
++#define _PAGE_NX        (0x8000000000000000ULL)
+ 
+ #define NONPAE_PAGEBASE(X)   (((unsigned long)(X)) & (unsigned long)machdep->pagemask)
+-#define NX_BIT_MASK          ((unsigned long long)0x7fffffffffffffff)
++#define NX_BIT_MASK          (0x7fffffffffffffffULL)
+ #define PAE_PAGEBASE(X)      (((unsigned long long)(X)) & ((unsigned long long)machdep->pagemask) & NX_BIT_MASK)
+ 
+ #define SWP_TYPE(entry) (((entry) >> 1) & 0x3f)
+@@ -2788,6 +2791,7 @@
+ char *fill_inode_cache(ulong);
+ void clear_inode_cache(void);
+ int monitor_memory(long *, long *, long *, long *);
++int is_readable(char *);
+ #define RADIX_TREE_COUNT   (1)
+ #define RADIX_TREE_SEARCH  (2)
+ #define RADIX_TREE_DUMP    (3)
+@@ -2966,44 +2970,44 @@
+ struct stack_hook *gather_text_list(struct bt_info *);
+ int get_cpus_online(void);
+ void back_trace(struct bt_info *);
+-#define BT_RAW                     (0x1)
+-#define BT_SYMBOLIC_ARGS           (0x2)
+-#define BT_FULL                    (0x4)
+-#define BT_TEXT_SYMBOLS            (0x8)
+-#define BT_TEXT_SYMBOLS_PRINT     (0x10)
+-#define BT_TEXT_SYMBOLS_NOPRINT   (0x20)
+-#define BT_USE_GDB                (0x40)
+-#define BT_EXCEPTION_FRAME        (0x80)
+-#define BT_LINE_NUMBERS          (0x100)
+-#define BT_USER_EFRAME           (0x200)
+-#define BT_SAVE_LASTSP           (0x400)
+-#define BT_FROM_EXCEPTION        (0x800)
+-#define BT_FROM_CALLFRAME       (0x1000)
+-#define BT_EFRAME_SEARCH        (0x2000)
+-#define BT_SPECULATE            (0x4000)
+-#define BT_RESCHEDULE           (0x8000)
++#define BT_RAW                     (0x1ULL)
++#define BT_SYMBOLIC_ARGS           (0x2ULL)
++#define BT_FULL                    (0x4ULL)
++#define BT_TEXT_SYMBOLS            (0x8ULL)
++#define BT_TEXT_SYMBOLS_PRINT     (0x10ULL)
++#define BT_TEXT_SYMBOLS_NOPRINT   (0x20ULL)
++#define BT_USE_GDB                (0x40ULL)
++#define BT_EXCEPTION_FRAME        (0x80ULL)
++#define BT_LINE_NUMBERS          (0x100ULL)
++#define BT_USER_EFRAME           (0x200ULL)
++#define BT_SAVE_LASTSP           (0x400ULL)
++#define BT_FROM_EXCEPTION        (0x800ULL)
++#define BT_FROM_CALLFRAME       (0x1000ULL)
++#define BT_EFRAME_SEARCH        (0x2000ULL)
++#define BT_SPECULATE            (0x4000ULL)
++#define BT_RESCHEDULE           (0x8000ULL)
+ #define BT_SCHEDULE      (BT_RESCHEDULE)
+-#define BT_RET_FROM_SMP_FORK   (0x10000)
+-#define BT_STRACE              (0x20000)
+-#define BT_KSTACKP             (0x40000)
+-#define BT_LOOP_TRAP           (0x80000)
+-#define BT_BUMP_FRAME_LEVEL   (0x100000)
+-#define BT_EFRAME_COUNT       (0x200000)
+-#define BT_CPU_IDLE           (0x400000)
+-#define BT_WRAP_TRAP          (0x800000)
+-#define BT_KERNEL_THREAD     (0x1000000)
++#define BT_RET_FROM_SMP_FORK   (0x10000ULL)
++#define BT_STRACE              (0x20000ULL)
++#define BT_KSTACKP             (0x40000ULL)
++#define BT_LOOP_TRAP           (0x80000ULL)
++#define BT_BUMP_FRAME_LEVEL   (0x100000ULL)
++#define BT_EFRAME_COUNT       (0x200000ULL)
++#define BT_CPU_IDLE           (0x400000ULL)
++#define BT_WRAP_TRAP          (0x800000ULL)
++#define BT_KERNEL_THREAD     (0x1000000ULL)
+ #define BT_ERROR_MASK  (BT_LOOP_TRAP|BT_WRAP_TRAP|BT_KERNEL_THREAD|BT_CPU_IDLE)
+-#define BT_UNWIND_ERROR      (0x2000000)
+-#define BT_OLD_BACK_TRACE    (0x4000000)
+-#define BT_FRAMESIZE_DEBUG   (0x8000000)
+-#define BT_CONTEXT_SWITCH   (0x10000000)
+-#define BT_HARDIRQ          (0x20000000)
+-#define BT_SOFTIRQ          (0x40000000)
+-#define BT_CHECK_CALLER     (0x80000000)
+-#define BT_EXCEPTION_STACK (0x100000000)
+-#define BT_IRQSTACK        (0x200000000)
+-#define BT_DUMPFILE_SEARCH (0x400000000)
+-#define BT_EFRAME_SEARCH2  (0x800000000)
++#define BT_UNWIND_ERROR      (0x2000000ULL)
++#define BT_OLD_BACK_TRACE    (0x4000000ULL)
++#define BT_FRAMESIZE_DEBUG   (0x8000000ULL)
++#define BT_CONTEXT_SWITCH   (0x10000000ULL)
++#define BT_HARDIRQ          (0x20000000ULL)
++#define BT_SOFTIRQ          (0x40000000ULL)
++#define BT_CHECK_CALLER     (0x80000000ULL)
++#define BT_EXCEPTION_STACK (0x100000000ULL)
++#define BT_IRQSTACK        (0x200000000ULL)
++#define BT_DUMPFILE_SEARCH (0x400000000ULL)
++#define BT_EFRAME_SEARCH2  (0x800000000ULL)
+ 
+ #define BT_REF_HEXVAL         (0x1)
+ #define BT_REF_SYMBOL         (0x2)

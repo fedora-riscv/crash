@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 3.10
-Release: 9
+Release: 12
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -42,6 +42,8 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Wed Mar 02 2005 Dave Anderson <anderson@redhat.com> 3.10-12
+- rebuild (gcc 4)
 * Thu Feb 10 2005 Dave Anderson <anderson@redhat.com> 3.10-9
 - Updated source package to crash-3.10.tar.gz, containing
   IBM's final ppc64 processor support for RHEL4

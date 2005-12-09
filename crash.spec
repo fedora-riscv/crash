@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 3.10
-Release: 13
+Release: 13.1
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -42,6 +42,9 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
+- rebuilt
+
 * Thu Mar 03 2005 Dave Anderson <anderson@redhat.com> 3.10-13
 - Compiler error- and warning-related fixes for gcc 4 build.
 - Update to enhance x86 and x86_64 gdb disassembly output so as to

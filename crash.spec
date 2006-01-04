@@ -3,8 +3,8 @@
 #
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 3.10
-Release: 13.1
+Version: 4.0
+Release: 2.18
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -35,6 +35,9 @@ make DESTDIR=%{buildroot} install
 mkdir -p %{buildroot}%{_mandir}/man8
 cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 
+%clean
+rm -rf %{buildroot}
+
 %files
 %defattr(-,root,root)
 /usr/bin/crash
@@ -42,6 +45,10 @@ cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
 %doc README
 
 %changelog
+* Wed Jan 04 2006 Dave Anderson <anderson@redhat.com> 4.0-2.18
+- Updated source package to crash-4.0.tar.gz, and crash.patch
+  to bring it up to 4.0-2.18.
+
 * Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
 - rebuilt
 

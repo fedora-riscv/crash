@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 2.18
+Release: 2.18.1
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -45,6 +45,9 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Tue Feb 07 2006 Jesse Keating <jkeating@redhat.com> - 4.0-2.18.1
+- rebuilt for new gcc4.1 snapshot and glibc changes
+
 * Wed Jan 04 2006 Dave Anderson <anderson@redhat.com> 4.0-2.18
 - Updated source package to crash-4.0.tar.gz, and crash.patch
   to bring it up to 4.0-2.18.

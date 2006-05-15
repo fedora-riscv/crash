@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 2.26.3
+Release: 2.26.4
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -45,6 +45,10 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Mon May 15 2006 Dave Anderson <anderson@redhat.com> - 4.0-2.26.4
+- Updated crash.patch such that <asm/page.h> is not #include'd
+  by s390_dump.c; IBM did not make the file s390[s] only; BZ #192719
+
 * Mon May 15 2006 Dave Anderson <anderson@redhat.com> - 4.0-2.26.3
 - Updated crash.patch such that <asm/page.h> is not #include'd
   by vas_crash.h; only ia64 build complained; BZ #191719

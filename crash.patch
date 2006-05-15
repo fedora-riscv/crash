@@ -1,4 +1,4 @@
---- crash/extensions/Makefile.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/extensions/Makefile.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/extensions/Makefile	2005-11-08 11:38:21.000000000 -0500
 @@ -0,0 +1,41 @@
 +#
@@ -42,7 +42,7 @@
 +dminfo.so: ../defs.h dminfo.c
 +	gcc -nostartfiles -shared -rdynamic -o dminfo.so dminfo.c -fPIC -D$(TARGET)
 +	
---- crash/extensions/echo.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/extensions/echo.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/extensions/echo.c	2005-11-10 16:12:50.000000000 -0500
 @@ -0,0 +1,105 @@
 +/* echo.c - simple example of a crash extension
@@ -150,7 +150,7 @@
 +};
 +
 +
---- crash/extensions/dminfo.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/extensions/dminfo.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/extensions/dminfo.c	2005-11-10 16:12:50.000000000 -0500
 @@ -0,0 +1,1531 @@
 +/* dminfo.c - crash extension module for device-mapper analysis
@@ -1684,7 +1684,7 @@
 +{
 +	return 0;
 +}
---- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/gdb-6.1/gdb/ppc-linux-tdep.c	2005-11-04 17:37:54.000000000 -0500
 @@ -0,0 +1,1116 @@
 +/* Target-dependent code for GDB, the GNU debugger.
@@ -2803,7 +2803,7 @@
 +                         ppc_linux_init_abi);
 +  add_core_fns (&ppc_linux_regset_core_fns);
 +}
---- crash/main.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/main.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/main.c	2006-04-26 15:41:04.000000000 -0400
 @@ -35,11 +35,13 @@
  	{"no_data_debug", 0, 0, 0},
@@ -3025,7 +3025,7 @@
          else if (pc->writemem == write_memory_device)
                  fprintf(fp, "         writemem: write_memory_device()\n");
          else
---- crash/tools.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/tools.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/tools.c	2006-04-26 15:45:34.000000000 -0400
 @@ -2004,6 +2004,10 @@
  				pc->flags &= ~(DUMPFILE_TYPES);
@@ -3123,7 +3123,7 @@
 +	fprintf(fp, "\r                                                \r");
 +	fflush(fp);
 +}
---- crash/memory.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/memory.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/memory.c	2006-05-01 11:35:50.000000000 -0400
 @@ -45,6 +45,8 @@
  	ulong *addrlist;
@@ -5294,7 +5294,7 @@
 +		}
 +	}
 +}
---- crash/filesys.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/filesys.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/filesys.c	2006-04-28 11:24:32.000000000 -0400
 @@ -1,8 +1,8 @@
  /* filesys.c - core analysis suite
@@ -5494,7 +5494,7 @@
  	FREEBUF(files_struct_buf);
  }
  
---- crash/help.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/help.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/help.c	2006-03-23 14:25:56.000000000 -0500
 @@ -1,8 +1,8 @@
  /* help.c - core analysis suite
@@ -5760,7 +5760,7 @@
  "Copyright (C) 1999, 2002  Silicon Graphics, Inc.",
  "Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.",
  "This program is free software, covered by the GNU General Public License,",
---- crash/task.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/task.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/task.c	2006-04-28 11:25:53.000000000 -0400
 @@ -27,6 +27,7 @@
  static void refresh_pidhash_task_table(void);
@@ -6596,7 +6596,7 @@
  	sigset = task_signal(tc->task);
  	if (!tt->last_task_read)
  		return;
---- crash/kernel.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/kernel.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/kernel.c	2006-04-26 16:42:12.000000000 -0400
 @@ -20,7 +20,7 @@
  
@@ -7156,7 +7156,7 @@
 +	return(XEN_MFN_NOT_FOUND);
 +}
 +
---- crash/gdb_interface.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/gdb_interface.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/gdb_interface.c	2006-04-11 17:25:48.000000000 -0400
 @@ -31,9 +31,6 @@
  {
@@ -7188,7 +7188,7 @@
  			gdb_interface(req);
          		if (!(req->flags & GNU_COMMAND_FAILED)) 
  				goto retry;
---- crash/configure.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/configure.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/configure.c	2006-03-23 15:44:46.000000000 -0500
 @@ -1128,7 +1128,7 @@
  	printf("License: GPL\n");
@@ -7199,7 +7199,7 @@
  	printf("Distribution: Linux 2.2 or greater\n");
  	printf("Vendor: Red Hat, Inc.\n");
  	printf("Packager: Dave Anderson <anderson@redhat.com>\n");
---- crash/net.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/net.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/net.c	2006-05-11 11:17:01.000000000 -0400
 @@ -50,6 +50,7 @@
  #define STRUCT_NET_DEVICE (0x4)
@@ -7556,7 +7556,7 @@
  			break;
  		}
  		break;
---- crash/dev.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/dev.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/dev.c	2005-11-23 11:09:08.000000000 -0500
 @@ -91,13 +91,13 @@
                  switch(c)
@@ -7574,7 +7574,7 @@
  				option_not_supported(c);
  			do_pci();
  			return;
---- crash/alpha.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/alpha.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/alpha.c	2005-11-04 17:37:53.000000000 -0500
 @@ -1858,8 +1858,6 @@
  	fprintf(fp, "              flags: %lx (", machdep->flags);
@@ -7585,7 +7585,7 @@
          fprintf(fp, ")\n");
  	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
  	fprintf(fp, "  identity_map_base: %lx\n", machdep->identity_map_base);
---- crash/x86.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/x86.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/x86.c	2006-04-26 15:53:35.000000000 -0400
 @@ -685,6 +685,7 @@
  	    bt->debug || 
@@ -8550,7 +8550,7 @@
 +	return machdep->get_stack_frame(bt, eip, esp);
 +}
  #endif /* X86 */
---- crash/ppc.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/ppc.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/ppc.c	2006-04-11 15:22:52.000000000 -0400
 @@ -138,6 +138,8 @@
  		machdep->hz = HZ;
@@ -8580,7 +8580,7 @@
  	fprintf(fp, "           machspec: %lx\n", (ulong)machdep->machspec);
  }
  
---- crash/ia64.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/ia64.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/ia64.c	2006-04-26 15:56:33.000000000 -0400
 @@ -1,8 +1,8 @@
  /* ia64.c - core analysis suite
@@ -8642,7 +8642,7 @@
  
  	if (DUMPFILE() && ia64_in_init_stack(SWITCH_STACK_ADDR(CURRENT_TASK())))
  		machdep->flags |= INIT;
---- crash/s390.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/s390.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/s390.c	2005-11-04 17:37:53.000000000 -0500
 @@ -178,8 +178,6 @@
  	fprintf(fp, "              flags: %lx (", machdep->flags);
@@ -8653,7 +8653,7 @@
  	fprintf(fp, ")\n");
  
  	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
---- crash/s390x.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/s390x.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/s390x.c	2005-11-04 17:37:53.000000000 -0500
 @@ -193,8 +193,6 @@
  	fprintf(fp, "              flags: %lx (", machdep->flags);
@@ -8664,7 +8664,7 @@
  	fprintf(fp, ")\n");
  
  	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
---- crash/ppc64.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/ppc64.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/ppc64.c	2006-04-26 15:57:36.000000000 -0400
 @@ -47,6 +47,9 @@
  static char * ppc64_check_eframe(struct ppc64_pt_regs *);
@@ -9225,7 +9225,7 @@
 +        	machdep->machspec->last_level4_read = 0;
 +}
  #endif /* PPC64 */ 
---- crash/x86_64.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/x86_64.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/x86_64.c	2006-04-26 16:12:41.000000000 -0400
 @@ -18,7 +18,10 @@
  #ifdef X86_64
@@ -10848,7 +10848,7 @@
 +	}
 +}
  #endif  /* X86_64 */ 
---- crash/extensions.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/extensions.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/extensions.c	2005-11-10 09:47:46.000000000 -0500
 @@ -18,9 +18,6 @@
  #include "defs.h"
@@ -10878,7 +10878,7 @@
  unload_extension(char *lib)
  {
          struct extension_table *ext;
---- crash/va_server.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/va_server.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/va_server.c	2006-03-22 08:55:34.000000000 -0500
 @@ -57,13 +57,15 @@
  
@@ -10897,7 +10897,7 @@
  	if(read_map(crash_file)) {
  		if(va_server_init_v1(crash_file, start, end, stride))
  			return -1;
---- crash/symbols.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/symbols.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/symbols.c	2006-05-10 14:14:28.000000000 -0400
 @@ -1,8 +1,8 @@
  /* symbols.c - core analysis suite
@@ -11052,7 +11052,7 @@
  
          fprintf(fp, "\n                   array_table:\n");
  	/*
---- crash/cmdline.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/cmdline.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/cmdline.c	2005-11-18 10:49:59.000000000 -0500
 @@ -71,14 +71,17 @@
  	 *    4. from a terminal.
@@ -11085,7 +11085,7 @@
  	pc->sigint_cnt = 0;
  	pc->redirect = 0;
  	pc->pipe_command[0] = NULLCHAR;
---- crash/lkcd_common.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/lkcd_common.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_common.c	2005-11-10 15:24:16.000000000 -0500
 @@ -53,6 +53,8 @@
  
@@ -11225,7 +11225,7 @@
  
  	if ((lkcd->flags & LKCD_VALID) && (page > lkcd->total_pages)) 
  		lkcd->total_pages = page;
---- crash/lkcd_v7.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/lkcd_v7.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_v7.c	2005-11-10 15:21:50.000000000 -0500
 @@ -89,7 +89,11 @@
  	ifd = 0;
@@ -11240,7 +11240,7 @@
  	dump_index_size = (lkcd->memory_pages * sizeof(off_t));	
  	lkcd->page_offsets = 0;
  	strcpy(dumpfile_index_name, dumpfile);
---- crash/lkcd_v8.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/lkcd_v8.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_v8.c	2005-12-15 08:59:52.000000000 -0500
 @@ -26,6 +26,7 @@
  // static dump_header_asm_t dump_header_asm_v8 = { 0 };
@@ -11301,7 +11301,33 @@
  		set_mb_benchmark((granularity * (i+1))/lkcd->page_size);
  	}
  }
---- crash/lkcd_x86_trace.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/s390_dump.c.orig	2006-05-15 17:21:18.000000000 -0400
++++ crash/s390_dump.c	2006-05-15 17:15:56.000000000 -0400
+@@ -16,7 +16,7 @@
+  * GNU General Public License for more details.
+  */
+ #include "defs.h"
+-#include <asm/page.h>
++//#include <asm/page.h>
+ #include "ibm_common.h"
+ 
+ static FILE * s390_file;
+@@ -69,10 +69,13 @@
+ 	return WRITE_ERROR;
+ }
+ 
++#define S390_PAGE_SHIFT   12
++#define S390_PAGE_SIZE    (1UL << S390_PAGE_SHIFT)
++
+ uint
+ s390_page_size(void)
+ {
+-	return PAGE_SIZE;
++	return S390_PAGE_SIZE;
+ }
+ 
+ int 
+--- crash/lkcd_x86_trace.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_x86_trace.c	2006-05-15 16:28:35.000000000 -0400
 @@ -47,11 +47,13 @@
  static int setup_trace_rec(kaddr_t, kaddr_t, int, trace_t *);
@@ -11671,7 +11697,7 @@
   *  Cache 2k starting from the passed-in text address.  This sits on top
   *  of the instrbuf 256-byte cache, but we don't want to extend its size
   *  because we can run off the end of a module segment -- if this routine
---- crash/netdump.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/netdump.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/netdump.c	2006-02-14 14:36:21.000000000 -0500
 @@ -22,12 +22,12 @@
  	physaddr_t phys_end;
@@ -12670,7 +12696,7 @@
 +{
 +	return netdump_memory_dump(fp);
 +}
---- crash/diskdump.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/diskdump.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/diskdump.c	2006-03-23 14:29:25.000000000 -0500
 @@ -1,16 +1,16 @@
  /* 
@@ -13194,7 +13220,7 @@
  }
  
  /*
---- crash/xendump.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/xendump.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/xendump.c	2006-04-26 16:17:27.000000000 -0400
 @@ -0,0 +1,1167 @@
 +/* 
@@ -14364,7 +14390,7 @@
 +		}
 +	}
 +}
---- crash/unwind.c.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/unwind.c.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/unwind.c	2005-11-23 09:37:52.000000000 -0500
 @@ -1397,9 +1397,22 @@
  	req = &request;
@@ -14392,7 +14418,7 @@
  		machdep->machspec->unw_tables_offset =
  			 req->member_offset/BITS_PER_BYTE;
  
---- crash/defs.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/defs.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/defs.h	2006-05-01 11:49:13.000000000 -0400
 @@ -1,8 +1,8 @@
  /* defs.h - core analysis suite
@@ -15107,7 +15133,7 @@
  
  #define LKCD_DUMP_VERSION_NUMBER_MASK (0xf)
  #define LKCD_DUMP_RAW                 (0x1)   /* DUMP_[DH_]RAW */ 
---- crash/vas_crash.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/vas_crash.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/vas_crash.h	2006-05-15 16:50:28.000000000 -0400
 @@ -19,7 +19,7 @@
   */
@@ -15118,7 +15144,7 @@
  
  void save_core(void);
  
---- crash/netdump.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/netdump.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/netdump.h	2005-11-04 17:37:53.000000000 -0500
 @@ -24,3 +24,14 @@
  
@@ -15135,7 +15161,7 @@
 +#endif
 +
 +#endif  /* NOTDEF */
---- crash/diskdump.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/diskdump.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/diskdump.h	2005-11-30 15:15:00.000000000 -0500
 @@ -3,6 +3,8 @@
   *
@@ -15208,7 +15234,7 @@
 +#define PAGE_VALID		(0x1)	/* flags */
 +#define DISKDUMP_VALID_PAGE(flags)	((flags) & PAGE_VALID)
 +
---- crash/xendump.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/xendump.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/xendump.h	2006-04-26 15:58:59.000000000 -0400
 @@ -0,0 +1,97 @@
 +/* 
@@ -15308,7 +15334,7 @@
 +
 +#define MFN_NOT_FOUND (-1)
 +#define PFN_NOT_FOUND (-1)
---- crash/lkcd_dump_v5.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/lkcd_dump_v5.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_dump_v5.h	2006-03-22 08:45:35.000000000 -0500
 @@ -35,7 +35,7 @@
  #ifndef _DUMP_H
@@ -15319,7 +15345,7 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/lkcd_dump_v7.h.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/lkcd_dump_v7.h.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/lkcd_dump_v7.h	2006-03-22 08:45:57.000000000 -0500
 @@ -35,7 +35,7 @@
  #ifndef _DUMP_H
@@ -15330,8 +15356,8 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/Makefile.orig	2006-05-15 16:51:42.000000000 -0400
-+++ crash/Makefile	2006-05-15 16:51:42.000000000 -0400
+--- crash/Makefile.orig	2006-05-15 17:21:18.000000000 -0400
++++ crash/Makefile	2006-05-15 17:21:18.000000000 -0400
 @@ -3,8 +3,8 @@
  # Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
  #       www.missioncriticallinux.com, info@missioncriticallinux.com
@@ -15507,7 +15533,7 @@
 +
 +do_extensions:
 +	@(cd extensions; make -i OBJECTS="$(EXTENSION_OBJECT_FILES)" TARGET=$(TARGET))
---- crash/gdb-6.1.patch.orig	2006-05-15 16:51:42.000000000 -0400
+--- crash/gdb-6.1.patch.orig	2006-05-15 17:21:18.000000000 -0400
 +++ crash/gdb-6.1.patch	2006-01-03 13:36:25.000000000 -0500
 @@ -0,0 +1,11 @@
 +--- gdb-6.1/bfd/coff-alpha.c.orig
@@ -15521,8 +15547,8 @@
 + 	}
 + 
 +       if (lita_sec_data->gp != 0)
---- crash/README.orig	2006-05-15 16:51:42.000000000 -0400
-+++ crash/README	2006-05-15 16:51:40.000000000 -0400
+--- crash/README.orig	2006-05-15 17:21:18.000000000 -0400
++++ crash/README	2006-05-15 17:21:16.000000000 -0400
 @@ -69,7 +69,7 @@
       After the kernel is re-compiled, the uncompressed "vmlinux" kernel
       that is created in the top-level kernel build directory must be saved.
@@ -15554,7 +15580,7 @@
          DUMPFILE: /dev/mem
              CPUS: 1
 -            DATE: Wed Jul 13 13:26:00 2005
-+            DATE: Mon May 15 16:51:40 2006
++            DATE: Mon May 15 17:21:15 2006
            UPTIME: 10 days, 22:55:18
      LOAD AVERAGE: 0.08, 0.03, 0.01
             TASKS: 42

@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 2.26.2
+Release: 2.26.3
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -45,6 +45,10 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Mon May 15 2006 Dave Anderson <anderson@redhat.com> - 4.0-2.26.3
+- Updated crash.patch such that <asm/page.h> is not #include'd
+  by vas_crash.h; only ia64 build complained; BZ #191719
+
 * Mon May 15 2006 Dave Anderson <anderson@redhat.com> - 4.0-2.26.2
 - Updated crash.patch such that <asm/segment.h> is not #include'd
   by lkcd_x86_trace.c; also for BZ #191719

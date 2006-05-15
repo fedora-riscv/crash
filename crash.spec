@@ -4,11 +4,11 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 2.18.1
+Release: 2.26.1
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
-URL: ftp://people.redhat.com/anderson/%{name}-%{version}.tar.gz
+URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: i386 ia64 x86_64 ppc64
 Buildroot: %{_tmppath}/%{name}-root
@@ -45,6 +45,10 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Mon May 15 2006 Dave Anderson <anderson@redhat.com> - 4.0-2.26.1
+- Updated crash.patch to bring it up to 4.0-2.26, which should 
+  address BZ #191719 - "crash fails to build in mock"
+
 * Tue Feb 07 2006 Jesse Keating <jkeating@redhat.com> - 4.0-2.18.1
 - rebuilt for new gcc4.1 snapshot and glibc changes
 

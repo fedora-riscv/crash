@@ -50,6 +50,7 @@ rm -rf %{buildroot}
 - Added kdump reference to description.
 - Added s390 and s390x to ExclusiveArch list.  BZ #199125
 - Removed LKCD v1 pt_regs references for s390/s390x build.
+- Removed LKCD v2_v3 pt_regs references for for s390/s390x build.
 
 * Fri Jul 14 2006 Jesse Keating <jkeating@redhat.com> - 4.0-3
 - rebuild

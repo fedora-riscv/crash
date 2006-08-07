@@ -4,13 +4,13 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 3
+Release: 3.1
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
-ExclusiveArch: i386 ia64 x86_64 ppc64
+ExclusiveArch: i386 ia64 x86_64 ppc64 s390 s390x
 Buildroot: %{_tmppath}/%{name}-root
 BuildRequires: ncurses-devel zlib-devel
 Patch0: crash.patch
@@ -18,7 +18,7 @@ Patch0: crash.patch
 %description
 The core analysis suite is a self-contained tool that can be used to
 investigate either live systems, kernel core dumps created from the
-netdump and diskdump packages from Red Hat Linux, the mcore kernel patch
+netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
@@ -45,6 +45,11 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Mon Aug  7 2006 Dave Anderson <anderson@redhat.com> - 4.0-3.1
+- Updated crash.patch to match upstream version 4.0-3.1.
+- Added kdump reference to description.
+- Added s390 and s390x to ExclusiveArch list.  BZ #199125
+
 * Fri Jul 14 2006 Jesse Keating <jkeating@redhat.com> - 4.0-3
 - rebuild
 

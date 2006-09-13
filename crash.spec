@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 3.1
+Release: 3.3
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -45,6 +45,10 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Wed Sep 13 2006 Dave Anderson <anderson@redhat.com> - 4.0-3.3
+- Updated crash.patch to match upstream version 4.0-3.3.
+- Support for x86_64 relocatable kernels.  BZ #204557
+
 * Mon Aug  7 2006 Dave Anderson <anderson@redhat.com> - 4.0-3.1
 - Updated crash.patch to match upstream version 4.0-3.1.
 - Added kdump reference to description.

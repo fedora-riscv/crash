@@ -13,6 +13,7 @@ ExclusiveOS: Linux
 ExclusiveArch: i386 ia64 x86_64 ppc64 s390 s390x
 Buildroot: %{_tmppath}/%{name}-root
 BuildRequires: ncurses-devel zlib-devel
+Requires: binutils
 Patch0: crash.patch
 
 %description

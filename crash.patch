@@ -1,4 +1,4 @@
---- crash/configure.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/configure.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/configure.c	2008-02-04 10:30:09.000000000 -0500
 @@ -1,8 +1,8 @@
  /* configure.c - core analysis suite
@@ -146,8 +146,8 @@
  }
  
  /*
---- crash/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
-+++ crash/Makefile	2008-02-19 15:36:39.000000000 -0500
+--- crash/Makefile.orig	2008-02-19 16:16:13.000000000 -0500
++++ crash/Makefile	2008-02-19 16:16:12.000000000 -0500
 @@ -3,8 +3,8 @@
  # Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
  #       www.missioncriticallinux.com, info@missioncriticallinux.com
@@ -477,7 +477,7 @@
 +
 +do_extensions:
 +	@(cd extensions; make -i TARGET=$(TARGET) TARGET_CFLAGS=$(TARGET_CFLAGS))
---- crash/lkcd_dump_v7.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_dump_v7.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/lkcd_dump_v7.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_dump_v5.h - core analysis suite
@@ -499,7 +499,7 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/cmdline.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/cmdline.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/cmdline.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* cmdline.c - core analysis suite
@@ -935,7 +935,7 @@
 +		stall(1000);
  	}
  }
---- crash/lkcd_dump_v5.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_dump_v5.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/lkcd_dump_v5.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_dump_v5.h - core analysis suite
@@ -957,7 +957,7 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/xen_hyper.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xen_hyper.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xen_hyper.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1975 @@
 +/*
@@ -2935,7 +2935,7 @@
 +	fprintf(out, "PCPU: %2d  VCPU: %lx\n", vcc->processor, vcpu);
 +}
 +#endif
---- crash/netdump.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/netdump.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/netdump.c	2008-01-16 10:00:24.000000000 -0500
 @@ -1,7 +1,7 @@
  /* netdump.c 
@@ -4789,7 +4789,7 @@
 +
 +	return FALSE;
 +}
---- crash/x86_64.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/x86_64.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/x86_64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,7 +1,7 @@
  /* x86_64.c -- core analysis suite
@@ -11875,7 +11875,7 @@
 +	}
 +}
  #endif  /* X86_64 */ 
---- crash/symbols.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/symbols.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/symbols.c	2008-02-19 15:30:03.000000000 -0500
 @@ -1,8 +1,8 @@
  /* symbols.c - core analysis suite
@@ -14160,7 +14160,7 @@
                  fprintf(fp, (pc->flags & SILENT) || !(pc->flags & TTY) ? "" :
                   "\nplease wait... (patching %ld gdb minimal_symbol values) ",
  			st->symcnt);
---- crash/defs.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/defs.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/defs.h	2008-02-06 16:41:12.000000000 -0500
 @@ -1,8 +1,8 @@
  /* defs.h - core analysis suite
@@ -15928,7 +15928,7 @@
 +#endif
 +
  #endif /* !GDB_COMMON */
---- crash/alpha.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/alpha.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/alpha.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* alpha.c - core analysis suite
@@ -15960,7 +15960,7 @@
          fprintf(fp, ")\n");
  	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
  	fprintf(fp, "  identity_map_base: %lx\n", machdep->identity_map_base);
---- crash/va_server.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/va_server.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/va_server.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* va_server.c - kernel crash dump file translation library
@@ -15990,7 +15990,7 @@
  	if(read_map(crash_file)) {
  		if(va_server_init_v1(crash_file, start, end, stride))
  			return -1;
---- crash/kernel.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/kernel.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/kernel.c	2008-01-16 16:32:14.000000000 -0500
 @@ -1,8 +1,8 @@
  /* kernel.c - core analysis suite
@@ -18762,8 +18762,8 @@
 +			break;
 +	}
  }
---- crash/lkcd_vmdump_v1.h.orig	2008-02-19 15:36:39.000000000 -0500
-+++ crash/lkcd_vmdump_v1.h	2008-01-04 09:42:08.000000000 -0500
+--- crash/lkcd_vmdump_v1.h.orig	2008-02-19 16:16:13.000000000 -0500
++++ crash/lkcd_vmdump_v1.h	2008-02-19 16:12:48.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_vmdump_v1.h - core analysis suite
   *
@@ -18775,7 +18775,15 @@
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
-@@ -114,8 +114,12 @@
+@@ -34,6 +34,7 @@
+ #include <linux/utsname.h>              /* for utsname structure            */
+ #endif
+ #ifndef IA64
++typedef unsigned int u32;
+ #include <asm/ptrace.h>                 /* for pt_regs                      */
+ #endif
+ 
+@@ -114,8 +115,12 @@
  
  	/* the dump registers */
  #ifndef IA64
@@ -18788,7 +18796,7 @@
  
  	/* the address of the current task */
  	struct task_struct  *dh_current_task;
---- crash/xen_hyper_dump_tables.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xen_hyper_dump_tables.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xen_hyper_dump_tables.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,948 @@
 +/*
@@ -19739,7 +19747,7 @@
 +	fprintf(fp, "\n");
 +}
 +#endif
---- crash/xendump.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xendump.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xendump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,2848 @@
 +/* 
@@ -22590,7 +22598,7 @@
 +{
 +	return (XENDUMP_VALID() ? xd : NULL);
 +}
---- crash/lkcd_v8.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_v8.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/lkcd_v8.c	2008-01-04 09:42:08.000000000 -0500
 @@ -23,9 +23,185 @@
  #include "lkcd_dump_v8.h"				/* REMIND */
@@ -22844,7 +22852,7 @@
  		set_mb_benchmark((granularity * (i+1))/lkcd->page_size);
  	}
  }
---- crash/xen_hyper_defs.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xen_hyper_defs.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xen_hyper_defs.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,970 @@
 +/*
@@ -23817,7 +23825,7 @@
 +    "Xen hypervisor mode not supported on this architecture\n"
 +
 +#endif
---- crash/lkcd_v7.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_v7.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/lkcd_v7.c	2008-01-04 09:42:08.000000000 -0500
 @@ -89,7 +89,11 @@
  	ifd = 0;
@@ -23832,7 +23840,7 @@
  	dump_index_size = (lkcd->memory_pages * sizeof(off_t));	
  	lkcd->page_offsets = 0;
  	strcpy(dumpfile_index_name, dumpfile);
---- crash/filesys.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/filesys.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/filesys.c	2008-01-21 13:43:40.000000000 -0500
 @@ -1,8 +1,8 @@
  /* filesys.c - core analysis suite
@@ -24542,7 +24550,7 @@
 +
 +	return found;
 +}
---- crash/task.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/task.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/task.c	2008-02-12 15:44:23.000000000 -0500
 @@ -1,8 +1,8 @@
  /* task.c - core analysis suite
@@ -28351,7 +28359,7 @@
  
  	switch (_NSIG_WORDS)
  	{
---- crash/memory.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/memory.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/memory.c	2008-01-11 11:58:54.000000000 -0500
 @@ -1,8 +1,8 @@
  /* memory.c - core analysis suite
@@ -44578,12 +44586,12 @@
 +        return found;
 +}
 +#endif  /* NOT_USED */
---- crash/unwind_x86.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/unwind_x86.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/unwind_x86.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,2 @@
 +
 +
---- crash/extensions/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/Makefile.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/Makefile	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,47 @@
 +#
@@ -44633,7 +44641,7 @@
 +	@for MAKEFILE in `grep -sl "^clean:" *.mk`; \
 +	  do make --no-print-directory -f $$MAKEFILE clean; \
 +	done
---- crash/extensions/libsial/sial_input.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_input.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_input.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,802 @@
 +/*
@@ -45438,7 +45446,7 @@
 +		sial_msg("Include file not found: '%s' [include path is '%s']", name, sial_getipath());
 +	}
 +}
---- crash/extensions/libsial/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/Makefile.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/Makefile	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,94 @@
 +#
@@ -45535,7 +45543,7 @@
 +	-/bin/rm -f *.o $(TARGETS) $(LDIRT)
 +
 +clobber: clean
---- crash/extensions/libsial/sial_str.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_str.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_str.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,185 @@
 +/*
@@ -45723,7 +45731,7 @@
 +	sial_error("String too long at %d", iline);
 +	return NULLNODE;
 +}
---- crash/extensions/libsial/sial_func.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_func.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_func.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1191 @@
 +/*
@@ -46917,7 +46925,7 @@
 +	return 0;
 +}
 +
---- crash/extensions/libsial/sial_op.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_op.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_op.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,904 @@
 +/*
@@ -47824,7 +47832,7 @@
 +	nn->data=pto;
 +	return nn;
 +}
---- crash/extensions/libsial/sial_member.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_member.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_member.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,321 @@
 +/*
@@ -48148,7 +48156,7 @@
 +	n->free=(ffct_t)sial_freemem;
 +	return n;
 +}
---- crash/extensions/libsial/sialpp-lsed.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sialpp-lsed.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sialpp-lsed	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,32 @@
 +s/yyback/sialppback/g
@@ -48183,7 +48191,7 @@
 +s/yyvstop/sialppvstop/g
 +s/yywrap/sialppwrap/g
 +s/yydebug/sialdebug/g
---- crash/extensions/libsial/sial-lsed.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial-lsed.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial-lsed	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,32 @@
 +s/yyback/sialback/g
@@ -48218,7 +48226,7 @@
 +s/yyvstop/sialvstop/g
 +s/yywrap/sialwrap/g
 +s/yydebug/sialdebug/g
---- crash/extensions/libsial/sial_type.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_type.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_type.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1172 @@
 +/*
@@ -49393,7 +49401,7 @@
 +	sial_dupval(vto, vfrm);
 +}
 +
---- crash/extensions/libsial/sialpp.l.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sialpp.l.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sialpp.l	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,85 @@
 +%{
@@ -49481,7 +49489,7 @@
 +#undef unput
 +#define input()       sial_input()
 +#define unput(c)      sial_unput(c)
---- crash/extensions/libsial/sial.l.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial.l.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial.l	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,206 @@
 +%{
@@ -49690,7 +49698,7 @@
 +#undef unput
 +#define input()       sial_input()
 +#define unput(c)      sial_unput(c)
---- crash/extensions/libsial/sial_var.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_var.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_var.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1320 @@
 +/*
@@ -51013,7 +51021,7 @@
 +	}
 +}
 +
---- crash/extensions/libsial/sial_api.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_api.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_api.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,267 @@
 +/*
@@ -51283,7 +51291,7 @@
 +
 +/* parsers debug flags */
 +extern int sialdebug, sialppdebug;
---- crash/extensions/libsial/README.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/README.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/README	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1024 @@
 +
@@ -52310,7 +52318,7 @@
 +
 +Questions/Comments
 +Luc Chouinard, lucchouina@yahoo.com
---- crash/extensions/libsial/README.sial.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/README.sial.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/README.sial	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,97 @@
 +
@@ -52410,7 +52418,7 @@
 +	Refer to the README file on writing a user level command.
 +	Also look at the 'sial.c' example in the scripts directory
 +        
---- crash/extensions/libsial/sial_num.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_num.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_num.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,233 @@
 +/*
@@ -52646,7 +52654,7 @@
 +	sial_error("Oops! NUMBER");
 +	return 0;
 +}
---- crash/extensions/libsial/sial_alloc.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_alloc.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_alloc.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,430 @@
 +/*
@@ -53079,7 +53087,7 @@
 +	sial_setsvlev(jmps[njmps].svlev);
 +}
 +
---- crash/extensions/libsial/sial.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,465 @@
 +/*
@@ -53547,7 +53555,7 @@
 +#define S_MAXFILES	200	/* maximum number of macro files  */
 +
 +#define S_VARARG	"__VARARG" /* name of the special var for ... */
---- crash/extensions/libsial/sial_stat.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_stat.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_stat.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,435 @@
 +/*
@@ -53985,7 +53993,7 @@
 +	}
 +}
 +
---- crash/extensions/libsial/sial_util.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_util.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_util.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,922 @@
 +/*
@@ -54910,7 +54918,7 @@
 +	return n;
 +}
 +
---- crash/extensions/libsial/sial.y.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial.y.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial.y	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,436 @@
 +%{
@@ -55349,7 +55357,7 @@
 +
 +int sialerror(char *p) { sial_error(p); return 0; }
 +
---- crash/extensions/libsial/sial_define.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_define.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_define.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,519 @@
 +/*
@@ -55871,7 +55879,7 @@
 +
 +	sial_error("Syntax error on macro definition");
 +}
---- crash/extensions/libsial/sial_builtin.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_builtin.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_builtin.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,434 @@
 +/*
@@ -56308,7 +56316,7 @@
 +	sial_error("Oops. sial_exebfunc()");
 +	return 0;
 +}
---- crash/extensions/libsial/sialpp.y.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sialpp.y.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sialpp.y	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,88 @@
 +%{
@@ -56399,7 +56407,7 @@
 +	return 1;
 +}
 +
---- crash/extensions/libsial/sial_node.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_node.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_node.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,69 @@
 +/*
@@ -56471,7 +56479,7 @@
 +	sial_curpos(&p, 0);
 +	return v;
 +}
---- crash/extensions/libsial/sial_api.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_api.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_api.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1516 @@
 +/*
@@ -57990,7 +57998,7 @@
 +	return 1;
 +}
 +
---- crash/extensions/libsial/sial_print.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_print.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_print.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,398 @@
 +/*
@@ -58391,7 +58399,7 @@
 +	sial_setpos(&n->pos);
 +	return n;
 +}
---- crash/extensions/libsial/mkbaseop.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/mkbaseop.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/mkbaseop.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,169 @@
 +/*
@@ -58563,7 +58571,7 @@
 +}\n", NOPS, NOPS);
 +	exit(0);
 +}
---- crash/extensions/libsial/sial_case.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/libsial/sial_case.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/libsial/sial_case.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,125 @@
 +/*
@@ -58691,7 +58699,7 @@
 +	}
 +	return 1;
 +}
---- crash/extensions/echo.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/echo.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/echo.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,114 @@
 +/* echo.c - simple example of a crash extension
@@ -58808,11 +58816,11 @@
 +};
 +
 +
---- crash/extensions/sial.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/sial.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/sial.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1021 @@
 +/*
-+ * $Id: crash.patch,v 1.18 2008/02/19 20:53:20 crash Exp $
++ * $Id: crash.patch,v 1.19 2008/02/19 21:22:10 crash Exp $
 + *
 + * This file is part of lcrash, an analysis tool for Linux memory dumps.
 + *
@@ -59832,7 +59840,7 @@
 +	} 
 +        return 1;
 +}
---- crash/extensions/dminfo.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/dminfo.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/dminfo.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1534 @@
 +/* dminfo.c - crash extension module for device-mapper analysis
@@ -61369,7 +61377,7 @@
 +{
 +	return 0;
 +}
---- crash/extensions/sial.mk.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions/sial.mk.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/extensions/sial.mk	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,17 @@
 +#
@@ -61389,7 +61397,7 @@
 +
 +clean:
 +	cd libsial && make clean
---- crash/tools.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/tools.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/tools.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* tools.c - core analysis suite
@@ -61989,7 +61997,7 @@
 +	else
 +		return val;
 +}
---- crash/xen_hyper_command.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xen_hyper_command.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xen_hyper_command.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1856 @@
 +/*
@@ -63848,7 +63856,7 @@
 +}
 +
 +#endif
---- crash/main.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/main.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/main.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* main.c - core analysis suite
@@ -64585,7 +64593,7 @@
 +	error(FATAL, XEN_HYPERVISOR_NOT_SUPPORTED);
 +#endif
 +}
---- crash/s390dbf.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/s390dbf.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/s390dbf.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1340 @@
 +/*
@@ -65928,7 +65936,7 @@
 +
 +#endif
 +
---- crash/s390.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/s390.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/s390.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,9 +1,9 @@
  /* s390.c - core analysis suite
@@ -66391,7 +66399,7 @@
  }
  
  /*
---- crash/unwind_x86_64.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/unwind_x86_64.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/unwind_x86_64.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,92 @@
 +#define CONFIG_64BIT 1
@@ -66486,7 +66494,7 @@
 +	PTREGS_INFO(r15), \
 +	PTREGS_INFO(rip)
 +
---- crash/crash.8.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/crash.8.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/crash.8	2008-01-04 09:42:08.000000000 -0500
 @@ -5,7 +5,7 @@
  .TH CRASH 8
@@ -66640,7 +66648,7 @@
 +.PP
 +.BR netdump (8),
 +.BR gdb (1)
---- crash/lkcd_common.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_common.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/lkcd_common.c	2008-01-04 09:42:08.000000000 -0500
 @@ -3,8 +3,8 @@
   * Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
@@ -66926,7 +66934,7 @@
 +	}
 +}
 +
---- crash/ppc.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/ppc.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/ppc.c	2008-01-04 09:42:08.000000000 -0500
 @@ -51,6 +51,9 @@
  void
@@ -67010,8 +67018,8 @@
  
  	if (verbose)
  		fprintf(fp, "  PMD: %lx => %lx\n", (ulong)page_middle, 
---- crash/README.orig	2008-02-19 15:36:39.000000000 -0500
-+++ crash/README	2008-02-19 15:36:37.000000000 -0500
+--- crash/README.orig	2008-02-19 16:16:13.000000000 -0500
++++ crash/README	2008-02-19 16:16:11.000000000 -0500
 @@ -69,7 +69,7 @@
       After the kernel is re-compiled, the uncompressed "vmlinux" kernel
       that is created in the top-level kernel build directory must be saved.
@@ -67046,7 +67054,7 @@
          DUMPFILE: /dev/mem
              CPUS: 1
 -            DATE: Wed Jul 13 13:26:00 2005
-+            DATE: Tue Feb 19 15:36:37 2008
++            DATE: Tue Feb 19 16:16:11 2008
            UPTIME: 10 days, 22:55:18
      LOAD AVERAGE: 0.08, 0.03, 0.01
             TASKS: 42
@@ -67099,7 +67107,7 @@
      Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.
      This program is free software, covered by the GNU General Public License,
      and you are welcome to change it and/or distribute copies of it under
---- crash/gdb-6.1/gdb/symtab.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/gdb-6.1/gdb/symtab.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/gdb-6.1/gdb/symtab.c	2008-01-04 09:42:08.000000000 -0500
 @@ -4,7 +4,7 @@
     1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004
@@ -67168,7 +67176,7 @@
  
         	execute_command(req->buf, FALSE);
  
---- crash/gdb-6.1/gdb/symfile.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/gdb-6.1/gdb/symfile.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/gdb-6.1/gdb/symfile.c	2008-01-04 09:42:08.000000000 -0500
 @@ -3,7 +3,7 @@
     Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
@@ -67217,7 +67225,7 @@
    /* We're only interested in debugging sections with relocation
       information.  */
    if ((sectp->flags & SEC_RELOC) == 0)
---- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/gdb-6.1/gdb/ppc-linux-tdep.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1116 @@
 +/* Target-dependent code for GDB, the GNU debugger.
@@ -68336,7 +68344,7 @@
 +                         ppc_linux_init_abi);
 +  add_core_fns (&ppc_linux_regset_core_fns);
 +}
---- crash/lkcd_x86_trace.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_x86_trace.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/lkcd_x86_trace.c	2008-01-04 09:42:08.000000000 -0500
 @@ -5,8 +5,8 @@
  /* 
@@ -68966,7 +68974,7 @@
  	} else {
  		opcode = *codeptr;
  		op = &op_386[*codeptr];
---- crash/ia64.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/ia64.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/ia64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* ia64.c - core analysis suite
@@ -70523,7 +70531,7 @@
 +	}
 +}
  #endif
---- crash/gdb_interface.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/gdb_interface.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/gdb_interface.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* gdb_interface.c - core analysis suite
@@ -70657,7 +70665,7 @@
  	switch (len)
  	{
  	case SIZEOF_8BIT:
---- crash/lkcd_x86_trace.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_x86_trace.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/lkcd_x86_trace.h	2008-01-04 09:42:08.000000000 -0500
 @@ -35,6 +35,25 @@
  
@@ -70685,7 +70693,7 @@
  #endif  /* REDHAT */
  
  
---- crash/lkcd_fix_mem.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_fix_mem.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/lkcd_fix_mem.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,3 +1,5 @@
 +/* OBSOLETE */
@@ -70693,7 +70701,7 @@
  #ifdef IA64
  
  #define UTSNAME_ENTRY_SZ 65
---- crash/ppc64.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/ppc64.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/ppc64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* ppc64.c -- core analysis suite
@@ -71375,7 +71383,7 @@
 +        	machdep->machspec->last_level4_read = 0;
 +}
  #endif /* PPC64 */ 
---- crash/xendump.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xendump.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xendump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,177 @@
 +/* 
@@ -71555,7 +71563,7 @@
 +	uint64_t pfn;
 +	uint64_t gmfn; 
 +};
---- crash/diskdump.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/diskdump.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/diskdump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,10 @@
  /* 
@@ -71638,7 +71646,7 @@
 +#define PAGE_VALID		(0x1)	/* flags */
 +#define DISKDUMP_VALID_PAGE(flags)	((flags) & PAGE_VALID)
 +
---- crash/help.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/help.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/help.c	2008-01-04 11:54:24.000000000 -0500
 @@ -1,8 +1,8 @@
  /* help.c - core analysis suite
@@ -73037,7 +73045,7 @@
  "Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.",
  "This program is free software, covered by the GNU General Public License,",
  "and you are welcome to change it and/or distribute copies of it under",
---- crash/gdb-6.1.patch.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/gdb-6.1.patch.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/gdb-6.1.patch	2008-02-19 15:31:45.000000000 -0500
 @@ -0,0 +1,97 @@
 +--- gdb-6.1.orig/bfd/coff-alpha.c
@@ -73137,7 +73145,7 @@
 + #include <sys/ptrace.h>
 + #include <sys/debugreg.h>
 + #include <sys/syscall.h>
---- crash/diskdump.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/diskdump.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/diskdump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,16 +1,16 @@
  /* 
@@ -73983,7 +73991,7 @@
 +{
 +	return (get_dump_level() > 0 ? TRUE : FALSE);
 +}
---- crash/unwind_x86_32_64.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/unwind_x86_32_64.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/unwind_x86_32_64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1220 @@
 +#if defined(X86_64)
@@ -75206,7 +75214,7 @@
 +
 +
 +#endif 
---- crash/s390x.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/s390x.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/s390x.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,9 +1,9 @@
  /* s390.c - core analysis suite
@@ -75772,7 +75780,7 @@
  }
  
  /*
---- crash/lkcd_dump_v8.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_dump_v8.h.orig	2008-02-19 16:16:13.000000000 -0500
 +++ crash/lkcd_dump_v8.h	2008-01-04 09:42:08.000000000 -0500
 @@ -235,4 +235,304 @@
  	int             stack_offset;
@@ -76079,7 +76087,7 @@
 +#endif
 +
  #endif /* _DUMP_H */
---- crash/x86.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/x86.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/x86.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* x86.c - core analysis suite
@@ -78459,7 +78467,7 @@
 +}
 +
  #endif /* X86 */
---- crash/netdump.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/netdump.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/netdump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -24,3 +24,95 @@
  
@@ -78557,7 +78565,7 @@
 +#define KDUMP_MFN_LIST  (0x4)
 +
 +#define P2M_FAILURE ((physaddr_t)(0xffffffffffffffffLL))
---- crash/xen_hyper_global_data.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/xen_hyper_global_data.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/xen_hyper_global_data.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,400 @@
 +/*
@@ -78960,7 +78968,7 @@
 +struct task_context fake_tc = { 0 };
 +
 +#endif
---- crash/lkcd_fix_mem.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/lkcd_fix_mem.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/lkcd_fix_mem.c	2008-01-04 09:42:08.000000000 -0500
 @@ -20,21 +20,13 @@
  
@@ -79025,7 +79033,7 @@
 +}
 +
  #endif // IA64
---- crash/dev.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/dev.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/dev.c	2008-01-04 09:42:08.000000000 -0500
 @@ -91,13 +91,13 @@
                  switch(c)
@@ -79174,7 +79182,7 @@
  	for (i = 0; i < devcnt; i++) {
  
  		/*
---- crash/vas_crash.h.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/vas_crash.h.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/vas_crash.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* vas_crash.h - kernel crash dump file format (on swap)
@@ -79196,7 +79204,7 @@
  
  void save_core(void);
  
---- crash/global_data.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/global_data.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/global_data.c	2008-01-04 09:42:08.000000000 -0500
 @@ -68,7 +68,7 @@
   *  To add a new command, declare it in defs.h and enter it in this table.
@@ -79217,7 +79225,7 @@
  	{(char *)NULL}
  };
  
---- crash/unwind.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/unwind.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/unwind.c	2008-01-04 09:42:08.000000000 -0500
 @@ -6,8 +6,8 @@
  /*
@@ -79463,7 +79471,7 @@
  static void
  unw_init_frame_info (struct unw_frame_info *info, struct bt_info *bt, ulong sw)
  {
---- crash/extensions.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/extensions.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/extensions.c	2008-01-04 09:42:08.000000000 -0500
 @@ -18,9 +18,6 @@
  #include "defs.h"
@@ -79584,8 +79592,8 @@
 +{ 
 +	return pc->cmd_table; 
 +}
---- crash/lkcd_vmdump_v2_v3.h.orig	2008-02-19 15:36:39.000000000 -0500
-+++ crash/lkcd_vmdump_v2_v3.h	2008-01-04 09:42:08.000000000 -0500
+--- crash/lkcd_vmdump_v2_v3.h.orig	2008-02-19 16:16:13.000000000 -0500
++++ crash/lkcd_vmdump_v2_v3.h	2008-02-19 16:14:53.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_vmdump_v2_v3.h - core analysis suite
   *
@@ -79597,7 +79605,15 @@
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
-@@ -81,7 +81,11 @@
+@@ -51,6 +51,7 @@
+ #define _ASM_VMDUMP_H
+ 
+ /* necessary header files */
++typedef unsigned int u32;
+ #include <asm/ptrace.h>                          /* for pt_regs             */
+ 
+ /* definitions */
+@@ -81,7 +82,11 @@
  	uint32_t             dha_eip;
  
  	/* the dump registers */
@@ -79609,7 +79625,15 @@
  
  } dump_header_asm_t;
  
---- crash/net.c.orig	2008-02-19 15:36:39.000000000 -0500
+@@ -97,6 +102,7 @@
+  */
+ 
+ #ifndef IA64
++typedef unsigned int u32;
+ #include <asm/ptrace.h>                          /* for pt_regs             */
+ #endif
+ 
+--- crash/net.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/net.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* net.c - core analysis suite
@@ -79989,7 +80013,7 @@
  			break;
  		}
  		break;
---- crash/s390_dump.c.orig	2008-02-19 15:36:39.000000000 -0500
+--- crash/s390_dump.c.orig	2008-02-19 16:16:12.000000000 -0500
 +++ crash/s390_dump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* s390_dump.c - core analysis suite

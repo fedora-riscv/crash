@@ -1,13 +1,13 @@
---- crash/configure.c.orig	2008-01-17 15:17:20.000000000 -0500
-+++ crash/configure.c	2008-01-04 09:42:08.000000000 -0500
+--- crash/configure.c.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/configure.c	2008-02-04 10:30:09.000000000 -0500
 @@ -1,8 +1,8 @@
  /* configure.c - core analysis suite
   *
   * Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
 - * Copyright (C) 2002, 2003, 2004, 2005 David Anderson
 - * Copyright (C) 2002, 2003, 2004, 2005 Red Hat, Inc. All rights reserved.
-+ * Copyright (C) 2002, 2003, 2004, 2005, 2006 David Anderson
-+ * Copyright (C) 2002, 2003, 2004, 2005, 2006 Red Hat, Inc. All rights reserved.
++ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 David Anderson
++ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 Red Hat, Inc. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@
 +	printf("offered by Mission Critical Linux, or the LKCD kernel patch.\n");
 +	printf("\n");
 +	printf("%%package devel\n");
-+	printf("Requires: %%{name} = %%{version}\n");
++	printf("Requires: %%{name} = %%{version}, zlib-devel\n");
 +	printf("Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles\n");
 +	printf("Group: Development/Debuggers\n");
 +	printf("\n");
@@ -146,8 +146,8 @@
  }
  
  /*
---- crash/Makefile.orig	2008-01-17 15:17:21.000000000 -0500
-+++ crash/Makefile	2008-01-17 15:17:20.000000000 -0500
+--- crash/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/Makefile	2008-02-19 15:36:39.000000000 -0500
 @@ -3,8 +3,8 @@
  # Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
  #       www.missioncriticallinux.com, info@missioncriticallinux.com
@@ -477,7 +477,7 @@
 +
 +do_extensions:
 +	@(cd extensions; make -i TARGET=$(TARGET) TARGET_CFLAGS=$(TARGET_CFLAGS))
---- crash/lkcd_dump_v7.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_dump_v7.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_dump_v7.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_dump_v5.h - core analysis suite
@@ -499,7 +499,7 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/cmdline.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/cmdline.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/cmdline.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* cmdline.c - core analysis suite
@@ -935,7 +935,7 @@
 +		stall(1000);
  	}
  }
---- crash/lkcd_dump_v5.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_dump_v5.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_dump_v5.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_dump_v5.h - core analysis suite
@@ -957,7 +957,7 @@
  
  /* define TRUE and FALSE for use in our dump modules */
  #ifndef FALSE
---- crash/xen_hyper.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xen_hyper.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xen_hyper.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1975 @@
 +/*
@@ -2935,7 +2935,7 @@
 +	fprintf(out, "PCPU: %2d  VCPU: %lx\n", vcc->processor, vcpu);
 +}
 +#endif
---- crash/netdump.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/netdump.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/netdump.c	2008-01-16 10:00:24.000000000 -0500
 @@ -1,7 +1,7 @@
  /* netdump.c 
@@ -4789,7 +4789,7 @@
 +
 +	return FALSE;
 +}
---- crash/x86_64.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/x86_64.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/x86_64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,7 +1,7 @@
  /* x86_64.c -- core analysis suite
@@ -11875,8 +11875,8 @@
 +	}
 +}
  #endif  /* X86_64 */ 
---- crash/symbols.c.orig	2008-01-17 15:17:20.000000000 -0500
-+++ crash/symbols.c	2008-01-16 12:01:59.000000000 -0500
+--- crash/symbols.c.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/symbols.c	2008-02-19 15:30:03.000000000 -0500
 @@ -1,8 +1,8 @@
  /* symbols.c - core analysis suite
   *
@@ -13278,8 +13278,14 @@
  
  	if (!lenptr)                /* not stored */
  		return(len);        
-@@ -5608,6 +5918,10 @@
+@@ -5606,8 +5916,16 @@
+                 OFFSET(task_struct_last_run));
+         fprintf(fp, "         task_struct_timestamp: %ld\n",
                  OFFSET(task_struct_timestamp));
++        fprintf(fp, "        task_struct_sched_info: %ld\n",
++                OFFSET(task_struct_sched_info));
++	fprintf(fp, "       sched_info_last_arrival: %ld\n",
++                OFFSET(sched_info_last_arrival));
          fprintf(fp, "       task_struct_thread_info: %ld\n",
                  OFFSET(task_struct_thread_info));
 +        fprintf(fp, "           task_struct_nsproxy: %ld\n",
@@ -13289,7 +13295,7 @@
  
  	fprintf(fp, "              thread_info_task: %ld\n",
                  OFFSET(thread_info_task));
-@@ -5618,11 +5932,31 @@
+@@ -5618,11 +5936,31 @@
  	fprintf(fp, "      thread_info_previous_esp: %ld\n",
                  OFFSET(thread_info_previous_esp));
  
@@ -13321,7 +13327,7 @@
          fprintf(fp, "               hlist_node_next: %ld\n",
  		OFFSET(hlist_node_next));
          fprintf(fp, "              hlist_node_pprev: %ld\n",
-@@ -5647,6 +5981,11 @@
+@@ -5647,6 +5985,11 @@
          	OFFSET(signal_struct_count));
  	fprintf(fp, "          signal_struct_action: %ld\n",
          	OFFSET(signal_struct_action));
@@ -13333,7 +13339,7 @@
          fprintf(fp, "        task_struct_start_time: %ld\n",
                  OFFSET(task_struct_start_time));
          fprintf(fp, "             task_struct_times: %ld\n",
-@@ -5766,10 +6105,22 @@
+@@ -5766,10 +6109,22 @@
  		OFFSET(mm_struct_pgd));
  	fprintf(fp, "                 mm_struct_rss: %ld\n", 
  		OFFSET(mm_struct_rss));
@@ -13356,7 +13362,7 @@
  
  	fprintf(fp, "          vm_area_struct_vm_mm: %ld\n", 
  		OFFSET(vm_area_struct_vm_mm));
-@@ -5885,6 +6236,15 @@
+@@ -5885,6 +6240,15 @@
          fprintf(fp, "                      page_pte: %ld\n",
                  OFFSET(page_pte));
  
@@ -13372,7 +13378,7 @@
          fprintf(fp, "    swap_info_struct_swap_file: %ld\n",
  		OFFSET(swap_info_struct_swap_file));
          fprintf(fp, "  swap_info_struct_swap_vfsmnt: %ld\n",
-@@ -5922,6 +6282,8 @@
+@@ -5922,6 +6286,8 @@
  		OFFSET(irq_desc_t_status));
  	fprintf(fp, "            irq_desc_t_handler: %ld\n",
  		OFFSET(irq_desc_t_handler));
@@ -13381,7 +13387,7 @@
  	fprintf(fp, "             irq_desc_t_action: %ld\n",
  		OFFSET(irq_desc_t_action));
  	fprintf(fp, "              irq_desc_t_depth: %ld\n",
-@@ -5967,11 +6329,52 @@
+@@ -5967,11 +6333,52 @@
  	fprintf(fp, "hw_interrupt_type_set_affinity: %ld\n",
  		OFFSET(hw_interrupt_type_set_affinity));
  
@@ -13434,7 +13440,7 @@
          fprintf(fp, "          files_struct_max_fds: %ld\n", 
  		OFFSET(files_struct_max_fds));
          fprintf(fp, "        files_struct_max_fdset: %ld\n", 
-@@ -5988,6 +6391,12 @@
+@@ -5988,6 +6395,12 @@
  		OFFSET(file_f_vfsmnt));
          fprintf(fp, "                  file_f_count: %ld\n", 
  		OFFSET(file_f_count));
@@ -13447,7 +13453,7 @@
  	fprintf(fp, "                fs_struct_root: %ld\n",
  		OFFSET(fs_struct_root));
  	fprintf(fp, "                 fs_struct_pwd: %ld\n",
-@@ -6165,6 +6574,47 @@
+@@ -6165,6 +6578,47 @@
          fprintf(fp, "                     slab_free: %ld\n",
                  OFFSET(slab_free));
  
@@ -13495,7 +13501,7 @@
  	fprintf(fp, "               net_device_next: %ld\n",
          	OFFSET(net_device_next));
  	fprintf(fp, "               net_device_name: %ld\n",
-@@ -6217,6 +6667,11 @@
+@@ -6217,6 +6671,11 @@
          fprintf(fp, "                  inet_opt_num: %ld\n", 
  		OFFSET(inet_opt_num));
  
@@ -13507,7 +13513,7 @@
          fprintf(fp, "               timer_list_list: %ld\n",
                  OFFSET(timer_list_list));
          fprintf(fp, "               timer_list_next: %ld\n", 
-@@ -6291,6 +6746,8 @@
+@@ -6291,6 +6750,8 @@
                  OFFSET(zone_struct_size));
  	fprintf(fp, "           zone_struct_memsize: %ld\n",
                  OFFSET(zone_struct_memsize));
@@ -13516,7 +13522,7 @@
  	fprintf(fp, "  zone_struct_zone_start_paddr: %ld\n",
                  OFFSET(zone_struct_zone_start_paddr));
  	fprintf(fp, "  zone_struct_zone_start_mapnr: %ld\n",
-@@ -6324,6 +6781,8 @@
+@@ -6324,6 +6785,8 @@
                  OFFSET(zone_name));
  	fprintf(fp, "            zone_spanned_pages: %ld\n",
                  OFFSET(zone_spanned_pages));
@@ -13525,7 +13531,7 @@
  	fprintf(fp, "           zone_zone_start_pfn: %ld\n",
                  OFFSET(zone_zone_start_pfn));
  	fprintf(fp, "                zone_pages_min: %ld\n",
-@@ -6332,6 +6791,18 @@
+@@ -6332,6 +6795,18 @@
                  OFFSET(zone_pages_low));
  	fprintf(fp, "               zone_pages_high: %ld\n",
                  OFFSET(zone_pages_high));
@@ -13544,7 +13550,7 @@
  
          fprintf(fp, "                neighbour_next: %ld\n", 
  		OFFSET(neighbour_next));
-@@ -6471,10 +6942,61 @@
+@@ -6471,10 +6946,61 @@
  		OFFSET(x8664_pda_irqstackptr));
  	fprintf(fp, "          x8664_pda_level4_pgt: %ld\n",
  		OFFSET(x8664_pda_level4_pgt));
@@ -13606,7 +13612,7 @@
  
  	fprintf(fp, "\n                    size_table:\n");
  	fprintf(fp, "                          page: %ld\n", SIZE(page));
-@@ -6493,6 +7015,10 @@
+@@ -6493,6 +7019,10 @@
          fprintf(fp, "                   array_cache: %ld\n", SIZE(array_cache));
          fprintf(fp, "                 kmem_bufctl_t: %ld\n", 
  		SIZE(kmem_bufctl_t));
@@ -13617,7 +13623,7 @@
          fprintf(fp, "              swap_info_struct: %ld\n", 
  		SIZE(swap_info_struct));
          fprintf(fp, "                vm_area_struct: %ld\n", 
-@@ -6512,6 +7038,7 @@
+@@ -6512,6 +7042,7 @@
  	fprintf(fp, "                     fs_struct: %ld\n", SIZE(fs_struct));
  	fprintf(fp, "                  files_struct: %ld\n", 
  		SIZE(files_struct));
@@ -13625,7 +13631,7 @@
  	fprintf(fp, "                          file: %ld\n", SIZE(file)); 
  	fprintf(fp, "                         inode: %ld\n", SIZE(inode)); 
  	fprintf(fp, "                      vfsmount: %ld\n", SIZE(vfsmount)); 
-@@ -6546,8 +7073,11 @@
+@@ -6546,8 +7077,11 @@
  	fprintf(fp, "                          sock: %ld\n", SIZE(sock));
  	fprintf(fp, "                     inet_sock: %ld\n", SIZE(inet_sock));
  	fprintf(fp, "                        socket: %ld\n", SIZE(socket));
@@ -13637,7 +13643,7 @@
  	fprintf(fp, "                  signal_queue: %ld\n", 
  		SIZE(signal_queue));
  	fprintf(fp, "                      sigqueue: %ld\n", SIZE(sigqueue));
-@@ -6601,6 +7131,8 @@
+@@ -6601,6 +7135,8 @@
  
  	fprintf(fp, "                     x8664_pda: %ld\n", 
  		SIZE(x8664_pda));
@@ -13646,7 +13652,7 @@
  	fprintf(fp, "                   gate_struct: %ld\n", 
  		SIZE(gate_struct));
  	fprintf(fp, "                    tss_struct: %ld\n", 
-@@ -6609,7 +7141,22 @@
+@@ -6609,7 +7145,22 @@
  		SIZE(task_struct_start_time));
  	fprintf(fp, "                     cputime_t: %ld\n", 
  		SIZE(cputime_t));
@@ -13670,7 +13676,7 @@
  
          fprintf(fp, "\n                   array_table:\n");
  	/*
-@@ -6663,6 +7210,12 @@
+@@ -6663,6 +7214,12 @@
                  get_array_length("prio_array.queue", NULL, SIZE(list_head)));
  	fprintf(fp, "            height_to_maxindex: %d\n",
  		ARRAY_LENGTH(height_to_maxindex));
@@ -13683,7 +13689,7 @@
  
  	if (spec) {
  		int in_size_table, in_array_table, arrays, offsets, sizes;
-@@ -6890,6 +7443,10 @@
+@@ -6890,6 +7447,10 @@
                              SEC_HAS_CONTENTS))
                                  st->flags |= NO_SEC_CONTENTS;
                  }
@@ -13694,7 +13700,7 @@
  		break;
  
  	case (uint)MODULE_SECTIONS:
-@@ -6906,6 +7463,10 @@
+@@ -6906,6 +7467,10 @@
  			    SEC_HAS_CONTENTS))
  				st->flags |= NO_SEC_CONTENTS;
  		}
@@ -13705,7 +13711,7 @@
  		break;
  
  	default:
-@@ -6960,8 +7521,9 @@
+@@ -6960,8 +7525,9 @@
  	i = lm->mod_sections;
  	lm->mod_section_data[i].section = section;
  	lm->mod_section_data[i].priority = prio;
@@ -13716,7 +13722,7 @@
  	if (strlen(name) < MAX_MOD_SEC_NAME)
  		strcpy(lm->mod_section_data[i].name, name);
  	else
-@@ -7013,7 +7575,7 @@
+@@ -7013,7 +7579,7 @@
   */
  
  static void
@@ -13725,7 +13731,7 @@
  {
  	int i;
  	asection *section;
-@@ -7073,6 +7635,134 @@
+@@ -7073,6 +7639,134 @@
  }
  
  /*
@@ -13860,7 +13866,7 @@
   *  Later versons of insmod store basic address information of each
   *  module in a format that looks like the following example of the
   *  nfsd module:
-@@ -7185,8 +7875,8 @@
+@@ -7185,8 +7879,8 @@
  	}
  
  	if (CRASHDEBUG(1))
@@ -13871,7 +13877,7 @@
  
  	switch (kt->flags & (KMOD_V1|KMOD_V2))
  	{
-@@ -7199,7 +7889,8 @@
+@@ -7199,7 +7893,8 @@
                  	strcpy(lm->mod_namelist, namelist);
          	else
                  	strncpy(lm->mod_namelist, namelist, MAX_MOD_NAMELIST-1);
@@ -13881,7 +13887,7 @@
  	}
  
    	if ((mbfd = bfd_openr(namelist, NULL)) == NULL) 
-@@ -7219,6 +7910,10 @@
+@@ -7219,6 +7914,10 @@
  	else if (symcount == 0)
  		error(FATAL, "no symbols in object file: %s\n", namelist);
  
@@ -13892,7 +13898,7 @@
          sort_x = bfd_make_empty_symbol(mbfd);
          sort_y = bfd_make_empty_symbol(mbfd);
          if (sort_x == NULL || sort_y == NULL)
-@@ -7251,17 +7946,33 @@
+@@ -7251,17 +7950,33 @@
  add_symbol_file(struct load_module *lm)
  {
          struct gnu_request request, *req;
@@ -13929,7 +13935,7 @@
  
  	sprintf(buf, "set complaints 0");
  	gdb_pass_through(buf, NULL, 0);
-@@ -7382,7 +8093,12 @@
+@@ -7382,7 +8097,12 @@
  
          bfd_map_over_sections(bfd, section_header_info, MODULE_SECTIONS);
  
@@ -13943,7 +13949,7 @@
  
          from = (bfd_byte *) minisyms;
          fromend = from + symcount * size;
-@@ -7395,104 +8111,112 @@
+@@ -7395,104 +8115,112 @@
                  bfd_get_symbol_info(bfd, sym, &syminfo);
  
  		secname = (char *)bfd_get_section_name(bfd, sym->section);
@@ -14134,7 +14140,7 @@
  	}
  
  	lm->mod_load_symend = &lm->mod_load_symtable[lm->mod_load_symcnt];
-@@ -7713,7 +8437,7 @@
+@@ -7713,7 +8441,7 @@
  	ulong start, end;
  	char *modbuf;
  	ulong maxchunk, alloc;
@@ -14143,7 +14149,7 @@
  
          start = roundup(lm->mod_size_of_struct, sizeof(long)) + lm->mod_base;
          end = lm->mod_base + lm->mod_size;
-@@ -8089,6 +8813,10 @@
+@@ -8089,6 +8817,10 @@
  	struct syment *sp_array[200], *sp;
  
  	if (req->name == PATCH_KERNEL_SYMBOLS_START) {
@@ -14154,8 +14160,8 @@
                  fprintf(fp, (pc->flags & SILENT) || !(pc->flags & TTY) ? "" :
                   "\nplease wait... (patching %ld gdb minimal_symbol values) ",
  			st->symcnt);
---- crash/defs.h.orig	2008-01-17 15:17:20.000000000 -0500
-+++ crash/defs.h	2008-01-16 11:45:00.000000000 -0500
+--- crash/defs.h.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/defs.h	2008-02-06 16:41:12.000000000 -0500
 @@ -1,8 +1,8 @@
  /* defs.h - core analysis suite
   *
@@ -14663,7 +14669,7 @@
          long neighbour_next;
          long neighbour_primary_key;
          long neighbour_ha;
-@@ -1210,7 +1381,67 @@
+@@ -1210,7 +1381,69 @@
  	long x8664_pda_irqstackptr;
  	long x8664_pda_level4_pgt;
  	long x8664_pda_cpunumber;
@@ -14728,10 +14734,12 @@
 +	long pcpu_info_vcpu;
 +	long pcpu_info_idle;
 +	long vcpu_struct_rq;
++	long task_struct_sched_info;
++	long sched_info_last_arrival;
  };
  
  struct size_table {         /* stash of commonly-used sizes */
-@@ -1239,6 +1470,7 @@
+@@ -1239,6 +1472,7 @@
  	long umode_t;
  	long dentry;
  	long files_struct;
@@ -14739,7 +14747,7 @@
  	long fs_struct;
  	long file;
  	long inode;
-@@ -1264,6 +1496,7 @@
+@@ -1264,6 +1498,7 @@
  	long net_device;
  	long sock;
  	long signal_struct;
@@ -14747,7 +14755,7 @@
  	long signal_queue;
  	long sighand_struct;
  	long sigqueue;
-@@ -1292,15 +1525,28 @@
+@@ -1292,15 +1527,28 @@
  	long address_space;
  	long char_device_struct;
  	long inet_sock;
@@ -14776,7 +14784,7 @@
  };
  
  struct array_table {
-@@ -1327,6 +1573,9 @@
+@@ -1327,6 +1575,9 @@
  	int free_area_DIMENSION;
  	int prio_array_queue;
  	int height_to_maxindex;
@@ -14786,7 +14794,7 @@
  };
  
  /*
-@@ -1342,7 +1591,12 @@
+@@ -1342,7 +1593,12 @@
  #define MEMBER_OFFSET(X,Y)  datatype_info((X), (Y), NULL)
  #define MEMBER_EXISTS(X,Y)  (datatype_info((X), (Y), NULL) >= 0)
  #define MEMBER_SIZE_REQUEST ((struct datatype_member *)(-1))
@@ -14799,7 +14807,7 @@
  
  /*
   *  The following set of macros can only be used with pre-intialized fields
-@@ -1365,7 +1619,9 @@
+@@ -1365,7 +1621,9 @@
  #define MEMBER_OFFSET_INIT(X, Y, Z) (ASSIGN_OFFSET(X) = MEMBER_OFFSET(Y, Z))
  #define STRUCT_SIZE_INIT(X, Y) (ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
  #define ARRAY_LENGTH_INIT(A, B, C, D, E) ((A) = get_array_length(C, D, E))
@@ -14809,7 +14817,7 @@
  
  /*
   *  For use with non-debug kernels.
-@@ -1389,6 +1645,7 @@
+@@ -1389,6 +1647,7 @@
  #define ULONGLONG(ADDR) *((ulonglong *)((char *)(ADDR)))
  #define ULONG_PTR(ADDR) *((ulong **)((char *)(ADDR)))
  #define USHORT(ADDR)    *((ushort *)((char *)(ADDR)))
@@ -14817,7 +14825,7 @@
  #define VOID_PTR(ADDR)  *((void **)((char *)(ADDR)))
  
  struct node_table {
-@@ -1396,6 +1653,7 @@
+@@ -1396,6 +1655,7 @@
  	ulong pgdat;
  	ulong mem_map;
  	ulong size;
@@ -14825,7 +14833,7 @@
  	ulonglong start_paddr;
  	ulong start_mapnr;
  };
-@@ -1420,8 +1678,10 @@
+@@ -1420,8 +1680,10 @@
  	ulong kmem_max_limit;
  	ulong kmem_max_cpus;
  	ulong kmem_cache_count;
@@ -14836,7 +14844,7 @@
  	int kmem_cache_namelen;
  	ulong page_hash_table;
  	int page_hash_table_len;
-@@ -1441,17 +1701,42 @@
+@@ -1441,17 +1703,42 @@
          ulong cached_vma_hits[VMA_CACHE];
          int vma_cache_index;
          ulong vma_cache_fills;
@@ -14890,7 +14898,7 @@
  
  #define COMMON_VADDR_SPACE() (vt->flags & COMMON_VADDR)
  #define PADDR_PRLEN          (vt->paddr_prlen)
-@@ -1478,7 +1763,8 @@
+@@ -1478,7 +1765,8 @@
  	long list_head_offset;
          ulong end;
  	ulong searchfor;
@@ -14900,7 +14908,7 @@
  	char *header;
  };
  #define LIST_OFFSET_ENTERED  (VERBOSE << 1)
-@@ -1584,8 +1870,11 @@
+@@ -1584,8 +1872,11 @@
  	int mods_installed;
  	struct load_module *current;
  	struct load_module *load_modules;
@@ -14912,7 +14920,7 @@
  #define KERNEL_SYMS        (0x1)
  #define MODULE_SYMS        (0x2)
  #define LOAD_MODULE_SYMS   (0x4)
-@@ -1596,6 +1885,8 @@
+@@ -1596,6 +1887,8 @@
  #define NO_SEC_CONTENTS   (0x40)
  #define FORCE_DEBUGINFO   (0x80)
  #define CRC_MATCHES      (0x100)
@@ -14921,7 +14929,7 @@
  
  #endif /* !GDB_COMMON */
  
-@@ -1611,6 +1902,8 @@
+@@ -1611,6 +1904,8 @@
  #define MOD_KALLSYMS    (0x8)
  #define MOD_INITRD     (0x10)
  
@@ -14930,7 +14938,7 @@
  struct mod_section_data {
  #if defined(GDB_6_1)
          struct bfd_section *section;
-@@ -1659,6 +1952,8 @@
+@@ -1659,6 +1954,8 @@
  #define KVADDR             (0x1)
  #define UVADDR             (0x2)
  #define PHYSADDR           (0x4)
@@ -14939,7 +14947,7 @@
  #define AMBIGUOUS          (~0)
  
  #define USE_USER_PGD       (UVADDR << 2)
-@@ -1680,6 +1975,33 @@
+@@ -1680,6 +1977,33 @@
  #define VIRTPAGEBASE(X)  (((ulong)(X)) & (ulong)machdep->pagemask)
  #define PHYSPAGEBASE(X)  (((physaddr_t)(X)) & (physaddr_t)machdep->pagemask)
  
@@ -14973,7 +14981,7 @@
  /*
   *  Machine specific stuff
   */
-@@ -1689,8 +2011,8 @@
+@@ -1689,8 +2013,8 @@
  #define MACHINE_TYPE       "X86"
  #define PTOV(X)            ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)            ((unsigned long)(X)-(machdep->kvbase))
@@ -14984,7 +14992,7 @@
  
  #define PGDIR_SHIFT_2LEVEL   (22)
  #define PTRS_PER_PTE_2LEVEL  (1024)
-@@ -1721,25 +2043,91 @@
+@@ -1721,25 +2045,91 @@
  
  #define SWP_TYPE(entry) (((entry) >> 1) & 0x3f)
  #define SWP_OFFSET(entry) ((entry) >> 8)
@@ -15084,7 +15092,7 @@
  #define PTOV(X)               ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)               x86_64_VTOP((ulong)(X))
  #define IS_VMALLOC_ADDR(X)    x86_64_IS_VMALLOC_ADDR((ulong)(X))
-@@ -1757,12 +2145,34 @@
+@@ -1757,12 +2147,34 @@
  #define pmd_index(address)  (((address) >> PMD_SHIFT) & (PTRS_PER_PMD-1))
  #define pte_index(address)  (((address) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
  
@@ -15120,7 +15128,7 @@
  /* 
   *  PHYSICAL_PAGE_MASK changed (enlarged) between 2.4 and 2.6, so
   *  for safety, use the 2.6 values to generate it.
-@@ -1791,11 +2201,22 @@
+@@ -1791,11 +2203,22 @@
  
  #define SWP_TYPE(entry) (((entry) >> 1) & 0x3f)
  #define SWP_OFFSET(entry) ((entry) >> 8)
@@ -15143,7 +15151,7 @@
  #define CPU_PDA_READ(CPU, BUFFER) \
  	(STRNEQ("cpu_pda", closest_symbol((symbol_value("cpu_pda") +	\
  	     ((CPU) * SIZE(x8664_pda))))) &&				\
-@@ -1806,6 +2227,9 @@
+@@ -1806,6 +2229,9 @@
  #define VALID_LEVEL4_PGT_ADDR(X) \
  	(((X) == VIRTPAGEBASE(X)) && IS_KVADDR(X) && !IS_VMALLOC_ADDR(X))
  
@@ -15153,7 +15161,7 @@
  #endif  /* X86_64 */
  
  #ifdef ALPHA
-@@ -1816,7 +2240,7 @@
+@@ -1816,7 +2242,7 @@
  
  #define PTOV(X)            ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)            ((unsigned long)(X)-(machdep->kvbase))
@@ -15162,7 +15170,7 @@
  #define KSEG_BASE_48_BIT   (0xffff800000000000)
  #define KSEG_BASE          (0xfffffc0000000000)
  #define _PFN_MASK          (0xFFFFFFFF00000000)
-@@ -1848,6 +2272,8 @@
+@@ -1848,6 +2274,8 @@
  
  #define SWP_TYPE(entry) (((entry) >> 32) & 0xff)
  #define SWP_OFFSET(entry) ((entry) >> 40)
@@ -15171,7 +15179,7 @@
  
  #define TIF_SIGPENDING (2)
  
-@@ -1861,7 +2287,7 @@
+@@ -1861,7 +2289,7 @@
  
  #define PTOV(X)            ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)            ((unsigned long)(X)-(machdep->kvbase))
@@ -15180,7 +15188,7 @@
  
  #define PGDIR_SHIFT   (22)
  #define PTRS_PER_PTE  (1024)
-@@ -1881,9 +2307,14 @@
+@@ -1881,9 +2309,14 @@
  
  #define SWP_TYPE(entry) (((entry) >> 1) & 0x7f)
  #define SWP_OFFSET(entry) ((entry) >> 8)
@@ -15195,7 +15203,7 @@
  #endif  /* PPC */
  
  #ifdef IA64
-@@ -1908,6 +2339,9 @@
+@@ -1908,6 +2341,9 @@
  #define KERNEL_UNCACHED_BASE  ((ulong)KERNEL_UNCACHED_REGION << REGION_SHIFT)
  #define KERNEL_CACHED_BASE    ((ulong)KERNEL_CACHED_REGION << REGION_SHIFT)
  
@@ -15205,7 +15213,7 @@
  /*
   *  As of 2.6, these are no longer straight forward.
   */
-@@ -1917,16 +2351,57 @@
+@@ -1917,16 +2353,57 @@
  
  #define SWITCH_STACK_ADDR(X)  (ia64_get_switch_stack((ulong)(X)))
  
@@ -15269,7 +15277,7 @@
   * First, define the various bits in a PTE.  Note that the PTE format
   * matches the VHPT short format, the firt doubleword of the VHPD long
   * format, and the first doubleword of the TLB insertion format.
-@@ -1978,6 +2453,7 @@
+@@ -1978,6 +2455,7 @@
  #define __DIRTY_BITS		_PAGE_ED | __DIRTY_BITS_NO_ED
  
  #define EFI_PAGE_SHIFT  (12)
@@ -15277,7 +15285,7 @@
  /*
   * NOTE: #include'ing <asm/efi.h> creates too many compiler problems, so
   * this stuff is hardwired here; it's probably etched in stone somewhere.
-@@ -2020,6 +2496,8 @@
+@@ -2020,6 +2498,8 @@
  
  #define SWP_TYPE(entry)    (((entry) >> 1) & 0xff)
  #define SWP_OFFSET(entry)  ((entry) >> 9)
@@ -15286,7 +15294,7 @@
  
  #define TIF_SIGPENDING (1)
  
-@@ -2038,11 +2516,14 @@
+@@ -2038,11 +2518,14 @@
  #define _64BIT_
  #define MACHINE_TYPE       "PPC64"
  
@@ -15302,7 +15310,7 @@
  #define KERNELBASE      machdep->pageoffset
  
  #define PGDIR_SHIFT     (machdep->pageshift + (machdep->pageshift -3) + (machdep->pageshift - 2))
-@@ -2067,6 +2548,33 @@
+@@ -2067,6 +2550,33 @@
  #define PGD_OFFSET(vaddr)       ((vaddr >> PGDIR_SHIFT) & 0x7ff)
  #define PMD_OFFSET(vaddr)       ((vaddr >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
  
@@ -15336,7 +15344,7 @@
  #define _PAGE_PRESENT   0x001UL /* software: pte contains a translation */
  #define _PAGE_USER      0x002UL /* matches one of the PP bits */
  #define _PAGE_RW        0x004UL /* software: user write access allowed */
-@@ -2080,6 +2588,8 @@
+@@ -2080,6 +2590,8 @@
  
  #define SWP_TYPE(entry) (((entry) >> 1) & 0x7f)
  #define SWP_OFFSET(entry) ((entry) >> 8)
@@ -15345,7 +15353,7 @@
  
  #define MSR_PR_LG	14	/* Problem State / Privilege Level */
  				/* Used to find the user or kernel-mode frame*/
-@@ -2087,6 +2597,9 @@
+@@ -2087,6 +2599,9 @@
  #define STACK_FRAME_OVERHEAD            112
  #define EXCP_FRAME_MARKER               0x7265677368657265
  
@@ -15355,7 +15363,7 @@
  #endif /* PPC64 */
  
  #ifdef S390
-@@ -2095,7 +2608,7 @@
+@@ -2095,7 +2610,7 @@
  
  #define PTOV(X)            ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)            ((unsigned long)(X)-(machdep->kvbase))
@@ -15364,7 +15372,7 @@
  
  #define PTRS_PER_PTE    1024
  #define PTRS_PER_PMD    1
-@@ -2105,6 +2618,8 @@
+@@ -2105,6 +2620,8 @@
  #define SWP_TYPE(entry) (((entry) >> 2) & 0x1f)
  #define SWP_OFFSET(entry) ((((entry) >> 11) & 0xfffffffe) | \
                             (((entry) >> 7) & 0x1))
@@ -15373,7 +15381,7 @@
  
  #define TIF_SIGPENDING (2)
  
-@@ -2116,7 +2631,7 @@
+@@ -2116,7 +2633,7 @@
  
  #define PTOV(X)            ((unsigned long)(X)+(machdep->kvbase))
  #define VTOP(X)            ((unsigned long)(X)-(machdep->kvbase))
@@ -15382,7 +15390,7 @@
  #define PTRS_PER_PTE    512
  #define PTRS_PER_PMD    1024
  #define PTRS_PER_PGD    2048
-@@ -2125,6 +2640,8 @@
+@@ -2125,6 +2642,8 @@
  #define SWP_TYPE(entry)   (((entry) >> 2) & 0x1f)
  #define SWP_OFFSET(entry) ((((entry) >> 11) & 0xfffffffffffffffe) | \
                             (((entry) >> 7) & 0x1)) 
@@ -15391,7 +15399,7 @@
  
  #define TIF_SIGPENDING (2)
  
-@@ -2134,6 +2651,8 @@
+@@ -2134,6 +2653,8 @@
  
  #define SWP_TYPE(entry)   (error("PLATFORM_SWP_TYPE: TBD\n"))
  #define SWP_OFFSET(entry) (error("PLATFORM_SWP_OFFSET: TBD\n"))
@@ -15400,7 +15408,7 @@
  
  #endif /* PLATFORM */
  
-@@ -2185,7 +2704,10 @@
+@@ -2185,7 +2706,10 @@
  #define BADVAL   ((ulong)(-1))
  #define UNUSED   (-1)
  
@@ -15411,7 +15419,7 @@
  
  /*
   *  precision lengths for fprintf
-@@ -2199,9 +2721,10 @@
+@@ -2199,9 +2723,10 @@
  
  #define MINSPACE  (-100)
  
@@ -15425,7 +15433,7 @@
  
  #define LEFT_JUSTIFY   (1)
  #define RIGHT_JUSTIFY  (2)
-@@ -2419,17 +2942,22 @@
+@@ -2419,17 +2944,22 @@
  /*
   *  ps command options.
   */
@@ -15459,7 +15467,7 @@
  
  #define MAX_PS_ARGS    (100)   /* maximum command-line specific requests */
  
-@@ -2461,7 +2989,7 @@
+@@ -2461,7 +2991,7 @@
  extern struct program_context program_context, *pc;
  extern struct task_table task_table, *tt;
  extern struct kernel_table kernel_table, *kt;
@@ -15468,7 +15476,7 @@
  extern char *args[MAXARGS];      
  extern int argcnt;            
  extern int argerrs;
-@@ -2534,6 +3062,9 @@
+@@ -2534,6 +3064,9 @@
  void cmd_gdb(void);          /* gdb_interface.c */
  void cmd_net(void);          /* net.c */
  void cmd_extend(void);       /* extensions.c */
@@ -15478,7 +15486,7 @@
  
  /*
   *  main.c
-@@ -2591,6 +3122,8 @@
+@@ -2591,6 +3124,8 @@
  int interruptible(void);
  int received_SIGINT(void);
  void debug_redirect(char *);
@@ -15487,7 +15495,7 @@
  
  /*
   *  tools.c
-@@ -2658,6 +3191,7 @@
+@@ -2658,6 +3193,7 @@
  int hq_open(void);
  int hq_close(void);
  int hq_enter(ulong);
@@ -15495,7 +15503,7 @@
  long get_embedded(void);
  void dump_embedded(char *);
  char *ordinal(ulong, char *);
-@@ -2683,9 +3217,16 @@
+@@ -2683,9 +3219,16 @@
  int clean_arg(void);
  int empty_list(ulong);
  int machine_type(char *);
@@ -15513,7 +15521,7 @@
  
  /* 
   *  symbols.c 
-@@ -2721,9 +3262,11 @@
+@@ -2721,9 +3264,11 @@
  struct syment *next_symbol(char *, struct syment *);
  struct syment *prev_symbol(char *, struct syment *);
  void get_symbol_data(char *, long, void *);
@@ -15525,7 +15533,7 @@
  int symbol_exists(char *s);
  int kernel_symbol_exists(char *s);
  int get_syment_array(char *, struct syment **, int);
-@@ -2738,9 +3281,12 @@
+@@ -2738,9 +3283,12 @@
  void dump_struct_table(ulong);
  void dump_offset_table(char *, ulong);
  int is_elf_file(char *);
@@ -15538,7 +15546,7 @@
  int builtin_array_length(char *, int, int *);
  char *get_line_number(ulong, char *, int);
  char *get_build_directory(char *);
-@@ -2768,6 +3314,7 @@
+@@ -2768,6 +3316,7 @@
  long OFFSET_option(long, long, char *, char *, int, char *, char *);
  long SIZE_option(long, long, char *, char *, int, char *, char *);
  void dump_trace(ulong *);
@@ -15546,7 +15554,7 @@
  
  /*  
   *  memory.c 
-@@ -2807,6 +3354,7 @@
+@@ -2807,6 +3356,7 @@
  char *swap_location(ulonglong, char *); 
  void clear_swap_info_cache(void);
  uint memory_page_size(void);
@@ -15554,7 +15562,7 @@
  ulong first_vmalloc_address(void);
  int l1_cache_size(void);
  int dumpfile_memory(int);
-@@ -2838,6 +3386,7 @@
+@@ -2838,6 +3388,7 @@
  void open_files_dump(ulong, int, struct reference *);
  void get_pathname(ulong, char *, int, int, ulong);
  ulong file_to_dentry(ulong);
@@ -15562,7 +15570,7 @@
  void nlm_files_dump(void);
  int get_proc_version(void);
  int file_checksum(char *, long *);
-@@ -2874,6 +3423,7 @@
+@@ -2874,6 +3425,7 @@
  void help_init(void);
  void cmd_usage(char *, int);
  void display_version(void);
@@ -15570,7 +15578,7 @@
  #ifdef X86
  #define dump_machdep_table(X) x86_dump_machdep_table(X)
  #endif
-@@ -2945,6 +3495,9 @@
+@@ -2945,6 +3497,9 @@
  extern char *help_waitq[];
  extern char *help_whatis[];
  extern char *help_wr[];
@@ -15580,7 +15588,7 @@
  
  /*
   *  task.c
-@@ -2962,10 +3515,13 @@
+@@ -2962,10 +3517,13 @@
  ulong task_flags(ulong);
  ulong task_state(ulong);
  ulong task_mm(ulong, int);
@@ -15594,7 +15602,7 @@
  ulong stkptr_to_task(ulong);
  ulong task_to_thread_info(ulong);
  ulong task_to_stackbase(ulong);
-@@ -3005,11 +3561,17 @@
+@@ -3005,11 +3563,17 @@
   */
  void register_extension(struct command_table_entry *);
  void dump_extension_table(int);
@@ -15613,7 +15621,7 @@
  void module_init(void);
  void verify_version(void);
  void verify_spinlock(void);
-@@ -3019,14 +3581,18 @@
+@@ -3019,14 +3583,18 @@
  int is_system_call(char *, ulong);
  void generic_dump_irq(int);
  int generic_dis_filter(ulong, char *);
@@ -15633,7 +15641,7 @@
  void print_stack_text_syms(struct bt_info *, ulong, ulong);
  void back_trace(struct bt_info *);
  #define BT_RAW                     (0x1ULL)
-@@ -3039,11 +3605,13 @@
+@@ -3039,11 +3607,13 @@
  #define BT_EXCEPTION_FRAME        (0x80ULL)
  #define BT_LINE_NUMBERS          (0x100ULL)
  #define BT_USER_EFRAME           (0x200ULL)
@@ -15647,7 +15655,7 @@
  #define BT_RESCHEDULE           (0x8000ULL)
  #define BT_SCHEDULE      (BT_RESCHEDULE)
  #define BT_RET_FROM_SMP_FORK   (0x10000ULL)
-@@ -3069,6 +3637,8 @@
+@@ -3069,6 +3639,8 @@
  #define BT_DUMPFILE_SEARCH (0x800000000ULL)
  #define BT_EFRAME_SEARCH2 (0x1000000000ULL)
  #define BT_START          (0x2000000000ULL)
@@ -15656,7 +15664,7 @@
  
  #define BT_REF_HEXVAL         (0x1)
  #define BT_REF_SYMBOL         (0x2)
-@@ -3101,6 +3671,17 @@
+@@ -3101,6 +3673,17 @@
  #define TYPE_S390D       (REMOTE_VERBOSE << 6)
  #define TYPE_NETDUMP     (REMOTE_VERBOSE << 7)
  
@@ -15674,7 +15682,7 @@
  /*
   *  dev.c
   */
-@@ -3129,7 +3710,6 @@
+@@ -3129,7 +3712,6 @@
  void x86_display_idt_table(void);
  #define display_idt_table() x86_display_idt_table()
  #define KSYMS_START    (0x1)
@@ -15682,7 +15690,7 @@
  void x86_dump_eframe_common(struct bt_info *bt, ulong *, int);
  char *x86_function_called_by(ulong);
  struct syment *x86_jmp_error_code(ulong);
-@@ -3140,6 +3720,8 @@
+@@ -3140,6 +3722,8 @@
  	ulong entry_tramp_start;
  	ulong entry_tramp_end;
  	physaddr_t entry_tramp_start_phys;
@@ -15691,7 +15699,7 @@
  };
  
  struct syment *x86_is_entry_tramp_address(ulong, ulong *); 
-@@ -3194,19 +3776,54 @@
+@@ -3194,19 +3778,54 @@
  #define NMI_STACK 2    /* ebase[] offset to NMI exception stack */
  
  struct machine_specific {
@@ -15747,7 +15755,7 @@
  
  /*
   * ppc64.c
-@@ -3240,13 +3857,42 @@
+@@ -3240,13 +3859,42 @@
          ulong hwintrstack[NR_CPUS];
          char *hwstackbuf;
          uint hwstacksize;
@@ -15791,7 +15799,7 @@
  #endif
  
  /*
-@@ -3258,15 +3904,27 @@
+@@ -3258,15 +3906,27 @@
  #define display_idt_table() \
          error(FATAL, "-d option is not applicable to PowerPC architecture\n")
  #define KSYMS_START (0x1)
@@ -15820,7 +15828,7 @@
  
  /*
   *  ia64.c
-@@ -3283,6 +3941,8 @@
+@@ -3283,6 +3943,8 @@
  #define display_idt_table() \
  	error(FATAL, "-d option TBD on ia64 architecture\n");
  int ia64_in_init_stack(ulong addr);
@@ -15829,7 +15837,7 @@
  
  #define OLD_UNWIND       (0x1)   /* CONFIG_IA64_NEW_UNWIND not turned on */
  #define NEW_UNWIND       (0x2)   /* CONFIG_IA64_NEW_UNWIND turned on */
-@@ -3396,10 +4056,26 @@
+@@ -3396,10 +4058,26 @@
  int netdump_init(char *, FILE *);
  ulong get_netdump_panic_task(void);
  ulong get_netdump_switch_stack(ulong);
@@ -15857,7 +15865,7 @@
  
  /*
   *  diskdump.c
-@@ -3416,6 +4092,28 @@
+@@ -3416,6 +4094,28 @@
  int diskdump_memory_dump(FILE *);
  FILE *set_diskdump_fp(FILE *);
  void get_diskdump_regs(struct bt_info *, ulong *, ulong *);
@@ -15886,7 +15894,7 @@
  
  /*
   *  net.c
-@@ -3493,6 +4191,8 @@
+@@ -3493,6 +4193,8 @@
  void lkcd_dumpfile_complaint(uint32_t, uint32_t, int);
  int set_mb_benchmark(ulong);
  ulonglong fix_lkcd_address(ulonglong);
@@ -15895,7 +15903,7 @@
  
  /*
   * lkcd_v1.c
-@@ -3560,6 +4260,7 @@
+@@ -3560,6 +4262,7 @@
  #define LKCD_DUMP_V7                  (0x7)  /* DUMP_VERSION_NUMBER */
  #define LKCD_DUMP_V8                  (0x8)  /* DUMP_VERSION_NUMBER */
  #define LKCD_DUMP_V9                  (0x9)  /* DUMP_VERSION_NUMBER */
@@ -15903,7 +15911,7 @@
  
  #define LKCD_DUMP_VERSION_NUMBER_MASK (0xf)
  #define LKCD_DUMP_RAW                 (0x1)   /* DUMP_[DH_]RAW */ 
-@@ -3764,7 +4465,6 @@
+@@ -3764,7 +4467,6 @@
  extern int prettyprint_structs;
  extern int prettyprint_arrays;
  extern int repeat_count_threshold;
@@ -15911,7 +15919,7 @@
  extern unsigned int print_max;
  
  /*
-@@ -3814,4 +4514,8 @@
+@@ -3814,4 +4516,8 @@
  extern int have_partial_symbols(void); 
  extern int have_full_symbols(void);
  
@@ -15920,7 +15928,7 @@
 +#endif
 +
  #endif /* !GDB_COMMON */
---- crash/alpha.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/alpha.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/alpha.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* alpha.c - core analysis suite
@@ -15952,7 +15960,7 @@
          fprintf(fp, ")\n");
  	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
  	fprintf(fp, "  identity_map_base: %lx\n", machdep->identity_map_base);
---- crash/va_server.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/va_server.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/va_server.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* va_server.c - kernel crash dump file translation library
@@ -15982,7 +15990,7 @@
  	if(read_map(crash_file)) {
  		if(va_server_init_v1(crash_file, start, end, stride))
  			return -1;
---- crash/kernel.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/kernel.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/kernel.c	2008-01-16 16:32:14.000000000 -0500
 @@ -1,8 +1,8 @@
  /* kernel.c - core analysis suite
@@ -18754,7 +18762,7 @@
 +			break;
 +	}
  }
---- crash/lkcd_vmdump_v1.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_vmdump_v1.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_vmdump_v1.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_vmdump_v1.h - core analysis suite
@@ -18780,7 +18788,7 @@
  
  	/* the address of the current task */
  	struct task_struct  *dh_current_task;
---- crash/xen_hyper_dump_tables.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xen_hyper_dump_tables.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xen_hyper_dump_tables.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,948 @@
 +/*
@@ -19731,7 +19739,7 @@
 +	fprintf(fp, "\n");
 +}
 +#endif
---- crash/xendump.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xendump.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xendump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,2848 @@
 +/* 
@@ -22582,7 +22590,7 @@
 +{
 +	return (XENDUMP_VALID() ? xd : NULL);
 +}
---- crash/lkcd_v8.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_v8.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_v8.c	2008-01-04 09:42:08.000000000 -0500
 @@ -23,9 +23,185 @@
  #include "lkcd_dump_v8.h"				/* REMIND */
@@ -22836,7 +22844,7 @@
  		set_mb_benchmark((granularity * (i+1))/lkcd->page_size);
  	}
  }
---- crash/xen_hyper_defs.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xen_hyper_defs.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xen_hyper_defs.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,970 @@
 +/*
@@ -23809,7 +23817,7 @@
 +    "Xen hypervisor mode not supported on this architecture\n"
 +
 +#endif
---- crash/lkcd_v7.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_v7.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_v7.c	2008-01-04 09:42:08.000000000 -0500
 @@ -89,7 +89,11 @@
  	ifd = 0;
@@ -23824,16 +23832,16 @@
  	dump_index_size = (lkcd->memory_pages * sizeof(off_t));	
  	lkcd->page_offsets = 0;
  	strcpy(dumpfile_index_name, dumpfile);
---- crash/filesys.c.orig	2008-01-17 15:17:20.000000000 -0500
-+++ crash/filesys.c	2008-01-04 09:42:08.000000000 -0500
+--- crash/filesys.c.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/filesys.c	2008-01-21 13:43:40.000000000 -0500
 @@ -1,8 +1,8 @@
  /* filesys.c - core analysis suite
   *
   * Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
 - * Copyright (C) 2002, 2003, 2004, 2005 David Anderson
 - * Copyright (C) 2002, 2003, 2004, 2005 Red Hat, Inc. All rights reserved.
-+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007 David Anderson
-+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007 Red Hat, Inc. All rights reserved.
++ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 David Anderson
++ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 Red Hat, Inc. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
@@ -24339,11 +24347,11 @@
 +			OFFSET(files_struct_max_fds));
 +		}
 +	}
- 
--	if (!files_struct_addr || max_fdset == 0 || max_fds == 0) {
++
 +	if (VALID_MEMBER(files_struct_fdt)) {
 +		fdtable_addr = ULONG(files_struct_buf + OFFSET(files_struct_fdt));
-+
+ 
+-	if (!files_struct_addr || max_fdset == 0 || max_fds == 0) {
 +		if (fdtable_addr) {
 +			readmem(fdtable_addr, KVADDR, fdtable_buf,
 +	 			SIZE(fdtable), "fdtable buffer", FAULT_ON_ERROR); 
@@ -24449,7 +24457,62 @@
   * get_pathname() fills in a pathname string for an ending dentry
   * See __d_path() in the kernel for help fixing problems.
   */
-@@ -3575,3 +3681,29 @@
+@@ -3378,10 +3484,14 @@
+ #define RADIX_TREE_MAP_SHIFT  6
+ #define RADIX_TREE_MAP_SIZE  (1UL << RADIX_TREE_MAP_SHIFT)
+ #define RADIX_TREE_MAP_MASK  (RADIX_TREE_MAP_SIZE-1)
++#define RADIX_TREE_TAGS         2
++#define RADIX_TREE_TAG_LONGS    \
++	((RADIX_TREE_MAP_SIZE + BITS_PER_LONG - 1) / BITS_PER_LONG)
+ 
+ struct radix_tree_node {
+         unsigned int    count;
+         void            *slots[RADIX_TREE_MAP_SIZE];
++	unsigned long	tags[RADIX_TREE_TAGS][RADIX_TREE_TAG_LONGS];
+ };
+ 
+ /*
+@@ -3533,16 +3643,15 @@
+ radix_tree_lookup(ulong root_rnode, ulong index, int height)
+ {
+ 	unsigned int shift;
+-	struct radix_tree_node **slot;
++	void *slot;
+ 	struct radix_tree_node slotbuf;
+-	void **kslotp, **uslotp;
+ 
+ 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;
+-	kslotp = (void **)root_rnode;
++
++	readmem(root_rnode, KVADDR, &slot, sizeof(void *),
++		"radix_tree_root rnode", FAULT_ON_ERROR);
+ 
+ 	while (height > 0) {
+-		readmem((ulong)kslotp, KVADDR, &slot, sizeof(void *),
+-			"radix_tree_node slot", FAULT_ON_ERROR);
+ 
+ 		if (slot == NULL)
+ 			return NULL;
+@@ -3551,15 +3660,13 @@
+ 			sizeof(struct radix_tree_node),
+ 			"radix_tree_node struct", FAULT_ON_ERROR);
+ 
+-		uslotp = (void **)
+-		    (slotbuf.slots + ((index >> shift) & RADIX_TREE_MAP_MASK));
+-		kslotp = *uslotp;
+-
++		slot = slotbuf.slots[((index >> shift) & RADIX_TREE_MAP_MASK)];
++		
+ 		shift -= RADIX_TREE_MAP_SHIFT;
+ 		height--;
+ 	}
+ 
+-	return (void *) kslotp;
++	return slot;
+ }
+ 
+ int
+@@ -3575,3 +3682,29 @@
  
  	return TRUE;
  }
@@ -24479,8 +24542,8 @@
 +
 +	return found;
 +}
---- crash/task.c.orig	2008-01-17 15:17:20.000000000 -0500
-+++ crash/task.c	2008-01-17 14:44:07.000000000 -0500
+--- crash/task.c.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/task.c	2008-02-12 15:44:23.000000000 -0500
 @@ -1,8 +1,8 @@
  /* task.c - core analysis suite
   *
@@ -24557,7 +24620,22 @@
  	if (VALID_MEMBER(task_struct_thread_info)) {
          	MEMBER_OFFSET_INIT(thread_info_task, "thread_info", "task"); 
          	MEMBER_OFFSET_INIT(thread_info_cpu, "thread_info", "cpu");
-@@ -193,6 +221,17 @@
+@@ -184,8 +212,13 @@
+         MEMBER_OFFSET_INIT(task_struct_pids, "task_struct", "pids");
+         MEMBER_OFFSET_INIT(task_struct_last_run, "task_struct", "last_run");
+         MEMBER_OFFSET_INIT(task_struct_timestamp, "task_struct", "timestamp");
++        MEMBER_OFFSET_INIT(task_struct_sched_info, "task_struct", "sched_info");
++	if (VALID_MEMBER(task_struct_sched_info))
++		MEMBER_OFFSET_INIT(sched_info_last_arrival, 
++			"sched_info", "last_arrival");
+ 	if (VALID_MEMBER(task_struct_last_run) || 
+-	    VALID_MEMBER(task_struct_timestamp)) {
++	    VALID_MEMBER(task_struct_timestamp) ||
++	    VALID_MEMBER(sched_info_last_arrival)) {
+ 		char buf[BUFSIZE];
+ 	        strcpy(buf, "alias last ps -l");
+         	alias_init(buf);
+@@ -193,6 +226,17 @@
  	MEMBER_OFFSET_INIT(pid_link_pid, "pid_link", "pid");
  	MEMBER_OFFSET_INIT(pid_hash_chain, "pid", "hash_chain");
  
@@ -24575,7 +24653,7 @@
  	MEMBER_OFFSET_INIT(pid_pid_chain, "pid", "pid_chain");
  
  	STRUCT_SIZE_INIT(task_struct, "task_struct");
-@@ -207,6 +246,8 @@
+@@ -207,6 +251,8 @@
  	 
  	MEMBER_OFFSET_INIT(signal_struct_count, "signal_struct", "count");
  	MEMBER_OFFSET_INIT(signal_struct_action, "signal_struct", "action");
@@ -24584,7 +24662,7 @@
  
  	MEMBER_OFFSET_INIT(k_sigaction_sa, "k_sigaction", "sa");
  	
-@@ -217,17 +258,10 @@
+@@ -217,17 +263,10 @@
  	if (INVALID_MEMBER(sigpending_head))
  		MEMBER_OFFSET_INIT(sigpending_list, "sigpending", "list");
  	MEMBER_OFFSET_INIT(sigpending_signal, "sigpending", "signal");
@@ -24604,7 +24682,7 @@
  
  	STRUCT_SIZE_INIT(sighand_struct, "sighand_struct");
  	if (VALID_STRUCT(sighand_struct))
-@@ -249,6 +283,19 @@
+@@ -249,6 +288,19 @@
  
  	STRUCT_SIZE_INIT(cputime_t, "cputime_t");
  
@@ -24624,7 +24702,7 @@
  	if (VALID_MEMBER(runqueue_arrays)) 
  		MEMBER_OFFSET_INIT(task_struct_run_list, "task_struct",
  			"run_list");
-@@ -279,12 +326,6 @@
+@@ -279,12 +331,6 @@
  		error(FATAL, 
          "pidhash and pid_hash both exist -- cannot distinquish between them\n");
  
@@ -24637,7 +24715,7 @@
  	if (symbol_exists("pid_hash") && symbol_exists("pidhash_shift")) {
  		int pidhash_shift;
  
-@@ -302,7 +343,33 @@
+@@ -302,7 +348,33 @@
                  	tt->refresh_task_table = refresh_pid_hash_task_table;
  		} else {
                  	tt->pidhash_addr = symbol_value("pid_hash");
@@ -24672,7 +24750,7 @@
  		}
  
                  tt->flags |= PID_HASH;
-@@ -343,6 +410,10 @@
+@@ -343,6 +415,10 @@
  		irqstacks_init();
  
  	get_active_set();
@@ -24683,7 +24761,7 @@
  	tt->refresh_task_table(); 
  
  	if (tt->flags & TASK_REFRESH_OFF) 
-@@ -353,8 +424,11 @@
+@@ -353,8 +429,11 @@
  		set_context(NO_TASK, active_pid);
  		tt->this_task = pid_to_task(active_pid);
  	}
@@ -24696,7 +24774,7 @@
  
  	sort_context_array();
  
-@@ -987,9 +1061,7 @@
+@@ -987,9 +1066,7 @@
                  return;
  
          if (DUMPFILE()) {                                 /* impossible */
@@ -24707,7 +24785,7 @@
                  if (!symbol_exists("panic_threads"))
                          tt->flags |= POPULATE_PANIC;
          }
-@@ -1152,11 +1224,7 @@
+@@ -1152,11 +1229,7 @@
  
          FREEBUF(pid_hash);
  
@@ -24720,7 +24798,7 @@
  
          if (ACTIVE() && (tt->flags & TASK_INIT_DONE)) 
  		refresh_context(curtask, curpid);
-@@ -1176,12 +1244,14 @@
+@@ -1176,12 +1249,14 @@
  {
  	int i;
  	ulong *pid_hash;
@@ -24735,7 +24813,7 @@
          struct task_context *tc;
          ulong curtask;
          ulong curpid;
-@@ -1192,9 +1262,7 @@
+@@ -1192,9 +1267,7 @@
                  return;
  
          if (DUMPFILE()) {                                 /* impossible */
@@ -24746,7 +24824,7 @@
                  if (!symbol_exists("panic_threads"))
                          tt->flags |= POPULATE_PANIC;
          }
-@@ -1211,8 +1279,21 @@
+@@ -1211,8 +1284,21 @@
                  curpid = CURRENT_PID();
          }
  
@@ -24770,7 +24848,7 @@
  
  	pid_hash = (ulong *)GETBUF(plen * sizeof(void *));
  
-@@ -1228,6 +1309,16 @@
+@@ -1228,6 +1314,16 @@
  	 *  The zero'th (PIDTYPE_PID) entry is the hlist_head array
  	 *  that we want.
  	 */
@@ -24787,7 +24865,7 @@
  	pidhash_array = pid_hash[0];
  	FREEBUF(pid_hash);
  
-@@ -1345,6 +1436,15 @@
+@@ -1345,6 +1441,15 @@
  		}
  	}
  
@@ -24803,7 +24881,7 @@
          BZERO(tt->task_local, tt->max_tasks * sizeof(void *));
          cnt = retrieve_list((ulong *)tt->task_local, cnt);
  
-@@ -1394,11 +1494,7 @@
+@@ -1394,11 +1499,7 @@
          FREEBUF(pid_hash);
  	FREEBUF(nodebuf);
  
@@ -24816,7 +24894,7 @@
  
          if (ACTIVE() && (tt->flags & TASK_INIT_DONE)) 
  		refresh_context(curtask, curpid);
-@@ -1406,151 +1502,751 @@
+@@ -1406,151 +1507,751 @@
  	tt->retries = MAX(tt->retries, retries);
  }
  
@@ -25693,7 +25771,7 @@
  
  	t1 = (struct task_context *)arg1;
  	t2 = (struct task_context *)arg2;
-@@ -1581,6 +2277,9 @@
+@@ -1581,6 +2282,9 @@
  char *
  fill_task_struct(ulong task)
  {
@@ -25703,7 +25781,7 @@
  	if (!IS_LAST_TASK_READ(task)) { 
          	if (!readmem(task, KVADDR, tt->task_struct, 
  	     		SIZE(task_struct), "fill_task_struct", 
-@@ -1632,6 +2331,9 @@
+@@ -1632,6 +2336,9 @@
  				bt->stackbase);
  	} 
  
@@ -25713,7 +25791,7 @@
  	if (!IS_LAST_TASK_READ(bt->task)) {
  		if (bt->stackbase == bt->task) {
  			BCOPY(bt->stackbuf, tt->task_struct, SIZE(task_struct));
-@@ -1893,7 +2595,7 @@
+@@ -1893,7 +2600,7 @@
  	BZERO(&psinfo, sizeof(struct psinfo));
  	flag = 0;
  
@@ -25722,7 +25800,7 @@
                  switch(c)
  		{
  		case 'k':
-@@ -1907,21 +2609,31 @@
+@@ -1907,39 +2614,55 @@
  			break;
  
  		/*
@@ -25758,7 +25836,13 @@
  			break;
  			
  		case 'l':
-@@ -1932,14 +2644,19 @@
+ 			if (INVALID_MEMBER(task_struct_last_run) &&
+-			    INVALID_MEMBER(task_struct_timestamp)) {
++			    INVALID_MEMBER(task_struct_timestamp) &&
++			    INVALID_MEMBER(sched_info_last_arrival)) {
+ 				error(INFO, 
+-"neither task_struct.last_run nor task_struct.timestamp exist in this kernel\n");
++                            "last-run timestamps do not exist in this kernel\n");
  				argerrs++;
  				break;
  			}
@@ -25779,7 +25863,7 @@
  		default:
  			argerrs++;
  			break;
-@@ -2020,6 +2737,18 @@
+@@ -2020,6 +2743,18 @@
                  show_last_run(tc);                                    \
                  continue;                                             \
          }                                                             \
@@ -25798,7 +25882,7 @@
          get_task_mem_usage(tc->task, tm);                             \
          fprintf(fp, "%s", is_task_active(tc->task) ? "> " : "  ");    \
          fprintf(fp, "%5ld  %5ld  %2s  %s %3s",                        \
-@@ -2050,7 +2779,7 @@
+@@ -2050,7 +2785,7 @@
  	char buf2[BUFSIZE];
  	char buf3[BUFSIZE];
  
@@ -25807,7 +25891,7 @@
  		fprintf(fp, 
  		    "   PID    PPID  CPU %s  ST  %%MEM     VSZ    RSS  COMM\n",
  			flag & PS_KSTACKP ?
-@@ -2076,6 +2805,8 @@
+@@ -2076,6 +2811,8 @@
  		return;
  	}
  
@@ -25816,7 +25900,7 @@
  	for (ac = 0; ac < psi->argc; ac++) {
  		tm = &task_mem_usage;
  		tc = FIRST_CONTEXT();
-@@ -2096,8 +2827,15 @@
+@@ -2096,8 +2833,15 @@
  				break;
  
  			case PS_BY_CMD:
@@ -25834,7 +25918,7 @@
  				break;
  			}
  
-@@ -2145,6 +2883,229 @@
+@@ -2145,6 +2889,229 @@
  }
  
  /*
@@ -26064,7 +26148,7 @@
   *  Put either the task_struct address or kernel stack pointer into a string.
   *  If the kernel stack pointer is requested, piggy-back on top of the
   *  back trace code to avoid having to deal with machine dependencies,
-@@ -2229,11 +3190,8 @@
+@@ -2229,11 +3196,8 @@
   
  	use_kernel_timeval = STRUCT_EXISTS("kernel_timeval");
          get_symbol_data("jiffies", sizeof(long), &jiffies);
@@ -26078,7 +26162,7 @@
  	tsp = task_start_times;
  	tc = tcp ? tcp : FIRST_CONTEXT();
  
-@@ -2330,8 +3288,7 @@
+@@ -2330,8 +3294,7 @@
          for (i = 0, tsp = task_start_times; i < tasks; i++, tsp++) {
  		print_task_header(fp, tsp->tc, 0);
  		fprintf(fp, "    RUN TIME: %s\n", symbol_exists("jiffies_64") ? 
@@ -26088,7 +26172,7 @@
  			convert_time(jiffies - tsp->start_time, buf1));
  		fprintf(fp, "  START TIME: %llu\n", tsp->start_time); 
  		if (VALID_MEMBER(task_struct_times)) {
-@@ -2397,15 +3354,33 @@
+@@ -2397,15 +3360,33 @@
  static ulonglong
  convert_start_time(ulonglong start_time, ulonglong current)
  {
@@ -26125,7 +26209,7 @@
          default:
                  break;
          }
-@@ -2511,6 +3486,54 @@
+@@ -2511,6 +3492,54 @@
  }
  
  /*
@@ -26180,7 +26264,7 @@
   * Return the first task found that belongs to a pid. 
   */
  ulong
-@@ -2580,6 +3603,26 @@
+@@ -2580,6 +3609,26 @@
          return NULL;
  }
  
@@ -26207,7 +26291,7 @@
  
  /*
   *  Return the task_context structure of the first task found with a pid,
-@@ -2816,20 +3859,39 @@
+@@ -2816,20 +3865,39 @@
  
  
  /*
@@ -26251,7 +26335,7 @@
  }
  
  /*
-@@ -2925,7 +3987,11 @@
+@@ -2925,7 +3993,11 @@
  	fprintf(fp, "COMMAND: \"%s\"\n", tc->comm);
  	INDENT(indent);
  	fprintf(fp, "   TASK: %lx  ", tc->task);
@@ -26264,7 +26348,7 @@
  		fprintf(fp, "(1 of %d)  ", cnt);
  	if (tt->flags & THREAD_INFO)
  		fprintf(fp, "[THREAD_INFO: %lx]", tc->thread_info);
-@@ -2938,19 +4004,27 @@
+@@ -2938,19 +4010,27 @@
  	if (is_task_active(tc->task)) {
  		if (machdep->flags & HWRESET)
  			fprintf(fp, "(HARDWARE RESET)");
@@ -26295,7 +26379,7 @@
  	    !SYSRQ_TASK(tc->task)) {
  		fprintf(fp, "\n"); INDENT(indent);
  		if (machine_type("S390") || machine_type("S390X"))
-@@ -3006,6 +4080,10 @@
+@@ -3006,6 +4086,10 @@
                 		cnt++ ? "" : "\n", tc->comm);
  		break;
  	}
@@ -26306,7 +26390,7 @@
  }
  
  
-@@ -3182,6 +4260,22 @@
+@@ -3182,6 +4266,22 @@
  	return flags;
  }
  
@@ -26329,7 +26413,18 @@
  ulonglong
  task_last_run(ulong task)
  {
-@@ -3368,6 +4462,12 @@
+@@ -3197,6 +4297,10 @@
+ 	} else if (VALID_MEMBER(task_struct_timestamp))
+         	timestamp = tt->last_task_read ?  ULONGLONG(tt->task_struct + 
+ 			OFFSET(task_struct_timestamp)) : 0;
++	else if (VALID_MEMBER(sched_info_last_arrival))
++        	timestamp = tt->last_task_read ?  ULONGLONG(tt->task_struct + 
++			OFFSET(task_struct_sched_info) + 
++			OFFSET(sched_info_last_arrival)) : 0;
+ 	
+         return timestamp;
+ }
+@@ -3368,6 +4472,12 @@
  	task = NO_TASK;
          tc = FIRST_CONTEXT();
  
@@ -26342,7 +26437,7 @@
  	if (symbol_exists("panic_threads") &&
  	    symbol_exists("panicmsg") &&
  	    symbol_exists("panic_processor")) {
-@@ -3411,6 +4511,9 @@
+@@ -3411,6 +4521,9 @@
  
  use_task_0:
  
@@ -26352,7 +26447,7 @@
  	tt->flags |= PANIC_TASK_NOT_FOUND;
  	tc = FIRST_CONTEXT();
          return(tc->task);
-@@ -3448,50 +4551,74 @@
+@@ -3448,50 +4561,74 @@
  	int msg_found;
  
          BZERO(buf, BUFSIZE);
@@ -26464,7 +26559,7 @@
  	return(buf);
  }
  
-@@ -3517,7 +4644,7 @@
+@@ -3517,7 +4654,7 @@
  	BZERO(&foreach_data, sizeof(struct foreach_data));
  	fd = &foreach_data;
  
@@ -26473,7 +26568,7 @@
                  switch(c)
  		{
  		case 'R':
-@@ -3560,6 +4687,10 @@
+@@ -3560,6 +4697,10 @@
  			fd->flags |= FOREACH_r_FLAG;
  			break;
  
@@ -26484,7 +26579,7 @@
  		case 't':
  			fd->flags |= FOREACH_t_FLAG;
  			break;
-@@ -3754,12 +4885,14 @@
+@@ -3754,12 +4895,14 @@
  foreach(struct foreach_data *fd)
  {
          int i, j, k, a;
@@ -26500,7 +26595,7 @@
  	struct bt_info bt_info, *bt;
  
  	/* 
-@@ -3797,6 +4930,8 @@
+@@ -3797,6 +4940,8 @@
  			fd->reference ?  fd->reference : "");
  	}
  
@@ -26509,7 +26604,7 @@
          for (k = 0; k < fd->keys; k++) {
          	switch(fd->keyword_array[k])
                  {
-@@ -3881,6 +5016,14 @@
+@@ -3881,6 +5026,14 @@
  				error(FATAL, 
  			    	 "sig: -l and -s options are not applicable\n");
  			}
@@ -26524,7 +26619,7 @@
                          break;
  
  		case FOREACH_TEST:
-@@ -3941,7 +5084,7 @@
+@@ -3941,7 +5094,7 @@
  		if (fd->reference) {
  			BZERO(ref, sizeof(struct reference));
  			ref->str = fd->reference;
@@ -26533,7 +26628,7 @@
  			print_task_header(fp, tc, subsequent++);
  
  		for (k = 0; k < fd->keys; k++) {
-@@ -3962,7 +5105,12 @@
+@@ -3962,7 +5115,12 @@
  					bt->flags |= BT_SYMBOLIC_ARGS;
  				if (fd->flags & FOREACH_t_FLAG)
  					bt->flags |= BT_TEXT_SYMBOLS;
@@ -26547,7 +26642,7 @@
  					bt->flags |= BT_OLD_BACK_TRACE;
                                  if (fd->flags & FOREACH_e_FLAG)
                                          bt->flags |= BT_EFRAME_SEARCH;
-@@ -4010,8 +5158,14 @@
+@@ -4010,8 +5168,14 @@
  
                          case FOREACH_SIG:
  				pc->curcmd = "sig";
@@ -26564,7 +26659,7 @@
                                  break;
  
  			case FOREACH_SET:
-@@ -4075,6 +5229,11 @@
+@@ -4075,6 +5239,11 @@
  				nlm_files_dump();
  			}
  			break;
@@ -26576,7 +26671,7 @@
  		}
  	}
  
-@@ -4161,7 +5320,7 @@
+@@ -4161,7 +5330,7 @@
          fd = &foreach_data;
  	fd->keys = 1;
  	fd->keyword_array[0] = FOREACH_BT; 
@@ -26585,7 +26680,7 @@
  
  	dietask = lasttask = NO_TASK;
  	
-@@ -4188,6 +5347,12 @@
+@@ -4188,6 +5357,12 @@
  			break;	
  		}
  
@@ -26598,7 +26693,7 @@
                  if (strstr(buf, " die at ")) {
  			switch (dietask)
  			{
-@@ -4211,6 +5376,10 @@
+@@ -4211,6 +5386,10 @@
  	if (dietask == (NO_TASK+1))
  		error(WARNING, "multiple active tasks have called die\n\n");
  
@@ -26609,7 +26704,7 @@
  found_panic_task:
  	populate_panic_threads();
  
-@@ -4229,6 +5398,9 @@
+@@ -4229,6 +5408,9 @@
  		}
  	} 
  
@@ -26619,7 +26714,7 @@
  	return NULL;
  }
  
-@@ -4240,25 +5412,28 @@
+@@ -4240,25 +5422,28 @@
  {
  	ulong task;
  
@@ -26659,7 +26754,7 @@
  
  	return NO_TASK;
  }
-@@ -4298,14 +5473,17 @@
+@@ -4298,14 +5483,17 @@
  
          tc = FIRST_CONTEXT();
          for (i = 0; i < RUNNING_TASKS(); i++, tc++) {
@@ -26679,7 +26774,7 @@
  		tt->panic_threads[0] = get_dumpfile_panic_task();
  }
  	
-@@ -4331,7 +5509,7 @@
+@@ -4331,7 +5519,7 @@
  void
  dump_task_table(int verbose)
  {
@@ -26688,7 +26783,7 @@
  	struct task_context *tc;
  	char buf[BUFSIZE];
  	int others, wrap, flen;
-@@ -4363,6 +5541,12 @@
+@@ -4363,6 +5551,12 @@
                  fprintf(fp, "refresh_pid_hash_task_table()\n");
          else if (tt->refresh_task_table == refresh_hlist_task_table)
                  fprintf(fp, "refresh_hlist_task_table()\n");
@@ -26701,7 +26796,7 @@
  	else
  		fprintf(fp, "%lx\n", (ulong)tt->refresh_task_table);
  
-@@ -4411,6 +5595,9 @@
+@@ -4411,6 +5605,9 @@
          if (tt->flags & NO_TIMESPEC)
                  sprintf(&buf[strlen(buf)], 
  			"%sNO_TIMESPEC", others++ ? "|" : "");
@@ -26711,7 +26806,7 @@
  	sprintf(&buf[strlen(buf)], ")");
  
          if (strlen(buf) > 54)
-@@ -4436,14 +5623,16 @@
+@@ -4436,14 +5633,16 @@
  	fprintf(fp, "      last_mm_read: %lx\n", tt->last_mm_read);
  	fprintf(fp, "       task_struct: %lx\n", (ulong)tt->task_struct);
  	fprintf(fp, "         mm_struct: %lx\n", (ulong)tt->mm_struct);
@@ -26730,7 +26825,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->panic_threads[i]); 
-@@ -4451,7 +5640,7 @@
+@@ -4451,7 +5650,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "         panic_ksp:");
@@ -26739,7 +26834,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->panic_ksp[i]);
-@@ -4459,7 +5648,7 @@
+@@ -4459,7 +5658,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "       hardirq_ctx:");
@@ -26748,7 +26843,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->hardirq_ctx[i]);
-@@ -4467,7 +5656,7 @@
+@@ -4467,7 +5666,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "     hardirq_tasks:");
@@ -26757,7 +26852,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->hardirq_tasks[i]);
-@@ -4475,7 +5664,7 @@
+@@ -4475,7 +5674,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "       softirq_ctx:");
@@ -26766,7 +26861,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->softirq_ctx[i]);
-@@ -4483,7 +5672,7 @@
+@@ -4483,7 +5682,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "     softirq_tasks:");
@@ -26775,7 +26870,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->softirq_tasks[i]);
-@@ -4491,7 +5680,7 @@
+@@ -4491,7 +5690,7 @@
          fprintf(fp, "\n");
  
          fprintf(fp, "      idle_threads:");
@@ -26784,7 +26879,7 @@
                  if ((i % wrap) == 0)
                          fprintf(fp, "\n        ");
                  fprintf(fp, "%.*lx ", flen, tt->idle_threads[i]);
-@@ -4499,7 +5688,7 @@
+@@ -4499,7 +5698,7 @@
          fprintf(fp, "\n");
  
  	fprintf(fp, "        active_set:");
@@ -26793,7 +26888,7 @@
  		if ((i % wrap) == 0)
  	        	fprintf(fp, "\n        ");
  	        fprintf(fp, "%.*lx ", flen, tt->active_set[i]);
-@@ -4546,6 +5735,9 @@
+@@ -4546,6 +5745,9 @@
  	if ((tc->pid == 0) && !STREQ(tc->comm, pc->program_name))
  		return TRUE;
  
@@ -26803,7 +26898,7 @@
  	if (IS_ZOMBIE(task) || IS_EXITING(task))
                  return FALSE;
  
-@@ -4641,6 +5833,16 @@
+@@ -4641,6 +5843,16 @@
  			cnt++;
  		else
                  	BZERO(tasklist, sizeof(ulong) * NR_CPUS);
@@ -26820,7 +26915,7 @@
  	}
  
  	if (runqbuf)
-@@ -4734,14 +5936,38 @@
+@@ -4734,14 +5946,38 @@
  	} else if (symbol_exists("per_cpu__runqueues")) {
  		runq = symbol_value("per_cpu__runqueues");
  		per_cpu = TRUE;
@@ -26861,7 +26956,17 @@
                 	for (i = 0; i < kt->cpus; i++) {
                          if ((kt->flags & SMP) && (kt->flags & PER_CPU_OFF)) {
                                  runq = symbol_value("per_cpu__runqueues") +
-@@ -4799,23 +6025,55 @@
+@@ -4759,7 +5995,8 @@
+ 				cnt++;
+ 		}
+ 	} else if (VALID_MEMBER(runqueue_curr)) {
+-	        for (i = 0; i < NR_CPUS; i++, runq += SIZE(runqueue)) {
++	        for (i = 0; i < MAX(kt->cpus, kt->kernel_NR_CPUS); i++, 
++		    runq += SIZE(runqueue)) {
+ 	                readmem(runq, KVADDR, runqbuf,
+ 	                	SIZE(runqueue), "(old) runqueues curr",
+ 	                        FAULT_ON_ERROR);
+@@ -4799,23 +6036,55 @@
                  tt->flags &= ~ACTIVE_SET;
  }
  
@@ -26932,7 +27037,7 @@
  	while (fgets(buf, BUFSIZE, pc->tmpfile)) {      \
                  if (strstr(buf, " die+")) {             \
                          switch (die_task)               \
-@@ -4833,12 +6091,30 @@
+@@ -4833,12 +6102,30 @@
                          {                               \
                          case NO_TASK:                   \
                                  panic_task = task;      \
@@ -26963,7 +27068,7 @@
  	}
  
  /*
-@@ -4850,11 +6126,14 @@
+@@ -4850,11 +6137,14 @@
  	int i, j, found;
  	ulong task;
  	char buf[BUFSIZE];
@@ -26980,7 +27085,7 @@
  
          for (i = 0; i < NR_CPUS; i++) {
                  if (!(task = tt->active_set[i]))
-@@ -4867,15 +6146,16 @@
+@@ -4867,15 +6157,16 @@
                  	if ((tp = fill_task_struct(task))) {
                          	if ((tc = store_context(NULL, task, tp))) 
                                  	tt->running_tasks++;
@@ -26999,7 +27104,7 @@
  
  		close_tmpfile();
          }
-@@ -4903,7 +6183,7 @@
+@@ -4903,7 +6194,7 @@
  			raw_stack_dump(tt->hardirq_ctx[i], SIZE(thread_union));
  	        	rewind(pc->tmpfile);
  	
@@ -27008,7 +27113,7 @@
  
  			close_tmpfile();
  	        }
-@@ -4930,7 +6210,7 @@
+@@ -4930,7 +6221,7 @@
  			raw_stack_dump(tt->softirq_ctx[i], SIZE(thread_union));
  	        	rewind(pc->tmpfile);
  	
@@ -27017,7 +27122,7 @@
  
  			close_tmpfile();
  	        }
-@@ -4938,6 +6218,28 @@
+@@ -4938,6 +6229,28 @@
  		RESOLVE_PANIC_AND_DIE_CALLERS();
  	} 
  
@@ -27046,7 +27151,7 @@
  	return NO_TASK;
  }
  
-@@ -4997,6 +6299,11 @@
+@@ -4997,6 +6310,11 @@
  	ulong *tlist;
  	struct task_context *tc;
  
@@ -27058,7 +27163,7 @@
  	if (VALID_MEMBER(runqueue_arrays)) {
  		dump_runqueues();
  		return;
-@@ -5017,120 +6324,370 @@
+@@ -5017,120 +6335,370 @@
  		error(FATAL, 
  		    "cannot determine run queue structures being used\n");
  
@@ -27505,7 +27610,7 @@
  		offset =  OFFSET(prio_array_queue) + (i * SIZE(list_head));
  		kvaddr = k_prio_array + offset;
  		uvaddr = (ulong)u_prio_array + offset;
-@@ -5143,9 +6700,6 @@
+@@ -5143,9 +6711,6 @@
  		if ((list_head[0] == kvaddr) && (list_head[1] == kvaddr))
  			continue;
  
@@ -27515,7 +27620,7 @@
  		fprintf(fp, "  [%3d] ", i);
  
  		BZERO(ld, sizeof(struct list_data));
-@@ -5155,8 +6709,7 @@
+@@ -5155,8 +6720,7 @@
  		hq_open();
  		cnt = do_list(ld);
  		hq_close();
@@ -27525,7 +27630,7 @@
  		cnt = retrieve_list(tlist, cnt);
  		for (c = 0; c < cnt; c++) {
  			if (!(tc = task_to_context(tlist[c])))
-@@ -5174,6 +6727,9 @@
+@@ -5174,6 +6738,9 @@
  #define _NSIG_BPW       machdep->bits
  #define _NSIG_WORDS     (_NSIG / _NSIG_BPW)
  
@@ -27535,7 +27640,7 @@
  static struct signame {
          char *name;
          char *altname;
-@@ -5209,23 +6765,56 @@
+@@ -5209,23 +6776,56 @@
      /* 28 */  {"SIGWINCH",   NULL},
      /* 29 */  {"SIGIO",      "SIGPOLL"},
      /* 30 */  {"SIGPWR",     NULL},
@@ -27601,7 +27706,7 @@
  		fprintf(fp, "\n");
          }
  }
-@@ -5236,8 +6825,7 @@
+@@ -5236,8 +6836,7 @@
  static void 
  translate_sigset(ulonglong sigset)
  {
@@ -27611,7 +27716,7 @@
  	char buf[BUFSIZE];
  
  	if (!sigset) {
-@@ -5246,21 +6834,42 @@
+@@ -5246,21 +6845,42 @@
  	}
  
  	len = 0;
@@ -27660,7 +27765,7 @@
  	}
  	fprintf(fp, "\n");
  }
-@@ -5290,13 +6899,14 @@
+@@ -5290,13 +6910,14 @@
  	struct task_context *tc;
  	ulong *tasklist;
  	char *siglist;
@@ -27676,7 +27781,7 @@
                  switch(c)
  		{
  		case 's':
-@@ -5314,6 +6924,10 @@
+@@ -5314,6 +6935,10 @@
  			signame_list();
  			return;
  
@@ -27687,7 +27792,7 @@
  		default:
  			argerrs++;
  			break;
-@@ -5360,10 +6974,65 @@
+@@ -5360,10 +6985,65 @@
  		tasklist[tcnt++] = CURRENT_TASK();
  
  	for (c = 0; c < tcnt; c++) {
@@ -27755,7 +27860,7 @@
  }
  
  /*
-@@ -5381,7 +7050,7 @@
+@@ -5381,7 +7061,7 @@
          else {
                  if (!(flags & FOREACH_TASK))
                          print_task_header(fp, tc, 0);
@@ -27764,7 +27869,7 @@
          }
  }
  
-@@ -5401,40 +7070,34 @@
+@@ -5401,40 +7081,34 @@
   *  Dump all signal-handling data for a task.
   */
  static void
@@ -27820,7 +27925,7 @@
  
  	if (VALID_MEMBER(task_struct_sig))
  		signal_struct = ULONG(tt->task_struct + 
-@@ -5443,143 +7106,259 @@
+@@ -5443,143 +7117,259 @@
  		signal_struct = ULONG(tt->task_struct + 
  			OFFSET(task_struct_signal));
  
@@ -28199,7 +28304,7 @@
          while (sigqueue) {
          	readmem(sigqueue, KVADDR, signal_buf, 
  			SIZE_OPTION(signal_queue, sigqueue), 
-@@ -5597,14 +7376,17 @@
+@@ -5597,14 +7387,17 @@
  				OFFSET(siginfo_si_signo));
  		}
  
@@ -28219,7 +28324,7 @@
  }
  
  /*
-@@ -5614,12 +7396,13 @@
+@@ -5614,12 +7407,13 @@
   */
  
  static ulonglong 
@@ -28235,7 +28340,7 @@
  
  	if (!tt->last_task_read) 
  		return 0;
-@@ -5633,6 +7416,10 @@
+@@ -5633,6 +7427,10 @@
                          OFFSET(task_struct_signal));
          } else
  		return 0;
@@ -28246,7 +28351,7 @@
  
  	switch (_NSIG_WORDS)
  	{
---- crash/memory.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/memory.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/memory.c	2008-01-11 11:58:54.000000000 -0500
 @@ -1,8 +1,8 @@
  /* memory.c - core analysis suite
@@ -44473,12 +44578,12 @@
 +        return found;
 +}
 +#endif  /* NOT_USED */
---- crash/unwind_x86.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/unwind_x86.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/unwind_x86.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,2 @@
 +
 +
---- crash/extensions/Makefile.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/Makefile	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,47 @@
 +#
@@ -44528,7 +44633,7 @@
 +	@for MAKEFILE in `grep -sl "^clean:" *.mk`; \
 +	  do make --no-print-directory -f $$MAKEFILE clean; \
 +	done
---- crash/extensions/libsial/sial_input.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_input.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_input.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,802 @@
 +/*
@@ -45333,7 +45438,7 @@
 +		sial_msg("Include file not found: '%s' [include path is '%s']", name, sial_getipath());
 +	}
 +}
---- crash/extensions/libsial/Makefile.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/Makefile.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/Makefile	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,94 @@
 +#
@@ -45430,7 +45535,7 @@
 +	-/bin/rm -f *.o $(TARGETS) $(LDIRT)
 +
 +clobber: clean
---- crash/extensions/libsial/sial_str.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_str.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_str.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,185 @@
 +/*
@@ -45618,7 +45723,7 @@
 +	sial_error("String too long at %d", iline);
 +	return NULLNODE;
 +}
---- crash/extensions/libsial/sial_func.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_func.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_func.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1191 @@
 +/*
@@ -46812,7 +46917,7 @@
 +	return 0;
 +}
 +
---- crash/extensions/libsial/sial_op.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_op.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_op.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,904 @@
 +/*
@@ -47719,7 +47824,7 @@
 +	nn->data=pto;
 +	return nn;
 +}
---- crash/extensions/libsial/sial_member.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_member.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_member.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,321 @@
 +/*
@@ -48043,7 +48148,7 @@
 +	n->free=(ffct_t)sial_freemem;
 +	return n;
 +}
---- crash/extensions/libsial/sialpp-lsed.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sialpp-lsed.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sialpp-lsed	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,32 @@
 +s/yyback/sialppback/g
@@ -48078,7 +48183,7 @@
 +s/yyvstop/sialppvstop/g
 +s/yywrap/sialppwrap/g
 +s/yydebug/sialdebug/g
---- crash/extensions/libsial/sial-lsed.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial-lsed.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial-lsed	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,32 @@
 +s/yyback/sialback/g
@@ -48113,7 +48218,7 @@
 +s/yyvstop/sialvstop/g
 +s/yywrap/sialwrap/g
 +s/yydebug/sialdebug/g
---- crash/extensions/libsial/sial_type.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_type.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_type.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1172 @@
 +/*
@@ -49288,7 +49393,7 @@
 +	sial_dupval(vto, vfrm);
 +}
 +
---- crash/extensions/libsial/sialpp.l.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sialpp.l.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sialpp.l	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,85 @@
 +%{
@@ -49376,7 +49481,7 @@
 +#undef unput
 +#define input()       sial_input()
 +#define unput(c)      sial_unput(c)
---- crash/extensions/libsial/sial.l.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial.l.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial.l	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,206 @@
 +%{
@@ -49585,7 +49690,7 @@
 +#undef unput
 +#define input()       sial_input()
 +#define unput(c)      sial_unput(c)
---- crash/extensions/libsial/sial_var.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_var.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_var.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1320 @@
 +/*
@@ -50908,7 +51013,7 @@
 +	}
 +}
 +
---- crash/extensions/libsial/sial_api.h.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_api.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_api.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,267 @@
 +/*
@@ -51178,7 +51283,7 @@
 +
 +/* parsers debug flags */
 +extern int sialdebug, sialppdebug;
---- crash/extensions/libsial/README.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/README.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/README	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1024 @@
 +
@@ -52205,7 +52310,7 @@
 +
 +Questions/Comments
 +Luc Chouinard, lucchouina@yahoo.com
---- crash/extensions/libsial/README.sial.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/README.sial.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/README.sial	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,97 @@
 +
@@ -52305,7 +52410,7 @@
 +	Refer to the README file on writing a user level command.
 +	Also look at the 'sial.c' example in the scripts directory
 +        
---- crash/extensions/libsial/sial_num.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_num.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_num.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,233 @@
 +/*
@@ -52541,7 +52646,7 @@
 +	sial_error("Oops! NUMBER");
 +	return 0;
 +}
---- crash/extensions/libsial/sial_alloc.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_alloc.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_alloc.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,430 @@
 +/*
@@ -52974,7 +53079,7 @@
 +	sial_setsvlev(jmps[njmps].svlev);
 +}
 +
---- crash/extensions/libsial/sial.h.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,465 @@
 +/*
@@ -53442,7 +53547,7 @@
 +#define S_MAXFILES	200	/* maximum number of macro files  */
 +
 +#define S_VARARG	"__VARARG" /* name of the special var for ... */
---- crash/extensions/libsial/sial_stat.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_stat.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_stat.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,435 @@
 +/*
@@ -53880,7 +53985,7 @@
 +	}
 +}
 +
---- crash/extensions/libsial/sial_util.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_util.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_util.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,922 @@
 +/*
@@ -54805,7 +54910,7 @@
 +	return n;
 +}
 +
---- crash/extensions/libsial/sial.y.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial.y.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial.y	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,436 @@
 +%{
@@ -55244,7 +55349,7 @@
 +
 +int sialerror(char *p) { sial_error(p); return 0; }
 +
---- crash/extensions/libsial/sial_define.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_define.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_define.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,519 @@
 +/*
@@ -55766,7 +55871,7 @@
 +
 +	sial_error("Syntax error on macro definition");
 +}
---- crash/extensions/libsial/sial_builtin.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_builtin.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_builtin.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,434 @@
 +/*
@@ -56203,7 +56308,7 @@
 +	sial_error("Oops. sial_exebfunc()");
 +	return 0;
 +}
---- crash/extensions/libsial/sialpp.y.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sialpp.y.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sialpp.y	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,88 @@
 +%{
@@ -56294,7 +56399,7 @@
 +	return 1;
 +}
 +
---- crash/extensions/libsial/sial_node.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_node.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_node.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,69 @@
 +/*
@@ -56366,7 +56471,7 @@
 +	sial_curpos(&p, 0);
 +	return v;
 +}
---- crash/extensions/libsial/sial_api.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_api.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_api.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1516 @@
 +/*
@@ -57885,7 +57990,7 @@
 +	return 1;
 +}
 +
---- crash/extensions/libsial/sial_print.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_print.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_print.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,398 @@
 +/*
@@ -58286,7 +58391,7 @@
 +	sial_setpos(&n->pos);
 +	return n;
 +}
---- crash/extensions/libsial/mkbaseop.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/mkbaseop.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/mkbaseop.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,169 @@
 +/*
@@ -58458,7 +58563,7 @@
 +}\n", NOPS, NOPS);
 +	exit(0);
 +}
---- crash/extensions/libsial/sial_case.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/libsial/sial_case.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/libsial/sial_case.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,125 @@
 +/*
@@ -58586,7 +58691,7 @@
 +	}
 +	return 1;
 +}
---- crash/extensions/echo.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/echo.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/echo.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,114 @@
 +/* echo.c - simple example of a crash extension
@@ -58703,11 +58808,11 @@
 +};
 +
 +
---- crash/extensions/sial.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/sial.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/sial.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1021 @@
 +/*
-+ * $Id: crash.patch,v 1.17 2008/01/23 20:55:40 crash Exp $
++ * $Id: crash.patch,v 1.18 2008/02/19 20:53:20 crash Exp $
 + *
 + * This file is part of lcrash, an analysis tool for Linux memory dumps.
 + *
@@ -59727,7 +59832,7 @@
 +	} 
 +        return 1;
 +}
---- crash/extensions/dminfo.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/dminfo.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/dminfo.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1534 @@
 +/* dminfo.c - crash extension module for device-mapper analysis
@@ -61264,7 +61369,7 @@
 +{
 +	return 0;
 +}
---- crash/extensions/sial.mk.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/extensions/sial.mk.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions/sial.mk	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,17 @@
 +#
@@ -61284,7 +61389,7 @@
 +
 +clean:
 +	cd libsial && make clean
---- crash/tools.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/tools.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/tools.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* tools.c - core analysis suite
@@ -61884,7 +61989,7 @@
 +	else
 +		return val;
 +}
---- crash/xen_hyper_command.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xen_hyper_command.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xen_hyper_command.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1856 @@
 +/*
@@ -63743,7 +63848,7 @@
 +}
 +
 +#endif
---- crash/main.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/main.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/main.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* main.c - core analysis suite
@@ -64480,7 +64585,7 @@
 +	error(FATAL, XEN_HYPERVISOR_NOT_SUPPORTED);
 +#endif
 +}
---- crash/s390dbf.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/s390dbf.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/s390dbf.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1340 @@
 +/*
@@ -65823,7 +65928,7 @@
 +
 +#endif
 +
---- crash/s390.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/s390.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/s390.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,9 +1,9 @@
  /* s390.c - core analysis suite
@@ -66286,7 +66391,7 @@
  }
  
  /*
---- crash/unwind_x86_64.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/unwind_x86_64.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/unwind_x86_64.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,92 @@
 +#define CONFIG_64BIT 1
@@ -66381,7 +66486,7 @@
 +	PTREGS_INFO(r15), \
 +	PTREGS_INFO(rip)
 +
---- crash/crash.8.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/crash.8.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/crash.8	2008-01-04 09:42:08.000000000 -0500
 @@ -5,7 +5,7 @@
  .TH CRASH 8
@@ -66535,7 +66640,7 @@
 +.PP
 +.BR netdump (8),
 +.BR gdb (1)
---- crash/lkcd_common.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_common.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_common.c	2008-01-04 09:42:08.000000000 -0500
 @@ -3,8 +3,8 @@
   * Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
@@ -66821,7 +66926,7 @@
 +	}
 +}
 +
---- crash/ppc.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/ppc.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/ppc.c	2008-01-04 09:42:08.000000000 -0500
 @@ -51,6 +51,9 @@
  void
@@ -66905,14 +67010,14 @@
  
  	if (verbose)
  		fprintf(fp, "  PMD: %lx => %lx\n", (ulong)page_middle, 
---- crash/README.orig	2008-01-17 15:17:21.000000000 -0500
-+++ crash/README	2008-01-17 15:17:18.000000000 -0500
+--- crash/README.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/README	2008-02-19 15:36:37.000000000 -0500
 @@ -69,7 +69,7 @@
       After the kernel is re-compiled, the uncompressed "vmlinux" kernel
       that is created in the top-level kernel build directory must be saved.
  
 -  To build this utility, simply uncompress the tar file, enter the crash-4.0
-+  To build this utility, simply uncompress the tar file, enter the crash-4.0-5.0
++  To build this utility, simply uncompress the tar file, enter the crash-4.0-6.0
    subdirectory, and type "make".  The initial build will take several minutes 
    because the gdb module must be configured and and built.  Alternatively, the
    crash source RPM file may be installed and built, and the resultant crash
@@ -66925,7 +67030,7 @@
 -    Copyright (C) 2004, 2005  IBM Corporation
 -    Copyright (C) 1999-2005  Hewlett-Packard Co
 -    Copyright (C) 1999, 2002  Silicon Graphics, Inc.
-+    crash 4.0-5.0
++    crash 4.0-6.0
 +    Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008  Red Hat, Inc.
 +    Copyright (C) 2004, 2005, 2006  IBM Corporation
 +    Copyright (C) 1999-2006  Hewlett-Packard Co
@@ -66941,7 +67046,7 @@
          DUMPFILE: /dev/mem
              CPUS: 1
 -            DATE: Wed Jul 13 13:26:00 2005
-+            DATE: Thu Jan 17 15:17:18 2008
++            DATE: Tue Feb 19 15:36:37 2008
            UPTIME: 10 days, 22:55:18
      LOAD AVERAGE: 0.08, 0.03, 0.01
             TASKS: 42
@@ -66950,7 +67055,7 @@
      extend         mach           repeat         timer          
      
 -    crash version: 4.0      gdb version: 6.1
-+    crash version: 4.0-5.0   gdb version: 6.1
++    crash version: 4.0-6.0   gdb version: 6.1
      For help on any command above, enter "help <command>".
      For help on input options, enter "help input".
      For help on output options, enter "help output".
@@ -66963,7 +67068,7 @@
 -    Copyright (C) 2004, 2005  IBM Corporation
 -    Copyright (C) 1999-2005  Hewlett-Packard Co
 -    Copyright (C) 1999, 2002  Silicon Graphics, Inc.
-+    crash 4.0-5.0
++    crash 4.0-6.0
 +    Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008  Red Hat, Inc.
 +    Copyright (C) 2004, 2005, 2006  IBM Corporation
 +    Copyright (C) 1999-2006  Hewlett-Packard Co
@@ -66983,7 +67088,7 @@
 -    Copyright (C) 2004, 2005  IBM Corporation
 -    Copyright (C) 1999-2005  Hewlett-Packard Co
 -    Copyright (C) 1999, 2002  Silicon Graphics, Inc.
-+    crash 4.0-5.0
++    crash 4.0-6.0
 +    Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008  Red Hat, Inc.
 +    Copyright (C) 2004, 2005, 2006  IBM Corporation
 +    Copyright (C) 1999-2006  Hewlett-Packard Co
@@ -66994,7 +67099,7 @@
      Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.
      This program is free software, covered by the GNU General Public License,
      and you are welcome to change it and/or distribute copies of it under
---- crash/gdb-6.1/gdb/symtab.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/gdb-6.1/gdb/symtab.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/gdb-6.1/gdb/symtab.c	2008-01-04 09:42:08.000000000 -0500
 @@ -4,7 +4,7 @@
     1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004
@@ -67063,7 +67168,7 @@
  
         	execute_command(req->buf, FALSE);
  
---- crash/gdb-6.1/gdb/symfile.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/gdb-6.1/gdb/symfile.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/gdb-6.1/gdb/symfile.c	2008-01-04 09:42:08.000000000 -0500
 @@ -3,7 +3,7 @@
     Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
@@ -67112,7 +67217,7 @@
    /* We're only interested in debugging sections with relocation
       information.  */
    if ((sectp->flags & SEC_RELOC) == 0)
---- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2008-01-17 15:17:21.000000000 -0500
+--- crash/gdb-6.1/gdb/ppc-linux-tdep.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/gdb-6.1/gdb/ppc-linux-tdep.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1116 @@
 +/* Target-dependent code for GDB, the GNU debugger.
@@ -68231,7 +68336,7 @@
 +                         ppc_linux_init_abi);
 +  add_core_fns (&ppc_linux_regset_core_fns);
 +}
---- crash/lkcd_x86_trace.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_x86_trace.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_x86_trace.c	2008-01-04 09:42:08.000000000 -0500
 @@ -5,8 +5,8 @@
  /* 
@@ -68861,7 +68966,7 @@
  	} else {
  		opcode = *codeptr;
  		op = &op_386[*codeptr];
---- crash/ia64.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/ia64.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/ia64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* ia64.c - core analysis suite
@@ -70418,7 +70523,7 @@
 +	}
 +}
  #endif
---- crash/gdb_interface.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/gdb_interface.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/gdb_interface.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* gdb_interface.c - core analysis suite
@@ -70552,7 +70657,7 @@
  	switch (len)
  	{
  	case SIZEOF_8BIT:
---- crash/lkcd_x86_trace.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_x86_trace.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_x86_trace.h	2008-01-04 09:42:08.000000000 -0500
 @@ -35,6 +35,25 @@
  
@@ -70580,7 +70685,7 @@
  #endif  /* REDHAT */
  
  
---- crash/lkcd_fix_mem.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_fix_mem.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_fix_mem.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,3 +1,5 @@
 +/* OBSOLETE */
@@ -70588,7 +70693,7 @@
  #ifdef IA64
  
  #define UTSNAME_ENTRY_SZ 65
---- crash/ppc64.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/ppc64.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/ppc64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* ppc64.c -- core analysis suite
@@ -71270,7 +71375,7 @@
 +        	machdep->machspec->last_level4_read = 0;
 +}
  #endif /* PPC64 */ 
---- crash/xendump.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xendump.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xendump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,177 @@
 +/* 
@@ -71450,7 +71555,7 @@
 +	uint64_t pfn;
 +	uint64_t gmfn; 
 +};
---- crash/diskdump.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/diskdump.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/diskdump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,10 @@
  /* 
@@ -71533,7 +71638,7 @@
 +#define PAGE_VALID		(0x1)	/* flags */
 +#define DISKDUMP_VALID_PAGE(flags)	((flags) & PAGE_VALID)
 +
---- crash/help.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/help.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/help.c	2008-01-04 11:54:24.000000000 -0500
 @@ -1,8 +1,8 @@
  /* help.c - core analysis suite
@@ -72932,9 +73037,9 @@
  "Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.",
  "This program is free software, covered by the GNU General Public License,",
  "and you are welcome to change it and/or distribute copies of it under",
---- crash/gdb-6.1.patch.orig	2008-01-17 15:17:21.000000000 -0500
-+++ crash/gdb-6.1.patch	2008-01-04 09:42:08.000000000 -0500
-@@ -0,0 +1,87 @@
+--- crash/gdb-6.1.patch.orig	2008-02-19 15:36:39.000000000 -0500
++++ crash/gdb-6.1.patch	2008-02-19 15:31:45.000000000 -0500
+@@ -0,0 +1,97 @@
 +--- gdb-6.1.orig/bfd/coff-alpha.c
 ++++ gdb-6.1/bfd/coff-alpha.c
 +@@ -1455,7 +1455,7 @@ alpha_relocate_section (output_bfd, info
@@ -73022,7 +73127,17 @@
 +     }
 +   else
 +     {
---- crash/diskdump.c.orig	2008-01-17 15:17:20.000000000 -0500
++--- gdb-6.1/gdb/amd64-linux-nat.c.orig	2008-02-19 08:59:33.000000000 -0500
+++++ gdb-6.1/gdb/amd64-linux-nat.c	2008-02-19 09:27:23.000000000 -0500
++@@ -28,6 +28,7 @@
++ 
++ #include "gdb_assert.h"
++ #include "gdb_string.h"
+++typedef unsigned int u32;
++ #include <sys/ptrace.h>
++ #include <sys/debugreg.h>
++ #include <sys/syscall.h>
+--- crash/diskdump.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/diskdump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,16 +1,16 @@
  /* 
@@ -73868,7 +73983,7 @@
 +{
 +	return (get_dump_level() > 0 ? TRUE : FALSE);
 +}
---- crash/unwind_x86_32_64.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/unwind_x86_32_64.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/unwind_x86_32_64.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,1220 @@
 +#if defined(X86_64)
@@ -75091,7 +75206,7 @@
 +
 +
 +#endif 
---- crash/s390x.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/s390x.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/s390x.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,9 +1,9 @@
  /* s390.c - core analysis suite
@@ -75657,7 +75772,7 @@
  }
  
  /*
---- crash/lkcd_dump_v8.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_dump_v8.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_dump_v8.h	2008-01-04 09:42:08.000000000 -0500
 @@ -235,4 +235,304 @@
  	int             stack_offset;
@@ -75964,7 +76079,7 @@
 +#endif
 +
  #endif /* _DUMP_H */
---- crash/x86.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/x86.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/x86.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* x86.c - core analysis suite
@@ -78344,7 +78459,7 @@
 +}
 +
  #endif /* X86 */
---- crash/netdump.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/netdump.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/netdump.h	2008-01-04 09:42:08.000000000 -0500
 @@ -24,3 +24,95 @@
  
@@ -78442,7 +78557,7 @@
 +#define KDUMP_MFN_LIST  (0x4)
 +
 +#define P2M_FAILURE ((physaddr_t)(0xffffffffffffffffLL))
---- crash/xen_hyper_global_data.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/xen_hyper_global_data.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/xen_hyper_global_data.c	2008-01-04 09:42:08.000000000 -0500
 @@ -0,0 +1,400 @@
 +/*
@@ -78845,7 +78960,7 @@
 +struct task_context fake_tc = { 0 };
 +
 +#endif
---- crash/lkcd_fix_mem.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_fix_mem.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_fix_mem.c	2008-01-04 09:42:08.000000000 -0500
 @@ -20,21 +20,13 @@
  
@@ -78910,7 +79025,7 @@
 +}
 +
  #endif // IA64
---- crash/dev.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/dev.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/dev.c	2008-01-04 09:42:08.000000000 -0500
 @@ -91,13 +91,13 @@
                  switch(c)
@@ -79059,7 +79174,7 @@
  	for (i = 0; i < devcnt; i++) {
  
  		/*
---- crash/vas_crash.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/vas_crash.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/vas_crash.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* vas_crash.h - kernel crash dump file format (on swap)
@@ -79081,7 +79196,7 @@
  
  void save_core(void);
  
---- crash/global_data.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/global_data.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/global_data.c	2008-01-04 09:42:08.000000000 -0500
 @@ -68,7 +68,7 @@
   *  To add a new command, declare it in defs.h and enter it in this table.
@@ -79102,7 +79217,7 @@
  	{(char *)NULL}
  };
  
---- crash/unwind.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/unwind.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/unwind.c	2008-01-04 09:42:08.000000000 -0500
 @@ -6,8 +6,8 @@
  /*
@@ -79348,7 +79463,7 @@
  static void
  unw_init_frame_info (struct unw_frame_info *info, struct bt_info *bt, ulong sw)
  {
---- crash/extensions.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/extensions.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/extensions.c	2008-01-04 09:42:08.000000000 -0500
 @@ -18,9 +18,6 @@
  #include "defs.h"
@@ -79469,7 +79584,7 @@
 +{ 
 +	return pc->cmd_table; 
 +}
---- crash/lkcd_vmdump_v2_v3.h.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/lkcd_vmdump_v2_v3.h.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/lkcd_vmdump_v2_v3.h	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* lkcd_vmdump_v2_v3.h - core analysis suite
@@ -79494,7 +79609,7 @@
  
  } dump_header_asm_t;
  
---- crash/net.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/net.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/net.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* net.c - core analysis suite
@@ -79874,7 +79989,7 @@
  			break;
  		}
  		break;
---- crash/s390_dump.c.orig	2008-01-17 15:17:20.000000000 -0500
+--- crash/s390_dump.c.orig	2008-02-19 15:36:39.000000000 -0500
 +++ crash/s390_dump.c	2008-01-04 09:42:08.000000000 -0500
 @@ -1,8 +1,8 @@
  /* s390_dump.c - core analysis suite

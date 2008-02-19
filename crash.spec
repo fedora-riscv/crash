@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 6.0.3
+Release: 6.0.4
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -46,6 +46,12 @@ rm -rf %{buildroot}
 %doc README
 
 %changelog
+* Wed Feb 20 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.0.4
+- First attempt at addressing the GCC 4.3 build, which failed on x86_64
+  because ptrace-abi.h (included by ptrace.h) uses the "u32" typedef,
+  which relies on <asm/types.h>, and include/asm-x86_64/types.h
+  does not not typedef u32 as done in include/asm-x86/types.h.
+
 * Mon Feb 18 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 4.0-6.0.3
 - Autorebuild for GCC 4.3
 

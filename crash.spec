@@ -4,7 +4,7 @@
 Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 6.0.5
+Release: 6.3
 License: GPL
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
@@ -64,6 +64,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue Aug 29 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.3
+- Added crash-devel subpackage
+- Updated crash.patch to match upstream version 4.0-6.3
+
 * Wed Feb 20 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.0.5
 - Second attempt at addressing the GCC 4.3 build, which failed due
   to additional ptrace.h includes in the lkcd vmdump header files.

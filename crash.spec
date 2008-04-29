@@ -22,6 +22,17 @@ investigate either live systems, kernel core dumps created from the
 netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
+%package devel
+Requires: %{name} = %{version}
+Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
+Group: Development/Debuggers
+
+%description devel
+The core analysis suite is a self-contained tool that can be used to
+investigate either live systems, kernel core dumps created from the
+netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
+offered by Mission Critical Linux, or the LKCD kernel patch.
+
 %prep
 %setup -n %{name}-%{version}
 %patch0 -p1 -b crash.patch
@@ -35,6 +46,9 @@ mkdir -p %{buildroot}/usr/bin
 make DESTDIR=%{buildroot} install
 mkdir -p %{buildroot}%{_mandir}/man8
 cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
+mkdir -p %{buildroot}%{_includedir}/crash
+chmod 0644 defs.h
+cp defs.h %{buildroot}%{_includedir}/crash
 
 %clean
 rm -rf %{buildroot}
@@ -44,6 +58,10 @@ rm -rf %{buildroot}
 /usr/bin/crash
 %{_mandir}/man8/crash.8*
 %doc README
+
+%files devel
+%defattr(-,root,root)
+%{_includedir}/*
 
 %changelog
 * Wed Feb 20 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.0.5

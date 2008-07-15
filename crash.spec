@@ -4,8 +4,8 @@
 Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 6.3
-License: GPL
+Release: 7
+License: GPLv2
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
@@ -64,7 +64,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
-* Tue Aug 29 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.3
+* Tue Jul 15 2008 Tom "spot" Callaway <tcallawa@redhat.com> 4.0-7
+- fix license tag
+
+* Tue Apr 29 2008 Dave Anderson <anderson@redhat.com> - 4.0-6.3
 - Added crash-devel subpackage
 - Updated crash.patch to match upstream version 4.0-6.3
 

@@ -1,20 +1,20 @@
 #
 # crash core analysis suite
 #
-Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
+Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 7
+Release: 7.7.1%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: i386 ia64 x86_64 ppc64 s390 s390x
-Buildroot: %{_tmppath}/%{name}-root
+Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
-Patch0: crash.patch
+Patch0: crash.patch-4.0-7.7
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -23,8 +23,8 @@ netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %package devel
-Requires: %{name} = %{version}
-Summary: crash utility for live systems; netdump, diskdump, kdump, LKCD or mcore dumpfiles
+Requires: %{name} = %{version}, zlib-devel
+Summary: kernel crash analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Group: Development/Debuggers
 
 %description devel
@@ -34,36 +34,41 @@ netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
-%setup -n %{name}-%{version}
-%patch0 -p1 -b crash.patch
+%setup -n %{name}-%{version} -q
+%patch0 -p1 -b crash.patch-4.0-7.7
 
 %build
 make RPMPKG="%{version}-%{release}"
 
 %install
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/bin
+mkdir -p %{buildroot}%{_bindir}
 make DESTDIR=%{buildroot} install
 mkdir -p %{buildroot}%{_mandir}/man8
-cp crash.8 %{buildroot}%{_mandir}/man8/crash.8
+cp -p crash.8 %{buildroot}%{_mandir}/man8/crash.8
 mkdir -p %{buildroot}%{_includedir}/crash
 chmod 0644 defs.h
-cp defs.h %{buildroot}%{_includedir}/crash
+cp -p defs.h %{buildroot}%{_includedir}/crash
 
 %clean
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root)
-/usr/bin/crash
+%defattr(-,root,root,-)
+%{_bindir}/crash
 %{_mandir}/man8/crash.8*
-%doc README
+%doc README COPYING
 
 %files devel
-%defattr(-,root,root)
+%defattr(-,root,root,-)
 %{_includedir}/*
 
 %changelog
+* Thu Feb 19 2009 Dave Anderson <anderson@redhat.com> - 4.0-7.7.1
+- Updates to this file per crash merge review
+- Update to upstream version 4.0-7.7.  Full changelog viewable in:
+    http://people.redhat.com/anderson/crash.changelog.html
+
 * Tue Jul 15 2008 Tom "spot" Callaway <tcallawa@redhat.com> 4.0-7
 - fix license tag
 

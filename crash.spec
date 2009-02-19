@@ -4,13 +4,13 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0
-Release: 7.7.1%{?dist}
+Release: 7.7.2%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: %{name}-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
-ExclusiveArch: i386 ia64 x86_64 ppc64 s390 s390x
+ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
@@ -64,6 +64,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Thu Feb 19 2009 Dave Anderson <anderson@redhat.com> - 4.0-7.7.2
+- Replace exclusive arch i386 with ix86.
+
 * Thu Feb 19 2009 Dave Anderson <anderson@redhat.com> - 4.0-7.7.1
 - Updates to this file per crash merge review
 - Update to upstream version 4.0-7.7.  Full changelog viewable in:

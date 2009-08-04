@@ -1,20 +1,22 @@
+%global major_version 4.0
+%global minor_version 8.11
+
 #
 # crash core analysis suite
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 4.0
-Release: 9.7.2%{?dist}
+Version: %{major_version}.%{minor_version}
+Release: 1%{?dist}
 License: GPLv2
 Group: Development/Debuggers
-Source: %{name}-%{version}.tar.gz
+Source: http://people.redhat.com/anderson/crash-%{major_version}-%{minor_version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
-Patch0: crash.patch-4.0-7.7
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -34,8 +36,7 @@ netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
-%setup -n %{name}-%{version} -q
-%patch0 -p1 -b crash.patch-4.0-7.7
+%setup -n %{name}-%{major_version}-%{minor_version} -q
 
 %build
 make RPMPKG="%{version}-%{release}"
@@ -64,6 +65,11 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Wed Aug 05 2009 Lubomir Rintel <lkundrak@v3.sk> - 4.0.8.11-1
+- Update to later upstream release
+- Fix abuse of Revision tag
+
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 * Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0-9.7.2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 

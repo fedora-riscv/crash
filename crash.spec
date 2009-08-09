@@ -7,10 +7,12 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: %{major_version}.%{minor_version}
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{major_version}-%{minor_version}.tar.gz
+Source1: crash-4.0-8.11-dwarf3.patch
+Patch0: crash-4.0-8.11-optflags.patch
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x
@@ -37,9 +39,11 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{major_version}-%{minor_version} -q
+%patch0 -p1 -b .optflags
+cat %{SOURCE1} >> gdb-6.1.patch
 
 %build
-make RPMPKG="%{version}-%{release}"
+make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
 
 %install
 rm -rf %{buildroot}
@@ -65,6 +69,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Sun Aug 05 2009 Lubomir Rintel <lkundrak@v3.sk> - 4.0.8.11-2
+- Fix reading of dwarf 3 DW_AT_data_member_location
+- Use proper compiler flags
+
 * Wed Aug 05 2009 Lubomir Rintel <lkundrak@v3.sk> - 4.0.8.11-1
 - Update to later upstream release
 - Fix abuse of Revision tag

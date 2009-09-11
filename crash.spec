@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 4.0.9
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Fri Sep 11 2009 Dave Anderson <anderson@redhat.com> - 4.0.9-2
+  Bump version.
+
 * Fri Sep 11 2009 Dave Anderson <anderson@redhat.com> - 4.0.9-1
 - Update to upstream release, which allows the removal of the 
   Revision tag workaround, the crash-4.0-8.11-dwarf3.patch and 

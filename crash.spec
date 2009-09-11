@@ -1,18 +1,13 @@
-%global major_version 4.0
-%global minor_version 8.11
-
 #
 # crash core analysis suite
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: %{major_version}.%{minor_version}
-Release: 2%{?dist}
+Version: 4.0.9
+Release: 1%{?dist}
 License: GPLv2
 Group: Development/Debuggers
-Source: http://people.redhat.com/anderson/crash-%{major_version}-%{minor_version}.tar.gz
-Source1: crash-4.0-8.11-dwarf3.patch
-Patch0: crash-4.0-8.11-optflags.patch
+Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x
@@ -38,9 +33,7 @@ netdump, diskdump and kdump packages from Red Hat Linux, the mcore kernel patch
 offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
-%setup -n %{name}-%{major_version}-%{minor_version} -q
-%patch0 -p1 -b .optflags
-cat %{SOURCE1} >> gdb-6.1.patch
+%setup -n %{name}-%{version} -q
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -69,6 +62,11 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Fri Sep 11 2009 Dave Anderson <anderson@redhat.com> - 4.0.9-1
+- Update to upstream release, which allows the removal of the 
+  Revision tag workaround, the crash-4.0-8.11-dwarf3.patch and 
+  the crash-4.0-8.11-optflags.patch
+
 * Sun Aug 05 2009 Lubomir Rintel <lkundrak@v3.sk> - 4.0.8.11-2
 - Fix reading of dwarf 3 DW_AT_data_member_location
 - Use proper compiler flags

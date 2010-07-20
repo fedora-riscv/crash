@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 5.0.6
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue Jul 20 2010 Dave Anderson <anderson@redhat.com> - 5.0.6-2
+- Bump version.
+
 * Tue Jul 20 2010 Dave Anderson <anderson@redhat.com> - 5.0.6-1
 - Update to upstream version.
 

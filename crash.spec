@@ -55,7 +55,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{_bindir}/crash
 %{_mandir}/man8/crash.8*
-%doc README COPYING
+%doc README COPYING3
 
 %files devel
 %defattr(-,root,root,-)

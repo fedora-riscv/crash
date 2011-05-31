@@ -4,13 +4,13 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 5.1.2
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
-ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x
+ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x %{arm}
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
@@ -64,6 +64,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue May 31 2011 Peter Robinson <pbrobinson@gmail.com> - 5.1.2-3
+- Add ARM to the Exclusive arch
+
 * Wed Feb 25 2011 Dave Anderson <anderson@redhat.com> - 5.1.2-2
 - Fixes for gcc-4.6 -Werror compile failures in gdb module.  
 

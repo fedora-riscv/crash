@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 5.1.2
-Release: 3%{?dist}
+Version: 5.1.7
+Release: 2%{?dist}
 License: GPLv2
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -14,7 +14,8 @@ ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x %{arm}
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
-Patch0: gdb_Werror_fixes.patch
+Patch0: ppc64-unused-but-set-variable.patch
+Patch1: arm-unused-but-set-variable.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -35,7 +36,8 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version} -q
-%patch0 -p1 -b gdb_Werror_fixes.patch
+%patch0 -p1 -b ppc64-unused-but-set-variable.patch
+%patch1 -p1 -b arm-unused-but-set-variable.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -64,6 +66,11 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Wed Sep 14 2011 Dave Anderson <anderson@redhat.com> - 5.1.7-2
+- Fixes for gcc-4.6 -Werror compile failures for ARM architecture.
+- Fixes for gcc-4.6 -Werror compile failures for ppc64/ppc.
+- Update to latest upstream release
+
 * Tue May 31 2011 Peter Robinson <pbrobinson@gmail.com> - 5.1.2-3
 - Add ARM to the Exclusive arch
 

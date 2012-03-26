@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Mon Mar 26 2012 Dave Anderson <anderson@redhat.com> - 6.0.5-1
+- Update to latest upstream release
+
 * Wed Jan  4 2012 Dave Anderson <anderson@redhat.com> - 6.0.2-1
 - Update to latest upstream release
 

@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 6.0.2
+Version: 6.0.5
 Release: 1%{?dist}
 License: GPLv2
 Group: Development/Debuggers

@@ -1,0 +1,17 @@
+--- crash-6.0.8/gdb-7.3.1.patch.orig
++++ crash-6.0.8/gdb-7.3.1.patch
+@@ -1526,3 +1526,14 @@ diff -up gdb-7.3.1/gdb/psymtab.c.orig gd
+ +		return NULL;
+ +}
+  #endif
++--- gdb-7.3.1/gdb/linux-nat.h.orig
+++++ gdb-7.3.1/gdb/linux-nat.h
++@@ -60,7 +60,7 @@ struct lwp_info
++ 
++   /* Non-zero si_signo if this LWP stopped with a trap.  si_addr may
++      be the address of a hardware watchpoint.  */
++-  struct siginfo siginfo;
+++  siginfo_t siginfo;
++ 
++   /* STOPPED_BY_WATCHPOINT is non-zero if this LWP stopped with a data
++      watchpoint trap.  */

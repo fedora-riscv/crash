@@ -14,6 +14,7 @@ ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x %{arm}
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
+Patch0: struct_siginfo_to_siginfo_t.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -34,6 +35,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version} -q
+%patch0 -p1 -b struct_siginfo_to_siginfo_t.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -63,7 +65,8 @@ rm -rf %{buildroot}
 
 %changelog
 * Mon Jul  1 2012 Dave Anderson <anderson@redhat.com> - 6.0.8-1
-- Update to latest upstream release
+- Update to latest upstream release.
+- Replace usage of "struct siginfo" with "siginfo_t".
 
 * Mon Apr 30 2012 Dave Anderson <anderson@redhat.com> - 6.0.6-1
 - Update to latest upstream release

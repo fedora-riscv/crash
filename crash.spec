@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 6.1.0
+Version: 6.1.1
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue Nov 27 2012 Dave Anderson <anderson@redhat.com> - 6.1.1-1
+- Update to latest upstream release
+
 * Mon Sep  1 2012 Dave Anderson <anderson@redhat.com> - 6.1.0-1
 - Add ppc to ExclusiveArch list
 - Update to latest upstream release

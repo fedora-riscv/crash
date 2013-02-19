@@ -14,7 +14,6 @@ ExclusiveArch: %{ix86} ia64 x86_64 ppc64 s390 s390x %{arm}
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
-Patch0: struct_siginfo_to_siginfo_t.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to

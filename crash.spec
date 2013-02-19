@@ -35,7 +35,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version} -q
-%patch0 -p1 -b struct_siginfo_to_siginfo_t.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -66,6 +65,7 @@ rm -rf %{buildroot}
 %changelog
 * Tue Feb 19 2013 Dave Anderson <anderson@redhat.com> - 6.1.4-1
 - Update to latest upstream release.
+- Removed obsolete struct_siginfo_to_siginfo_t.patch.
 
 * Wed Jul 18 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 6.0.8-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild

@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 6.1.4
+Version: 6.1.6
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue Apr  9 2013 Dave Anderson <anderson@redhat.com> - 6.1.6-1
+- Update to latest upstream release
+
 * Tue Feb 19 2013 Dave Anderson <anderson@redhat.com> - 6.1.4-1
 - Update to latest upstream release
 

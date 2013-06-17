@@ -3,14 +3,14 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 6.1.6
+Version: 7.0.1
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
-ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm}
+ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel
 Requires: binutils
@@ -62,6 +62,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Mon Jun 17 2013 Dave Anderson <anderson@redhat.com> - 7.0.1-1
+- Update to latest upstream release
+- Add aarch64 as an exclusive arch
+
 * Tue Apr  9 2013 Dave Anderson <anderson@redhat.com> - 6.1.6-1
 - Update to latest upstream release
 

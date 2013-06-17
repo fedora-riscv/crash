@@ -12,7 +12,7 @@ URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
-BuildRequires: ncurses-devel zlib-devel
+BuildRequires: ncurses-devel zlib-devel bison
 Requires: binutils
 
 %description

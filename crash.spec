@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.0.4
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -14,6 +14,7 @@ ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison
 Requires: binutils
+Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
 
 %description
@@ -64,6 +65,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Tue Dec 17 2013 Toshio Kuratomi <toshio@fedoraproject.org> - 7.0.4-2
+- crash bundles gdb which bundles libiberty.  Add virtual Provides for
+  libiberty tracking.  Open a bug for unbundling gdb RHBZ#1044119
+
 * Mon Dec 16 2013 Dave Anderson <anderson@redhat.com> - 7.0.4-1
 - Update to latest upstream release
 

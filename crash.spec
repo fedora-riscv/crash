@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.0.4
-Release: 2%{?dist}
+Version: 7.0.5
+Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -12,10 +12,12 @@ URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
-BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison
+BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-devel
 Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
+Patch1: use_system_readline.patch
+Patch2: crash_log.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -37,6 +39,8 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
+%patch1 -p1 -b use_system_readline.patch
+%patch2 -p1 -b crash_log.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -65,6 +69,11 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Fri Feb 28 2014 Dave Anderson <anderson@redhat.com> - 7.0.5-1
+- Update to latest upstream release
+- Use system readline library
+- Fix "crash --log vmcore" command for 3.11 and later kernels.
+
 * Tue Dec 17 2013 Toshio Kuratomi <toshio@fedoraproject.org> - 7.0.4-2
 - crash bundles gdb which bundles libiberty.  Add virtual Provides for
   libiberty tracking.  Open a bug for unbundling gdb RHBZ#1044119

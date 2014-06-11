@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.0.5
-Release: 2%{?dist}
+Version: 7.0.7
+Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -16,8 +16,7 @@ BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-de
 Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
-Patch1: use_system_readline.patch
-Patch2: crash_log.patch
+Patch1: use_system_readline_v2.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -39,8 +38,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
-%patch1 -p1 -b use_system_readline.patch
-%patch2 -p1 -b crash_log.patch
+%patch1 -p1 -b use_system_readline_v2.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -69,6 +67,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Wed Jun 11 2014 Dave Anderson <anderson@redhat.com> - 7.0.7-1
+- Update to latest upstream release
+- Fix Fedora_21_Mass_Rebuild FTBFS (BZ #1106090)
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.0.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 

@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.0.7
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -17,6 +17,7 @@ Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v2.patch
+Patch2: aarch64.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -39,6 +40,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v2.patch
+%patch2 -p1 -b aarch64.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -67,6 +69,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Wed Jul 02 2014 Dave Anderson <anderson@redhat.com> - 7.0.7-2
+- Fix FTBS for aarch64 (BZ #1114588)
+
 * Wed Jun 11 2014 Dave Anderson <anderson@redhat.com> - 7.0.7-1
 - Update to latest upstream release
 - Fix Fedora_21_Mass_Rebuild FTBFS (BZ #1106090)

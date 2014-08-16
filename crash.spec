@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.0.7
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -69,6 +69,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.0.7-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
+
 * Wed Jul 02 2014 Dave Anderson <anderson@redhat.com> - 7.0.7-2
 - Fix FTBS for aarch64 (BZ #1114588)
 

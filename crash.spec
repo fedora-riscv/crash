@@ -3,21 +3,20 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.0.7
-Release: 3%{?dist}
+Version: 7.0.8
+Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
-ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64
+ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64 ppc64le
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-devel
 Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v2.patch
-Patch2: aarch64.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -40,7 +39,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v2.patch
-%patch2 -p1 -b aarch64.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -69,6 +67,10 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Mon Sep 15 2014 Dave Anderson <anderson@redhat.com> - 7.0.8-1
+- Update to latest upstream release
+- Add ppc64le as supported architecture for crash package (BZ #1136050)
+
 * Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.0.7-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
 

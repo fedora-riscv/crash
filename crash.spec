@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.0.8
+Version: 7.0.9
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
@@ -67,6 +67,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Fri Nov 15 2014 Dave Anderson <anderson@redhat.com> - 7.0.9-1
+- Update to latest upstream release
+
 * Mon Sep 15 2014 Dave Anderson <anderson@redhat.com> - 7.0.8-1
 - Update to latest upstream release
 - Add ppc64le as supported architecture for crash package (BZ #1136050)

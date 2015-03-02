@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.1.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -17,6 +17,7 @@ Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v2.patch
+Patch2: linux_version_4_support.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -39,6 +40,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v2.patch
+%patch2 -p1 -b linux_version_4_support.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -67,6 +69,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Mon Mar  2 2015 Dave Anderson <anderson@redhat.com> - 7.1.0-3
+- Support increment of Linux version from 3 to 4
+
 * Sat Feb 21 2015 Till Maas <opensource@till.name> - 7.1.0-2
 - Rebuilt for Fedora 23 Change
   https://fedoraproject.org/wiki/Changes/Harden_all_packages_with_position-independent_code

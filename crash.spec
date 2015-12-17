@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.1.3
+Version: 7.1.4
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
@@ -67,6 +67,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Thu Dec 17 2015 Dave Anderson <anderson@redhat.com> - 7.1.4-1
+- Update to latest upstream release
+
 * Thu Sep  3 2015 Dave Anderson <anderson@redhat.com> - 7.1.3-1
 - Update to latest upstream release
 

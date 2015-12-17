@@ -1,5 +1,5 @@
---- crash-7.0.2/diskdump.c.orig
-+++ crash-7.0.2/diskdump.c
+--- crash-7.1.4/diskdump.c.orig
++++ crash-7.1.4/diskdump.c
 @@ -23,6 +23,8 @@
   * GNU General Public License for more details.
   */
@@ -8,10 +8,10 @@
 +#define SNAPPY
  #include "defs.h"
  #include "diskdump.h"
- 
---- crash-7.0.2/Makefile.orig
-+++ crash-7.0.2/Makefile
-@@ -223,7 +223,7 @@ all: make_configure
+ #include "xen_dom0.h"
+--- crash-7.1.4/Makefile.orig
++++ crash-7.1.4/Makefile
+@@ -228,7 +228,7 @@ all: make_configure
  gdb_merge: force
  	@if [ ! -f ${GDB}/README ]; then \
  	  make --no-print-directory gdb_unzip; fi

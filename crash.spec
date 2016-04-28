@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.1.4
-Release: 2%{?dist}
+Version: 7.1.5
+Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -16,7 +16,7 @@ BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-de
 Requires: binutils
 Provides: bundled(libiberty)
 Patch0: lzo_snappy.patch
-Patch1: use_system_readline_v2.patch
+Patch1: use_system_readline_v3.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -38,7 +38,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
-%patch1 -p1 -b use_system_readline_v2.patch
+%patch1 -p1 -b use_system_readline_v3.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
@@ -67,6 +67,9 @@ rm -rf %{buildroot}
 %{_includedir}/*
 
 %changelog
+* Thu Apr 28 2016 Dave Anderson <anderson@redhat.com> - 7.1.5-1
+- Update to latest upstream release
+
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 7.1.4-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 

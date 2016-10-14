@@ -18,6 +18,7 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v3.patch
+Patch2: glibc_ps_get_thread_area_workaround.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -40,6 +41,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v3.patch
+%patch2 -p1 -b glibc_ps_get_thread_area_workaround.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"

@@ -54,9 +54,6 @@ mkdir -p %{buildroot}%{_includedir}/crash
 chmod 0644 defs.h
 cp -p defs.h %{buildroot}%{_includedir}/crash
 
-%clean
-rm -rf %{buildroot}
-
 %files
 %defattr(-,root,root,-)
 %{_bindir}/crash

@@ -13,6 +13,7 @@ ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64 ppc64le
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
 BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-devel
+BuildRequires: gcc gcc-c++
 Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6

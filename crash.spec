@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -43,7 +43,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch1 -p1 -b use_system_readline_v3.patch
 
 %build
-make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}"
+make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
 
 %install
 rm -rf %{buildroot}
@@ -66,6 +66,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Feb 23 2018 Dave Anderson <anderson@redhat.com> - 7.2.1-2
+- Use RPM build flags for LDFLAGS
+
 * Fri Feb 16 2018 Dave Anderson <anderson@redhat.com> - 7.2.1-1
 - Update to latest upstream release
 

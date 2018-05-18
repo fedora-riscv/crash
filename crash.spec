@@ -66,7 +66,7 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
-* Fri Feb 16 2018 Dave Anderson <anderson@redhat.com> - 7.2.3-1
+* Fri May 18 2018 Dave Anderson <anderson@redhat.com> - 7.2.3-1
 - Update to latest upstream release
 
 * Fri Feb 23 2018 Dave Anderson <anderson@redhat.com> - 7.2.1-2

@@ -56,13 +56,11 @@ chmod 0644 defs.h
 cp -p defs.h %{buildroot}%{_includedir}/crash
 
 %files
-%defattr(-,root,root,-)
 %{_bindir}/crash
 %{_mandir}/man8/crash.8*
 %doc README COPYING3
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/*
 
 %changelog

@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.2.3
-Release: 2%{?dist}
+Version: 7.2.4
+Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
@@ -64,6 +64,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Mon Sep 24 2018 Dave Anderson <anderson@redhat.com> - 7.2.4-1
+- Update to latest upstream release
+
 * Thu Jul 12 2018 Fedora Release Engineering <releng@fedoraproject.org> - 7.2.3-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 

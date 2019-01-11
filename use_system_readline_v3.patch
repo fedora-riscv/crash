@@ -1,6 +1,6 @@
 --- crash-7.0.7/cmdline.c.orig
 +++ crash-7.0.7/cmdline.c
-@@ -44,7 +44,8 @@ static int verify_args_input_file(char *
+@@ -46,7 +46,8 @@ static int verify_args_input_file(char *
  #define READLINE_LIBRARY
  
  #include <readline.h>

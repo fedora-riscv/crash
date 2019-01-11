@@ -3,7 +3,7 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.2.4
+Version: 7.2.5
 Release: 1%{?dist}
 License: GPLv3
 Group: Development/Debuggers
@@ -64,6 +64,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Jan 11 2019 Dave Anderson <anderson@redhat.com> - 7.2.5-1
+- Update to latest upstream release
+
 * Mon Sep 24 2018 Dave Anderson <anderson@redhat.com> - 7.2.4-1
 - Update to latest upstream release
 

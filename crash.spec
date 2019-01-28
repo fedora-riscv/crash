@@ -6,7 +6,6 @@ Name: crash
 Version: 7.2.5
 Release: 1%{?dist}
 License: GPLv3
-Group: Development/Debuggers
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
 ExclusiveOS: Linux
@@ -29,7 +28,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %package devel
 Requires: %{name} = %{version}, zlib-devel
 Summary: kernel crash analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
-Group: Development/Debuggers
 
 %description devel
 The core analysis suite is a self-contained tool that can be used to

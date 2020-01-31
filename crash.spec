@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.8
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
@@ -17,6 +17,7 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v3.patch
+Patch2: aarch64_gcc10_fno-common.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -38,6 +39,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v3.patch
+%patch2 -p1 -b aarch64_gcc10_fno-common.patch
 
 %build
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
@@ -61,8 +63,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
-* Fri Jan 31 2020 Dave Anderson <anderson@redhat.com> - 7.2.8-1
+* Fri Jan 31 2020 Dave Anderson <anderson@redhat.com> - 7.2.8-2
 - Update to latest upstream release
+- Fix aarch64 build for gcc-10 -fno-common
 
 * Tue Jan 28 2020 Fedora Release Engineering <releng@fedoraproject.org> - 7.2.7-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild

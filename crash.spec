@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.8
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv3
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
@@ -42,6 +42,13 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch2 -p1 -b aarch64_gcc10_fno-common.patch
 
 %build
+# This package has an internal copy of GDB which has broken configure code for
+# INTDIV0_RAISES_SIGFPE and MUST_REINSTALL_SIGHANDLERS
+# Updating that code properly seems nontrivial and best left to the package
+# maintainer.
+# Disable LTO
+%define _lto_cflags %{nil}
+
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
 
 %install
@@ -63,6 +70,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Tue Jun 30 2020 Jeff Law <law@redhat.com> - 7.2.8-3
+- Disable LTO
+
 * Fri Jan 31 2020 Dave Anderson <anderson@redhat.com> - 7.2.8-2
 - Update to latest upstream release
 - Fix aarch64 build for gcc-10 -fno-common

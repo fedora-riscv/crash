@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.8
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: GPLv3
 Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
 URL: http://people.redhat.com/anderson
@@ -54,7 +54,7 @@ make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflag
 %install
 rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_bindir}
-make DESTDIR=%{buildroot} install
+%make_install
 mkdir -p %{buildroot}%{_mandir}/man8
 cp -p crash.8 %{buildroot}%{_mandir}/man8/crash.8
 mkdir -p %{buildroot}%{_includedir}/crash
@@ -70,6 +70,10 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Mon Jul 13 2020 Tom Stellard <tstellar@redhat.com> - 7.2.8-4
+- Use make macros
+- https://fedoraproject.org/wiki/Changes/UseMakeBuildInstallMacro
+
 * Tue Jun 30 2020 Jeff Law <law@redhat.com> - 7.2.8-3
 - Disable LTO
 

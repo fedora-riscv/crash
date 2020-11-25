@@ -1,5 +1,5 @@
---- crash-7.0.7/cmdline.c.orig
-+++ crash-7.0.7/cmdline.c
+--- crash-7.2.9/cmdline.c.orig
++++ crash-7.2.9/cmdline.c
 @@ -46,7 +46,8 @@ static int verify_args_input_file(char *
  #define READLINE_LIBRARY
  
@@ -10,8 +10,8 @@
  #include <history.h>
  
  static void readline_init(void);
---- crash-7.0.7/Makefile.orig
-+++ crash-7.0.7/Makefile
+--- crash-7.2.9/Makefile.orig
++++ crash-7.2.9/Makefile
 @@ -205,7 +205,7 @@ TAR_FILES=${SOURCE_FILES} Makefile ${GPL
  	${EXTENSION_SOURCE_FILES} ${MEMORY_DRIVER_FILES}
  CSCOPE_FILES=${SOURCE_FILES}

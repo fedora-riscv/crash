@@ -3,11 +3,12 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.2.8
-Release: 5%{?dist}
+Version: 7.2.9
+Release: 1%{?dist}
 License: GPLv3
-Source: http://people.redhat.com/anderson/crash-%{version}.tar.gz
-URL: http://people.redhat.com/anderson
+Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
+Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
+URL: https://crash-utility.github.io
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64 ppc64le
 BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison readline-devel
@@ -17,7 +18,6 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v3.patch
-Patch2: aarch64_gcc10_fno-common.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -39,7 +39,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v3.patch
-%patch2 -p1 -b aarch64_gcc10_fno-common.patch
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -49,6 +48,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 # Disable LTO
 %define _lto_cflags %{nil}
 
+cp %{SOURCE1} .
 make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
 
 %install
@@ -70,6 +70,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Wed Nov 25 2020 Lianbo Jiang <lijiang@redhat.com> - 7.2.9-1
+- Update to latest upstream release
+
 * Mon Jul 27 2020 Fedora Release Engineering <releng@fedoraproject.org> - 7.2.8-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 

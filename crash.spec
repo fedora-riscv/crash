@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.9
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
@@ -18,6 +18,8 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v3.patch
+Patch2: printk-add-support-for-lockless-ringbuffer.patch
+Patch3: printk-use-committed-finalized-state-values.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -39,6 +41,8 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
 %patch1 -p1 -b use_system_readline_v3.patch
+%patch2 -p1 -b printk-add-support-for-lockless-ringbuffer.patch
+%patch3 -p1 -b printk-use-committed-finalized-state-values.patch
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -70,6 +74,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Dec 11 2020 Lianbo Jiang <lijiang@redhat.com> - 7.2.9-2
+- Add support for lockless ringbuffer
+
 * Wed Nov 25 2020 Lianbo Jiang <lijiang@redhat.com> - 7.2.9-1
 - Update to latest upstream release
 

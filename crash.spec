@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.2.9
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
@@ -21,6 +21,19 @@ Patch0: lzo_snappy.patch
 Patch1: use_system_readline_v3.patch
 Patch2: printk-add-support-for-lockless-ringbuffer.patch
 Patch3: printk-use-committed-finalized-state-values.patch
+Patch4: 0001-x86_64-VC-exception-stack-support.patch
+Patch5: 0002-netdump-fix-regression-for-raw-RAM-dumpfiles.patch
+Patch6: 0003-arm64-update-mapping-symbol-filter-in-arm64_verify_s.patch
+Patch7: 0004-extensions-eppic.mk-move-ping-check-to-recipe-script.patch
+Patch8: 0005-Fix-segmentation-fault-when-ikconfig-passed-nonstand.patch
+Patch9: 0006-netdump-fix-illegal-read-from-already-freed-buffer.patch
+Patch10: 0007-tools-fix-potential-source-and-destination-overlap-w.patch
+Patch11: 0008-set-add-ability-to-un-set-scope.patch
+Patch12: 0009-Fix-sys-t-mod-S-after-mod-t-when-crash-runs-with-s-o.patch
+Patch13: 0010-Fix-dev-d-option-on-Linux-5.11-rc1-and-later-kernels.patch
+Patch14: 0011-Fix-kmem-v-option-on-Linux-5.11-rc1-and-later-kernel.patch
+Patch15: 0012-mod-Show-the-base-address-of-module.patch
+Patch16: 0013-xen-increase-__PHYSICAL_MASK_SHIFT_XEN-to-52.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -44,6 +57,19 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch1 -p1 -b use_system_readline_v3.patch
 %patch2 -p1 -b printk-add-support-for-lockless-ringbuffer.patch
 %patch3 -p1 -b printk-use-committed-finalized-state-values.patch
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
+%patch16 -p1
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -75,6 +101,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Feb 05 2021 Lianbo Jiang <lijiang@redhat.com> - 7.2.9-4
+- Update to the latest upstream: commit <fdb41f0b6fa4>
+
 * Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 7.2.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
 

@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.2.9
-Release: 5%{?dist}
+Version: 7.3.0
+Release: 1%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
@@ -18,27 +18,6 @@ Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
-Patch1: printk-add-support-for-lockless-ringbuffer.patch
-Patch2: printk-use-committed-finalized-state-values.patch
-Patch3: 0001-x86_64-VC-exception-stack-support.patch
-Patch4: 0002-netdump-fix-regression-for-raw-RAM-dumpfiles.patch
-Patch5: 0003-arm64-update-mapping-symbol-filter-in-arm64_verify_s.patch
-Patch6: 0004-extensions-eppic.mk-move-ping-check-to-recipe-script.patch
-Patch7: 0005-Fix-segmentation-fault-when-ikconfig-passed-nonstand.patch
-Patch8: 0006-netdump-fix-illegal-read-from-already-freed-buffer.patch
-Patch9: 0007-tools-fix-potential-source-and-destination-overlap-w.patch
-Patch10: 0008-set-add-ability-to-un-set-scope.patch
-Patch11: 0009-Fix-sys-t-mod-S-after-mod-t-when-crash-runs-with-s-o.patch
-Patch12: 0010-Fix-dev-d-option-on-Linux-5.11-rc1-and-later-kernels.patch
-Patch13: 0011-Fix-kmem-v-option-on-Linux-5.11-rc1-and-later-kernel.patch
-Patch14: 0012-mod-Show-the-base-address-of-module.patch
-Patch15: 0013-xen-increase-__PHYSICAL_MASK_SHIFT_XEN-to-52.patch
-Patch16: 0014-log-change-log-level-print-in-older-kernels.patch
-Patch17: 0015-Makefile-reduce-crash-build-log.patch
-Patch18: 0016-x86_64-fix-bt-command-on-5.12-rc1-and-later-kernels.patch
-Patch19: 0017-Add-valgrind-support-for-the-crash-s-custom-memory-a.patch
-Patch20: 0018-symbols-Fix-potential-read-to-already-freed-object.patch
-Patch21: 0019-tools-Fix-potential-write-to-object-of-0-size.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -59,27 +38,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
-%patch1 -p1 -b printk-add-support-for-lockless-ringbuffer.patch
-%patch2 -p1 -b printk-use-committed-finalized-state-values.patch
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
-%patch8 -p1
-%patch9 -p1
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -111,6 +69,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri May 07 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-1
+- Rebase to upstream 7.3.0
+
 * Mon Mar 08 2021 Lianbo Jiang <lijiang@redhat.com> - 7.2.9-5
 - Fix Segmentation fault
 - Update to the latest upstream: commit <9c0c6c1b3750>

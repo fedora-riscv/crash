@@ -1,0 +1,36 @@
+From e61841a8b86ac551c314f74f4b82daae84f99700 Mon Sep 17 00:00:00 2001
+From: Luc Chouinard <lucchouina@gmail.com>
+Date: Wed, 9 Jun 2021 07:59:40 -0400
+Subject: [PATCH 08/16] extensions/eppic.mk: Enable use of alternate eppic
+ branch
+
+Made significant changes and fixes to eppic.
+Using options in the clone command break due to args parsing.
+Use separate variable for clone options.
+
+Closes: https://github.com/crash-utility/crash/pull/86
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ extensions/eppic.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/extensions/eppic.mk b/extensions/eppic.mk
+index bda69da6706f..b9c046b710ad 100644
+--- a/extensions/eppic.mk
++++ b/extensions/eppic.mk
+@@ -35,10 +35,10 @@ all:
+           if [ -f "$(GIT)" ]; \
+           then \
+              if [ -n "$(EPPIC_GIT_URL)" ]; then \
+-               git clone "$(EPPIC_GIT_URL)" eppic; \
++               git clone $(EPPIC_GIT_OPTIONS) $(EPPIC_GIT_URL) eppic; \
+              else \
+ 	          if ping -c 1 -W 5 github.com >/dev/null ; then \
+-		    git clone https://github.com/lucchouina/eppic.git eppic; \
++		    git clone $(EPPIC_GIT_OPTIONS) https://github.com/lucchouina/eppic.git eppic; \
+ 	          fi; \
+              fi; \
+           else \
+-- 
+2.30.2
+

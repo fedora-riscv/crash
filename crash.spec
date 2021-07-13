@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.3.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
@@ -18,6 +18,22 @@ Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 7.6
 Patch0: lzo_snappy.patch
+Patch1: 0001-arm64-Add-lowercase-tcr_el1_t1sz.patch
+Patch2: 0002-Fix-for-kmem-s-S-option-on-Linux-5.7-and-later-kerne.patch
+Patch3: 0003-memory-Add-support-for-SECTION_TAINT_ZONE_DEVICE-fla.patch
+Patch4: 0004-memory-Fix-for-kmem-n-option-to-display-NID-correctl.patch
+Patch5: 0005-defs.h-Fix-the-value-of-TIF_SIGPENDING-macro.patch
+Patch6: 0006-MIPS32-64-Add-irq-command-support.patch
+Patch7: 0007-MIPS64-three-fixes-for-MIPS64-kernels.patch
+Patch8: 0008-extensions-eppic.mk-Enable-use-of-alternate-eppic-br.patch
+Patch9: 0009-list-add-O-option-for-specifying-head-node-offset.patch
+Patch10: 0010-Fix-waitq-command-for-Linux-4.13-and-later-kernels.patch
+Patch11: 0011-Fix-pvops-Xen-detection-for-kernels-v4.20.patch
+Patch12: 0012-Handle-task_struct-state-member-changes-for-kernels-.patch
+Patch13: 0013-arm64-rename-ARM64_PAGE_OFFSET_ACTUAL-to-ARM64_FLIP_.patch
+Patch14: 0014-arm64-assign-page_offset-with-VA_BITS-kernel-configu.patch
+Patch15: 0015-arm64-use-dedicated-bits-to-record-the-VA-space-layo.patch
+Patch16: 0016-arm64-implement-switchable-PTOV-VTOP-for-kernels-5.1.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -38,6 +54,22 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
+%patch16 -p1
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -69,6 +101,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Tue Jul 13 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-2
+- Update to the latest upstream <f53b73e8380b>
+
 * Fri May 07 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-1
 - Rebase to upstream 7.3.0
 

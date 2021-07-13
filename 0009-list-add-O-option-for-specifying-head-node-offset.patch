@@ -1,0 +1,156 @@
+From f091b5e76d2d6e81b12cd40df7b5863c9e2efed1 Mon Sep 17 00:00:00 2001
+From: Firo Yang <firo.yang@suse.com>
+Date: Tue, 25 May 2021 18:17:37 +0800
+Subject: [PATCH 09/16] list: add -O option for specifying head node offset
+
+The -O option is very useful to specify the embedded head node's
+offset which is different to the offset of other nodes embedded,
+e.g. dentry.d_subdirs (the head node) and dentry.d_child.
+
+[ kh: did some cosmetic adjustments ]
+
+Signed-off-by: Firo Yang <firo.yang@suse.com>
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h  |  1 +
+ help.c  | 32 +++++++++++++++++++++++++++++++-
+ tools.c | 32 +++++++++++++++++++++++++++++---
+ 3 files changed, 61 insertions(+), 4 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index 148b03e14455..42c8074e6ac6 100644
+--- a/defs.h
++++ b/defs.h
+@@ -2613,6 +2613,7 @@ struct list_data {             /* generic structure used by do_list() to walk */
+ #define LIST_PARSE_MEMBER   (VERBOSE << 13)
+ #define LIST_READ_MEMBER    (VERBOSE << 14)
+ #define LIST_BRENT_ALGO     (VERBOSE << 15)
++#define LIST_HEAD_OFFSET_ENTERED  (VERBOSE << 16)
+ 
+ struct tree_data {
+ 	ulong flags;
+diff --git a/help.c b/help.c
+index 9649cc81fa36..99be7cb4e17c 100644
+--- a/help.c
++++ b/help.c
+@@ -5716,7 +5716,7 @@ char *help__list[] = {
+ "list",
+ "linked list",
+ "[[-o] offset][-e end][-[s|S] struct[.member[,member] [-l offset]] -[x|d]]"
+-"\n       [-r|-B] [-h|-H] start",
++"\n       [-r|-B] [-h [-O head_offset]|-H] start",
+ " ",
+ "  This command dumps the contents of a linked list.  The entries in a linked",
+ "  list are typically data structures that are tied together in one of two",
+@@ -5800,6 +5800,15 @@ char *help__list[] = {
+ "    -S struct  Similar to -s, but instead of parsing gdb output, member values",
+ "               are read directly from memory, so the command works much faster",
+ "               for 1-, 2-, 4-, and 8-byte members.",
++"    -O offset  Only used in conjunction with -h; it specifies the offset of",
++"               head node list_head embedded within a data structure which is",
++"               different than the offset of list_head of other nodes embedded",
++"               within a data structure.",
++"               The offset may be entered in either of the following manners:",
++"",
++"                 1. in \"structure.member\" format.",
++"                 2. a number of bytes.",
++"",
+ "    -l offset  Only used in conjunction with -s, if the start address argument",
+ "               is a pointer to an embedded list head (or any other similar list",
+ "               linkage structure whose first member points to the next linkage",
+@@ -6116,6 +6125,27 @@ char *help__list[] = {
+ "      comm = \"sudo\"",
+ "    ffff88005ac10180",
+ "      comm = \"crash\"",
++"",
++"  To display a liked list whose head node and other nodes are embedded within",
++"  either same or different data structures resulting in different offsets for",
++"  head node and other nodes, e.g. dentry.d_subdirs and dentry.d_child, the",
++"  -O option can be used:",
++"",
++"    %s> list -o dentry.d_child -s dentry.d_name.name -O dentry.d_subdirs -h ffff9c585b81a180",
++"    ffff9c585b9cb140",
++"      d_name.name = 0xffff9c585b9cb178 ccc.txt",
++"    ffff9c585b9cb980",
++"      d_name.name = 0xffff9c585b9cb9b8 bbb.txt",
++"    ffff9c585b9cb740",
++"      d_name.name = 0xffff9c585b9cb778 aaa.txt",
++"",
++"  The dentry.d_subdirs example above is equal to the following sequence:",
++"",
++"    %s> struct -o dentry.d_subdirs ffff9c585b81a180",
++"    struct dentry {",
++"      [ffff9c585b81a220] struct list_head d_subdirs;",
++"    }",
++"    %s> list -o dentry.d_child -s dentry.d_name.name -H ffff9c585b81a220",
+ NULL               
+ };
+ 
+diff --git a/tools.c b/tools.c
+index a26b101f6481..6fa3c70bac2b 100644
+--- a/tools.c
++++ b/tools.c
+@@ -3343,6 +3343,7 @@ void
+ cmd_list(void)
+ {
+ 	int c;
++	long head_member_offset = 0; /* offset for head like denty.d_subdirs */
+ 	struct list_data list_data, *ld;
+ 	struct datatype_member struct_member, *sm;
+ 	struct syment *sp;
+@@ -3353,7 +3354,7 @@ cmd_list(void)
+ 	BZERO(ld, sizeof(struct list_data));
+ 	struct_list_offset = 0;
+ 
+-	while ((c = getopt(argcnt, args, "BHhrs:S:e:o:xdl:")) != EOF) {
++	while ((c = getopt(argcnt, args, "BHhrs:S:e:o:O:xdl:")) != EOF) {
+                 switch(c)
+ 		{
+ 		case 'B':
+@@ -3394,6 +3395,20 @@ cmd_list(void)
+ 					optarg);
+ 			break;
+ 
++		case 'O':
++			if (ld->flags & LIST_HEAD_OFFSET_ENTERED)
++				error(FATAL, "offset value %d (0x%lx) already entered\n",
++					head_member_offset, head_member_offset);
++			else if (IS_A_NUMBER(optarg))
++				head_member_offset = stol(optarg, FAULT_ON_ERROR, NULL);
++			else if (arg_to_datatype(optarg, sm, RETURN_ON_ERROR) > 1)
++				head_member_offset = sm->member_offset;
++			else
++				error(FATAL, "invalid -O argument: %s\n", optarg);
++
++			ld->flags |= LIST_HEAD_OFFSET_ENTERED;
++			break;
++
+ 		case 'o':
+ 			if (ld->flags & LIST_OFFSET_ENTERED) 
+                                error(FATAL,
+@@ -3599,8 +3614,19 @@ next_arg:
+ 				fprintf(fp, "(empty)\n");
+ 				return;
+ 			}
+-		} else
+-			ld->start += ld->list_head_offset;
++		} else {
++			if (ld->flags & LIST_HEAD_OFFSET_ENTERED) {
++				if (!ld->end)
++					ld->end = ld->start + head_member_offset;
++				readmem(ld->start + head_member_offset, KVADDR, &ld->start,
++					sizeof(void *), "LIST_HEAD contents", FAULT_ON_ERROR);
++				if (ld->start == ld->end) {
++					fprintf(fp, "(empty)\n");
++					return;
++				}
++			} else
++				ld->start += ld->list_head_offset;
++		}
+ 	}
+ 
+ 	ld->flags &= ~(LIST_OFFSET_ENTERED|LIST_START_ENTERED);
+-- 
+2.30.2
+

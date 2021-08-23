@@ -11,7 +11,7 @@ Source1: http://ftp.gnu.org/gnu/gdb/gdb-7.6.tar.gz
 URL: https://crash-utility.github.io
 ExclusiveOS: Linux
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x %{arm} aarch64 ppc64le
-BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison
+BuildRequires: ncurses-devel zlib-devel lzo-devel snappy-devel bison wget patch
 BuildRequires: gcc gcc-c++
 BuildRequires: make
 Requires: binutils

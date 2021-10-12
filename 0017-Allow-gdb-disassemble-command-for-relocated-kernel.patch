@@ -1,0 +1,33 @@
+From e832e0eb5bd8d97dfa9f4bd0e22fbfad849c11df Mon Sep 17 00:00:00 2001
+From: Alexey Makhalov <amakhalov@vmware.com>
+Date: Fri, 19 Mar 2021 21:07:34 -0700
+Subject: [PATCH 17/27] Allow 'gdb disassemble' command for relocated kernel
+
+As new gdb is able to handle it properly.
+
+Signed-off-by: Alexey Makhalov <amakhalov@vmware.com>
+---
+ gdb_interface.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/gdb_interface.c b/gdb_interface.c
+index ce88d5a7c338..d3e1484f8dd9 100644
+--- a/gdb_interface.c
++++ b/gdb_interface.c
+@@ -741,13 +741,6 @@ is_restricted_command(char *cmd, ulong flags)
+ 		}
+ 	}
+ 
+-	if (kt->relocate && 
+-	    STRNEQ("disassemble", cmd) && STRNEQ(cmd, "disas"))
+-               	error(FATAL, 
+-		    "the gdb \"disassemble\" command is prohibited because the kernel text\n"
+-		    "%swas relocated%s; use the crash \"dis\" command instead.\n",
+-			space(strlen(pc->curcmd)+2), kt->flags2 & KASLR ? " by KASLR" : "");
+-	
+ 	return FALSE;
+ }
+ 
+-- 
+2.30.2
+

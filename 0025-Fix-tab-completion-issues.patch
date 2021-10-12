@@ -1,0 +1,55 @@
+From c1e256249426dd59ceea99038451a39e98a26790 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Thu, 19 Aug 2021 10:52:58 +0900
+Subject: [PATCH 25/27] Fix tab completion issues
+
+1. The maximum number of tab completion candidates is limited to 200
+by default.  Set it unlimited.
+
+2. The output of tab completion is not wrapped with the screen width.
+Get and use it when tab completion is invoked.
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+---
+ gdb-10.2.patch  | 11 +++++++++++
+ gdb_interface.c |  5 +++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index 4f8d418b17ed..1332b6638028 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -1580,3 +1580,14 @@
+    _rl_tracefp = 0;
+    return r;
+  }
++--- gdb-10.2/gdb/completer.c.orig
+++++ gdb-10.2/gdb/completer.c
++@@ -2949,6 +2949,8 @@
++ 
++   /* How many items of MAX length can we fit in the screen window? */
++   cols = gdb_complete_get_screenwidth (displayer);
+++  rl_reset_screen_size();
+++  rl_get_screen_size(NULL, &cols);
++   max += 2;
++   limit = cols / max;
++   if (limit != 1 && (limit * max == cols))
+diff --git a/gdb_interface.c b/gdb_interface.c
+index 2fe9ccde83a1..ff45cdcd39ae 100644
+--- a/gdb_interface.c
++++ b/gdb_interface.c
+@@ -305,6 +305,11 @@ retry:
+ 	req->name = NULL, req->flags = 0;
+ 	sprintf(req->buf, "set max-value-size unlimited");
+ 	gdb_interface(req);
++
++	req->command = GNU_PASS_THROUGH;
++	req->name = NULL, req->flags = 0;
++	sprintf(req->buf, "set max-completions unlimited");
++	gdb_interface(req);
+ #endif
+ 
+ #if 0
+-- 
+2.30.2
+

@@ -1,0 +1,45 @@
+From 36e9d8673e9205f4ea4daad61c199597920c93df Mon Sep 17 00:00:00 2001
+From: Alexey Makhalov <amakhalov@vmware.com>
+Date: Fri, 19 Mar 2021 21:07:27 -0700
+Subject: [PATCH 14/27] "whatis -m": fix duplications in the output
+
+"whatis -m" output started to generate duplicated results after GDB update:
+
+crash> whatis -m mm_struct
+SIZE  TYPE
+   16  tlb_state
+...
+  256  linux_binprm
+  2752  rq
+  2752  rq  <<-- duplicated
+  2752  rq
+  2752  rq
+  2752  rq
+  4048  task_struct
+
+It was caused by incorrect string comparisons.
+Use strcmp for full string comparison instead of just string pointers
+comparison.
+
+Signed-off-by: Alexey Makhalov <amakhalov@vmware.com>
+Reported-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+---
+ symbols.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/symbols.c b/symbols.c
+index 7ffac2ee8b49..338af2ce5038 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -7000,7 +7000,7 @@ append_struct_symbol (struct gnu_request *req, void *data)
+ 	struct type_request *treq = (struct type_request *)data;
+ 
+ 	for (i = 0; i < treq->idx; i++)
+-		if (treq->types[i].name == req->name)
++		if (!strcmp(treq->types[i].name, req->name))
+ 			break;
+ 
+ 	if (i < treq->idx) // We've already collected this type
+-- 
+2.30.2
+

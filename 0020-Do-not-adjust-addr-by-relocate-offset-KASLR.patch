@@ -1,0 +1,65 @@
+From 8d6f677e54a2474b3da19402e29278b62603d71d Mon Sep 17 00:00:00 2001
+From: Alexey Makhalov <amakhalov@vmware.com>
+Date: Thu, 8 Jul 2021 16:14:02 -0700
+Subject: [PATCH 20/27] Do not adjust addr by relocate offset(KASLR)
+
+GBD symbol resolution already considers relocation (KASLR) offset.
+So, there is no needs to adjust the function address before calling
+GDB.
+
+It fixes file name and line number output for 'dis -l' and 'sys -c'
+commands.
+
+Signed-off-by: Alexey Makhalov <amakhalov@vmware.com>
+Signed-off-by: Tao Liu <ltao@redhat.com>
+---
+ gdb_interface.c | 3 +--
+ kernel.c        | 3 +--
+ symbols.c       | 3 +--
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/gdb_interface.c b/gdb_interface.c
+index d3e1484f8dd9..b098ed823d55 100644
+--- a/gdb_interface.c
++++ b/gdb_interface.c
+@@ -1013,8 +1013,7 @@ gdb_set_crash_scope(ulong vaddr, char *arg)
+ 					return FALSE;
+ 				}
+ 			}
+-		} else if (kt->flags2 & KASLR)
+-			vaddr -= (kt->relocate * -1);
++		}
+ 	}
+ 
+ 	req->command = GNU_SET_CRASH_BLOCK;
+diff --git a/kernel.c b/kernel.c
+index 6b586dbb05c1..6a812ac7b1bc 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -1484,8 +1484,7 @@ list_source_code(struct gnu_request *req, int count_entered)
+ 		if (!(lm->mod_flags & MOD_LOAD_SYMS))
+ 			error(FATAL, "%s: module source code is not available\n", lm->mod_name);
+ 		get_line_number(req->addr, buf1, FALSE);
+-	} else if (kt->flags2 & KASLR)
+-		req->addr -= (kt->relocate * -1);
++	}
+ 
+ 	sprintf(buf1, "list *0x%lx", req->addr);
+ 	open_tmpfile();
+diff --git a/symbols.c b/symbols.c
+index 338af2ce5038..5d3c53a30abc 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -4296,8 +4296,7 @@ get_line_number(ulong addr, char *buf, int reserved)
+ 	if (module_symbol(addr, NULL, &lm, NULL, 0)) {
+ 		if (!(lm->mod_flags & MOD_LOAD_SYMS))
+ 			return(buf);
+-	} else if (kt->flags2 & KASLR)
+-		addr -= (kt->relocate * -1);
++	}
+ 
+ 	if ((lnh = machdep->line_number_hooks)) {
+         	name = closest_symbol(addr);
+-- 
+2.30.2
+

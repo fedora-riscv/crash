@@ -1,0 +1,90 @@
+From 51f21b0d1c91a4ae02ebf0d8c81460ec8b6c1283 Mon Sep 17 00:00:00 2001
+From: Tao Liu <ltao@redhat.com>
+Date: Thu, 15 Jul 2021 17:34:29 +0800
+Subject: [PATCH 22/27] x86_64_irq_eframe_link_init: Fix wrong instruction
+ searching range calculation
+
+In function x86_64_irq_eframe_link_init, instruction "push xxx" is searched in
+addresses range from "common_interrupt" to the next nearby symbol, in order to
+calculate the value of irq_eframe_link. The searching distance is given by
+max_instructions, which is calculated by end ranging address minus start ranging
+address. Then crash asks gdb to disassemble max_instructions quantity of instructions.
+
+Taking max_instructions as the quantity of disassemble instructions is inappropriate,
+because most x86_64 instructions have a length longer than 1, as a consequence, much
+more than the actual needed instructions get disassembled.
+
+In gdb-7.6 crash, the extra instructions are skipped by "if (!strstr(buf, sp->name))",
+which breaks if one instruction doesn't belongs to a symbol:
+
+   0xffffffff8005d5b4 <common_interrupt+0>:     cld
+   0xffffffff8005d5b5 <common_interrupt+1>:     sub    $0x48,%rsp
+   ...
+   0xffffffff8005d61e <common_interrupt+106>:   leaveq
+   0xffffffff8005d61f <exit_intr>:      mov    %gs:0x10,%rcx  <--- searching stops here
+   ...
+
+In gdb-10.2 crash, "exit_intr" doesn't show, however it really exist. As a result,
+searching for "push xxx" will go to a wrong place.
+
+   0xffffffff8005d5b4 <common_interrupt+0>:     cld
+   0xffffffff8005d5b5 <common_interrupt+1>:     sub    $0x48,%rsp
+   ...
+   0xffffffff8005d61e <common_interrupt+106>:   leave
+   0xffffffff8005d61f <common_interrupt+107>:   mov    %gs:0x10,%rcx <--- searching continues
+   ...
+
+   (gdb) p exit_intr
+   $1 = {<text variable, no debug info>} 0xffffffff8005d61f <common_interrupt+107>
+   (gdb) info symbol exit_intr
+   common_interrupt + 107 in section .text
+
+The previous way to determine start and end searching range is not stable, otherwise we may
+encounter regression that cmd "bt" prints wrong IRQ stack. This patch fix the bug by removing
+max_instructions calculation, and directly ask gdb to disassemble addresses range from
+"common_interrupt" to the next nearby symbol.
+
+Signed-off-by: Tao Liu <ltao@redhat.com>
+---
+ x86_64.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/x86_64.c b/x86_64.c
+index d0565ba26a0c..552d6194930b 100644
+--- a/x86_64.c
++++ b/x86_64.c
+@@ -6472,7 +6472,6 @@ x86_64_irq_eframe_link_init(void)
+ 	char buf[BUFSIZE];
+ 	char link_register[BUFSIZE];
+         char *arglist[MAXARGS];
+-	ulong max_instructions;
+ 
+ 	if (machdep->machspec->irq_eframe_link == UNINITIALIZED)
+ 		machdep->machspec->irq_eframe_link = 0;
+@@ -6487,12 +6486,10 @@ x86_64_irq_eframe_link_init(void)
+ 		return;
+ 	}
+ 
+-	max_instructions = spn->value - sp->value;
+-
+ 	open_tmpfile();
+ 
+-        sprintf(buf, "x/%ldi 0x%lx",
+-		max_instructions, sp->value);
++        sprintf(buf, "disassemble 0x%lx, 0x%lx",
++		sp->value, spn->value);
+ 
+         if (!gdb_pass_through(buf, pc->tmpfile, GNU_RETURN_ON_ERROR))
+ 		return;
+@@ -6501,6 +6498,8 @@ x86_64_irq_eframe_link_init(void)
+ 
+ 	rewind(pc->tmpfile);
+         while (fgets(buf, BUFSIZE, pc->tmpfile)) {
++		if (STRNEQ(buf, "Dump of assembler code"))
++			continue;
+ 		if (!strstr(buf, sp->name))
+ 			break;
+ 		if ((c = parse_line(buf, arglist)) < 4)
+-- 
+2.30.2
+

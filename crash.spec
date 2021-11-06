@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 7.3.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -61,6 +61,15 @@ Patch40: 0024-Set-gdb-max-value-size-to-be-unlimited.patch
 Patch41: 0025-Fix-tab-completion-issues.patch
 Patch42: 0026-Remove-text-value-cache-code.patch
 Patch43: 0027-.gitignore-add-gdb-10.2-directory.patch
+Patch44: 0001-symbols-Implement-install-and-remove-operations-for-.patch
+Patch45: 0002-symbols-Integrate-symbol_search-with-mod_symname_has.patch
+Patch46: 0003-symbols-Extend-symname_hash_search-with-hash-table-s.patch
+Patch47: 0004-symbols-Intergrate-symbol_exists-with-mod_symname_ha.patch
+Patch48: 0005-symbols-Sync-module-symbols-into-mod_symtable-whenev.patch
+Patch49: 0006-symbols-Refactor-SYMNAME_HASH_INDEX-macro-to-be-a-fu.patch
+Patch50: 0007-symbols-Add-mod_symname_hash-table-dump-to-help-s.patch
+Patch51: 0008-arm64-Use-VA_BITS-for-page_offset-calculation.patch
+Patch52: 0009-Handle-task_struct-cpu-member-changes-for-kernels-5..patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -124,6 +133,15 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch41 -p1
 %patch42 -p1
 %patch43 -p1
+%patch44 -p1
+%patch45 -p1
+%patch46 -p1
+%patch47 -p1
+%patch48 -p1
+%patch49 -p1
+%patch50 -p1
+%patch51 -p1
+%patch52 -p1
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -157,6 +175,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Sat Nov 06 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-5
+- Update to the latest upstream: commit <68870c83d299>
+
 * Tue Oct 12 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-4
 - Update to gdb-10.2
 

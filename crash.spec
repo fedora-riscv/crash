@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 7.3.0
-Release: 5%{?dist}
+Version: 8.0.0
+Release: 1%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -18,58 +18,6 @@ Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
 Patch0: lzo_snappy.patch
-Patch1: 0001-arm64-Add-lowercase-tcr_el1_t1sz.patch
-Patch2: 0002-Fix-for-kmem-s-S-option-on-Linux-5.7-and-later-kerne.patch
-Patch3: 0003-memory-Add-support-for-SECTION_TAINT_ZONE_DEVICE-fla.patch
-Patch4: 0004-memory-Fix-for-kmem-n-option-to-display-NID-correctl.patch
-Patch5: 0005-defs.h-Fix-the-value-of-TIF_SIGPENDING-macro.patch
-Patch6: 0006-MIPS32-64-Add-irq-command-support.patch
-Patch7: 0007-MIPS64-three-fixes-for-MIPS64-kernels.patch
-Patch8: 0008-extensions-eppic.mk-Enable-use-of-alternate-eppic-br.patch
-Patch9: 0009-list-add-O-option-for-specifying-head-node-offset.patch
-Patch10: 0010-Fix-waitq-command-for-Linux-4.13-and-later-kernels.patch
-Patch11: 0011-Fix-pvops-Xen-detection-for-kernels-v4.20.patch
-Patch12: 0012-Handle-task_struct-state-member-changes-for-kernels-.patch
-Patch13: 0013-arm64-rename-ARM64_PAGE_OFFSET_ACTUAL-to-ARM64_FLIP_.patch
-Patch14: 0014-arm64-assign-page_offset-with-VA_BITS-kernel-configu.patch
-Patch15: 0015-arm64-use-dedicated-bits-to-record-the-VA-space-layo.patch
-Patch16: 0016-arm64-implement-switchable-PTOV-VTOP-for-kernels-5.1.patch
-Patch17: 0001-kmem-Add-support-to-S-option-to-specify-a-range-of-C.patch
-Patch18: 0002-diskdump-Fail-readmem-early-if-dump-is-incomplete.patch
-Patch19: 0003-netdump-Permit-zero_excluded-for-incomplete-ELF-dump.patch
-Patch20: 0004-diskdump-Print-total-number-of-dumpable-pages.patch
-Patch21: 0005-diskdump-Introduce-read_pd.patch
-Patch22: 0006-x86_64-Fix-check-for-__per_cpu_offset-initialization.patch
-Patch23: 0007-arm64-Get-CPU-registers-from-ELF-notes-even-without-.patch
-Patch24: 0008-.gitignore-Add-cscope-ctags-compile_commands.json.patch
-Patch25: 0009-ppc64-Add-MMU-type-info-in-machdep-command.patch
-Patch26: 0010-mod-fix-module-object-file-lookup.patch
-Patch27: 0011-diskdump-Add-support-for-reading-dumpfiles-compresse.patch
-Patch28: 0012-Update-to-gdb-10.2.patch
-Patch29: 0013-crash_get_nr_cpus-get-nr_cpus-from-the-dumps.patch
-Patch30: 0014-whatis-m-fix-duplications-in-the-output.patch
-Patch31: 0015-Fix-reduced-output-of-bt-command.patch
-Patch32: 0016-crash_taget-fetch_registers-support.patch
-Patch33: 0017-Allow-gdb-disassemble-command-for-relocated-kernel.patch
-Patch34: 0018-vmware-backend-honor-silence-flag.patch
-Patch35: 0019-vmware_guestdump-add-debugging-of-the-init-function.patch
-Patch36: 0020-Do-not-adjust-addr-by-relocate-offset-KASLR.patch
-Patch37: 0021-Fix-the-failure-of-reporting-vmcore-and-vmlinux-do-n.patch
-Patch38: 0022-x86_64_irq_eframe_link_init-Fix-wrong-instruction-se.patch
-Patch39: 0023-Add-kernel-version-dependent-check-for-getting-lengt.patch
-Patch40: 0024-Set-gdb-max-value-size-to-be-unlimited.patch
-Patch41: 0025-Fix-tab-completion-issues.patch
-Patch42: 0026-Remove-text-value-cache-code.patch
-Patch43: 0027-.gitignore-add-gdb-10.2-directory.patch
-Patch44: 0001-symbols-Implement-install-and-remove-operations-for-.patch
-Patch45: 0002-symbols-Integrate-symbol_search-with-mod_symname_has.patch
-Patch46: 0003-symbols-Extend-symname_hash_search-with-hash-table-s.patch
-Patch47: 0004-symbols-Intergrate-symbol_exists-with-mod_symname_ha.patch
-Patch48: 0005-symbols-Sync-module-symbols-into-mod_symtable-whenev.patch
-Patch49: 0006-symbols-Refactor-SYMNAME_HASH_INDEX-macro-to-be-a-fu.patch
-Patch50: 0007-symbols-Add-mod_symname_hash-table-dump-to-help-s.patch
-Patch51: 0008-arm64-Use-VA_BITS-for-page_offset-calculation.patch
-Patch52: 0009-Handle-task_struct-cpu-member-changes-for-kernels-5..patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -90,58 +38,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
-%patch8 -p1
-%patch9 -p1
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1
-%patch37 -p1
-%patch38 -p1
-%patch39 -p1
-%patch40 -p1
-%patch41 -p1
-%patch42 -p1
-%patch43 -p1
-%patch44 -p1
-%patch45 -p1
-%patch46 -p1
-%patch47 -p1
-%patch48 -p1
-%patch49 -p1
-%patch50 -p1
-%patch51 -p1
-%patch52 -p1
 
 %build
 # This package has an internal copy of GDB which has broken configure code for
@@ -175,6 +71,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Wed Nov 24 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-1
+- Rebase to upstream 8.0.0
+
 * Sat Nov 06 2021 Lianbo Jiang <lijiang@redhat.com> - 7.3.0-5
 - Update to the latest upstream: commit <68870c83d299>
 

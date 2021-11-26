@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -18,6 +18,7 @@ Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
 Patch0: lzo_snappy.patch
+Patch1: crash-8.0.0_build.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -38,19 +39,12 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %prep
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy.patch
+%patch1 -p1 -b crash-8.0.0_build.patch
 
 %build
-# This package has an internal copy of GDB which has broken configure code for
-# INTDIV0_RAISES_SIGFPE and MUST_REINSTALL_SIGHANDLERS
-# Updating that code properly seems nontrivial and best left to the package
-# maintainer.
-# Disable LTO
-%define _lto_cflags %{nil}
-# Disable hardened package
-%undefine _hardened_build
 
 cp %{SOURCE1} .
-make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
+make RPMPKG="%{version}-%{release}" CFLAGS="%{optflags}" CXXFLAGS="%{optflags}" LDFLAGS="%{build_ldflags}"
 
 %install
 rm -rf %{buildroot}
@@ -71,6 +65,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Nov 26 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-2
+- Enable LTO and Hardened package
+
 * Wed Nov 24 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-1
 - Rebase to upstream 8.0.0
 

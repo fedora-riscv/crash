@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -17,7 +17,7 @@ BuildRequires: make
 Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
-Patch0: lzo_snappy.patch
+Patch0: lzo_snappy_zstd.patch
 Patch1: crash-8.0.0_build.patch
 
 %description
@@ -38,7 +38,7 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 
 %prep
 %setup -n %{name}-%{version} -q
-%patch0 -p1 -b lzo_snappy.patch
+%patch0 -p1 -b lzo_snappy_zstd.patch
 %patch1 -p1 -b crash-8.0.0_build.patch
 
 %build
@@ -65,6 +65,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Mon Dec 06 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-3
+- Enable ZSTD feature
+
 * Fri Nov 26 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-2
 - Enable LTO and Hardened package
 

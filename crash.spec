@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -19,6 +19,9 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
 Patch0: lzo_snappy_zstd.patch
 Patch1: crash-8.0.0_build.patch
+Patch2: 0001-arm64-Support-overflow-stack-panic.patch
+Patch3: 0002-defs.h-fix-breakage-of-compatibility-of-struct-machd.patch
+Patch4: 0003-defs.h-fix-breakage-of-compatibility-of-struct-symbo.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -40,6 +43,9 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy_zstd.patch
 %patch1 -p1 -b crash-8.0.0_build.patch
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
 
 %build
 
@@ -65,6 +71,10 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Dec 10 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-4
+- Fix segmentation fault caused by crash extension modules
+- Support the overflow stack exception handling on aarch64
+
 * Mon Dec 06 2021 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-3
 - Enable ZSTD feature
 

@@ -1,0 +1,59 @@
+From 70a27ae9f2b45d6dba56ee4240b6adf79c544ee1 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Thu, 6 Jan 2022 22:34:26 +0800
+Subject: [PATCH 03/12] Fix for "timer -r" option to display all the per-CPU
+ clocks
+
+Currently, the hrtimer_max_clock_bases is hard-coded to 3, which
+makes that crash only prints three clocks, and the rest of clocks
+are not displayed.
+
+Without the patch:
+crash> timer -r -C 11
+CPU: 11  HRTIMER_CPU_BASE: ffff9a775f95ee00
+  CLOCK: 0  HRTIMER_CLOCK_BASE: ffff9a775f95ee80  [ktime_get]
+  (empty)
+
+  CLOCK: 1  HRTIMER_CLOCK_BASE: ffff9a775f95ef00  [ktime_get_real]
+  (empty)
+
+  CLOCK: 2  HRTIMER_CLOCK_BASE: ffff9a775f95ef80  [ktime_get_boottime]
+  (empty)
+
+With the patch:
+crash> timer -r -C 11
+CPU: 11  HRTIMER_CPU_BASE: ffff9a775f95ee00
+  CLOCK: 0  HRTIMER_CLOCK_BASE: ffff9a775f95ee80  [ktime_get]
+  (empty)
+
+  CLOCK: 1  HRTIMER_CLOCK_BASE: ffff9a775f95ef00  [ktime_get_real]
+  (empty)
+
+  CLOCK: 2  HRTIMER_CLOCK_BASE: ffff9a775f95ef80  [ktime_get_boottime]
+  (empty)
+...
+  CLOCK: 7  HRTIMER_CLOCK_BASE: ffff9a775f95f200  [ktime_get_clocktai]
+  (empty)
+
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ kernel.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel.c b/kernel.c
+index 37b7af74ed2e..36c57ed501ad 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -7675,7 +7675,8 @@ dump_hrtimer_data(const ulong *cpus)
+ 	if (VALID_STRUCT(hrtimer_clock_base)) {
+ 		hrtimer_max_clock_bases = 2;
+ 		if (symbol_exists("ktime_get_boottime"))
+-			hrtimer_max_clock_bases = 3;
++			hrtimer_max_clock_bases = MEMBER_SIZE("hrtimer_cpu_base", "clock_base") /
++							SIZE(hrtimer_clock_base);
+ 	} else if (VALID_STRUCT(hrtimer_base)) {
+ 		max_hrtimer_bases = 2;
+ 	} else
+-- 
+2.20.1
+

@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.0
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -22,6 +22,19 @@ Patch1: crash-8.0.0_build.patch
 Patch2: 0001-arm64-Support-overflow-stack-panic.patch
 Patch3: 0002-defs.h-fix-breakage-of-compatibility-of-struct-machd.patch
 Patch4: 0003-defs.h-fix-breakage-of-compatibility-of-struct-symbo.patch
+Patch5: 0001-Fix-pvops-Xen-detection-for-arm-machine.patch
+Patch6: 0002-Handle-blk_mq_ctx-member-changes-for-kernels-5.16-rc.patch
+Patch7: 0003-Fix-for-timer-r-option-to-display-all-the-per-CPU-cl.patch
+Patch8: 0004-Fix-for-bt-v-option-to-display-the-stack-end-address.patch
+Patch9: 0005-Fix-for-HZ-calculation-on-Linux-5.14-and-later.patch
+Patch10: 0006-memory-Handle-struct-slab-changes-on-Linux-5.17-rc1-.patch
+Patch11: 0007-Move-the-initialization-of-boot_date-to-task_init.patch
+Patch12: 0008-Remove-ptype-command-from-ps-t-option-to-reduce-memo.patch
+Patch13: 0009-GDB-fix-completion-related-libstdc-assert.patch
+Patch14: 0010-Improve-the-ps-performance-for-vmcores-with-large-nu.patch
+Patch15: 0011-arm64-Fix-segfault-by-bt-command-with-offline-cpus.patch
+Patch16: 0012-Fix-for-kmem-s-S-and-bt-F-F-on-Linux-5.17-rc1.patch
+Patch17: crash-8.0.0-5-gdb-cdefs.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -46,6 +59,22 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
+%patch16 -p1
+%ifarch ppc64le
+%patch17 -p1 -b crash-8.0.0-5-gdb-cdefs.patch
+%endif
+
 
 %build
 
@@ -71,6 +100,10 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Wed Feb 09 2022 Lianbo Jiang <lijiang@redhat.com> - 8.0.0-6
+- Update to the latest upstream commit <5f390ed811b0>
+- Fix for cdefs issue on ppc64le
+
 * Wed Jan 19 2022 Fedora Release Engineering <releng@fedoraproject.org> - 8.0.0-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
 

@@ -1,0 +1,75 @@
+From d16dc6fff0260ec26002046fae4aeb546d6b9a0e Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Mon, 17 Jan 2022 15:14:00 +0800
+Subject: [PATCH 07/12] Move the initialization of "boot_date" to task_init()
+
+The "boot_date" is initialized conditionally in the cmd_log(), which may
+display incorrect "boot_date" value with the following command before
+running the "log -T" command:
+
+crash> help -k | grep date
+          date: Wed Dec 22 13:39:29 IST 2021
+     boot_date: Thu Jan  1 05:30:00 IST 1970
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The calculation of "boot_date" depends on the HZ value, and the HZ will
+be calculated in task_init() at the latest, so let's move it here.
+
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ kernel.c | 18 +++---------------
+ task.c   | 10 ++++++++++
+ 2 files changed, 13 insertions(+), 15 deletions(-)
+
+diff --git a/kernel.c b/kernel.c
+index 36c57ed501ad..094fe9b2efad 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -5025,21 +5025,9 @@ cmd_log(void)
+         if (argerrs)
+                 cmd_usage(pc->curcmd, SYNOPSIS);
+ 
+-	if (msg_flags & SHOW_LOG_CTIME) {
+-		if (pc->flags & MINIMAL_MODE) {
+-			error(WARNING, "the option '-T' is not available in minimal mode\n");
+-			return;
+-		}
+-
+-		if (kt->boot_date.tv_sec == 0) {
+-			ulonglong uptime_jiffies;
+-			ulong  uptime_sec;
+-
+-			get_uptime(NULL, &uptime_jiffies);
+-			uptime_sec = (uptime_jiffies)/(ulonglong)machdep->hz;
+-			kt->boot_date.tv_sec = kt->date.tv_sec - uptime_sec;
+-			kt->boot_date.tv_nsec = 0;
+-		}
++	if (msg_flags & SHOW_LOG_CTIME && pc->flags & MINIMAL_MODE) {
++		error(WARNING, "the option '-T' is not available in minimal mode\n");
++		return;
+ 	}
+ 
+ 	if (msg_flags & SHOW_LOG_AUDIT) {
+diff --git a/task.c b/task.c
+index 76e184ae70b1..263a8344dd94 100644
+--- a/task.c
++++ b/task.c
+@@ -692,6 +692,16 @@ task_init(void)
+ 
+ 	stack_overflow_check_init();
+ 
++	if (machdep->hz) {
++		ulonglong uptime_jiffies;
++		ulong  uptime_sec;
++
++		get_uptime(NULL, &uptime_jiffies);
++		uptime_sec = (uptime_jiffies)/(ulonglong)machdep->hz;
++		kt->boot_date.tv_sec = kt->date.tv_sec - uptime_sec;
++		kt->boot_date.tv_nsec = 0;
++	}
++
+ 	tt->flags |= TASK_INIT_DONE;
+ }
+ 
+-- 
+2.20.1
+

@@ -1,0 +1,73 @@
+From ce92e458506aec5bc5516a771e26b0f907ce0db4 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Wed, 26 Jan 2022 20:32:35 +0800
+Subject: [PATCH 09/12] GDB: fix completion related libstdc++ assert
+
+Currently crash built with some specific flags (-D_GLIBCXX_ASSERTIONS
+and etc.) may abort and print the following error when running the gdb
+list command or tab-completion of symbols.  For example:
+
+  crash> l panic
+  /usr/include/c++/11/string_view:234: ...
+  Aborted (core dumped)
+
+  crash> p "TAB completion"
+  crash> p /usr/include/c++/11/string_view:234: ...
+  Aborted (core dumped)
+
+When the name string is null (the length of name is zero), there are
+multiple places where array access is out of bounds in the gdb/ada-lang.c
+(see ada_fold_name() and ada_lookup_name_info()).
+
+The patch backports these gdb patches:
+6a780b676637 ("Fix completion related libstdc++ assert when using -D_GLIBCXX_DEBUG")
+2ccee230f830 ("Fix off-by-one error in ada_fold_name")
+
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+---
+ gdb-10.2.patch | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index 1332b6638028..f5e4c06e6f97 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -1591,3 +1591,34 @@
+    max += 2;
+    limit = cols / max;
+    if (limit != 1 && (limit * max == cols))
++--- gdb-10.2/gdb/ada-lang.c.orig
+++++ gdb-10.2/gdb/ada-lang.c
++@@ -997,7 +997,7 @@ ada_fold_name (gdb::string_view name)
++   int len = name.size ();
++   GROW_VECT (fold_buffer, fold_buffer_size, len + 1);
++ 
++-  if (name[0] == '\'')
+++  if (!name.empty () && name[0] == '\'')
++     {
++       strncpy (fold_buffer, name.data () + 1, len - 2);
++       fold_buffer[len - 2] = '\000';
++@@ -1006,8 +1006,9 @@ ada_fold_name (gdb::string_view name)
++     {
++       int i;
++ 
++-      for (i = 0; i <= len; i += 1)
+++      for (i = 0; i < len; i += 1)
++         fold_buffer[i] = tolower (name[i]);
+++      fold_buffer[i] = '\0';
++     }
++ 
++   return fold_buffer;
++@@ -13596,7 +13597,7 @@ ada_lookup_name_info::ada_lookup_name_info (const lookup_name_info &lookup_name)
++ {
++   gdb::string_view user_name = lookup_name.name ();
++ 
++-  if (user_name[0] == '<')
+++  if (!user_name.empty () && user_name[0] == '<')
++     {
++       if (user_name.back () == '>')
++ 	m_encoded_name
+-- 
+2.20.1
+

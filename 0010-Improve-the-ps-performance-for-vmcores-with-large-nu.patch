@@ -1,0 +1,149 @@
+From e389667cf62ef5db82f9796cdbc0134ec38612dc Mon Sep 17 00:00:00 2001
+From: Tao Liu <ltao@redhat.com>
+Date: Fri, 21 Jan 2022 13:43:09 +0800
+Subject: [PATCH 10/12] Improve the ps performance for vmcores with large
+ number of threads
+
+Previously, the ps command will iterate over all threads which
+have the same tgid, to accumulate their rss value, in order to
+get a thread/process's final rss value as part of the final output.
+
+For non-live systems, the rss accumulation values are identical for
+threads which have the same tgid, so there is no need to do the
+iteration and accumulation repeatly, thus a lot of readmem calls are
+skipped. Otherwise it will be the performance bottleneck if the
+vmcores have a large number of threads.
+
+In this patch, the rss accumulation value will be stored in a cache,
+next time a thread with the same tgid will take it directly without
+the iteration.
+
+For example, we can monitor the performance issue when a vmcore has
+~65k processes, most of which are threads for several specific
+processes. Without the patch, it will take ~7h for ps command
+to finish. With the patch, ps command will finish in 1min.
+
+Signed-off-by: Tao Liu <ltao@redhat.com>
+---
+ defs.h   |  1 +
+ memory.c | 70 +++++++++++++++++++++++++++++++-------------------------
+ task.c   |  1 +
+ 3 files changed, 41 insertions(+), 31 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index b63741c7d78b..55600d56ef1c 100644
+--- a/defs.h
++++ b/defs.h
+@@ -829,6 +829,7 @@ struct task_context {                     /* context stored for each task */
+ struct tgid_context {               /* tgid and task stored for each task */
+ 	ulong tgid;
+ 	ulong task;
++	long rss_cache;
+ };
+ 
+ struct task_table {                      /* kernel/local task table data */
+diff --git a/memory.c b/memory.c
+index 5af45fd7d834..e80c59ea4534 100644
+--- a/memory.c
++++ b/memory.c
+@@ -4665,7 +4665,7 @@ void
+ get_task_mem_usage(ulong task, struct task_mem_usage *tm)
+ {
+ 	struct task_context *tc;
+-	long rss = 0;
++	long rss = 0, rss_cache = 0;
+ 
+ 	BZERO(tm, sizeof(struct task_mem_usage));
+ 
+@@ -4730,38 +4730,46 @@ get_task_mem_usage(ulong task, struct task_mem_usage *tm)
+ 					(last->tgid == (last + 1)->tgid))
+ 					last++;
+ 
+-				while (first <= last)
+-				{
+-					/* count 0 -> filepages */
+-					if (!readmem(first->task +
+-						OFFSET(task_struct_rss_stat) +
+-						OFFSET(task_rss_stat_count), KVADDR,
+-						&sync_rss,
+-						sizeof(int),
+-						"task_struct rss_stat MM_FILEPAGES",
+-						RETURN_ON_ERROR))
+-							continue;
+-
+-					rss += sync_rss;
+-
+-					/* count 1 -> anonpages */
+-					if (!readmem(first->task +
+-						OFFSET(task_struct_rss_stat) +
+-						OFFSET(task_rss_stat_count) +
+-						sizeof(int),
+-						KVADDR, &sync_rss,
+-						sizeof(int),
+-						"task_struct rss_stat MM_ANONPAGES",
+-						RETURN_ON_ERROR))
+-							continue;
+-
+-					rss += sync_rss;
+-
+-					if (first == last)
+-						break;
+-					first++;
++				/*
++				 * Using rss cache for dumpfile is more beneficial than live debug
++				 * because its value never changes in dumpfile.
++				 */
++				if (ACTIVE() || last->rss_cache == UNINITIALIZED) {
++					while (first <= last)
++					{
++						/* count 0 -> filepages */
++						if (!readmem(first->task +
++							OFFSET(task_struct_rss_stat) +
++							OFFSET(task_rss_stat_count), KVADDR,
++							&sync_rss,
++							sizeof(int),
++							"task_struct rss_stat MM_FILEPAGES",
++							RETURN_ON_ERROR))
++								continue;
++
++						rss_cache += sync_rss;
++
++						/* count 1 -> anonpages */
++						if (!readmem(first->task +
++							OFFSET(task_struct_rss_stat) +
++							OFFSET(task_rss_stat_count) +
++							sizeof(int),
++							KVADDR, &sync_rss,
++							sizeof(int),
++							"task_struct rss_stat MM_ANONPAGES",
++							RETURN_ON_ERROR))
++								continue;
++
++						rss_cache += sync_rss;
++
++						if (first == last)
++							break;
++						first++;
++					}
++					last->rss_cache = rss_cache;
+ 				}
+ 
++				rss += last->rss_cache;
+ 				tt->last_tgid = last;
+ 			}
+ 		}
+diff --git a/task.c b/task.c
+index a79ed0d96fb5..864c838637ee 100644
+--- a/task.c
++++ b/task.c
+@@ -2947,6 +2947,7 @@ add_context(ulong task, char *tp)
+ 	tg = tt->tgid_array + tt->running_tasks;
+ 	tg->tgid = *tgid_addr;
+ 	tg->task = task;
++	tg->rss_cache = UNINITIALIZED;
+ 
+         if (do_verify && !verify_task(tc, do_verify)) {
+ 		error(INFO, "invalid task address: %lx\n", tc->task);
+-- 
+2.20.1
+

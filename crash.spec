@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -19,7 +19,23 @@ Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
 Patch0: lzo_snappy_zstd.patch
 Patch1: crash-8.0.1_build.patch
-Patch2: crash-8.0.0-5-gdb-cdefs.patch
+Patch2: 0001-ppc64-update-the-NR_CPUS-to-8192.patch
+Patch3: 0002-sbitmapq-remove-struct-and-member-validation-in-sbit.patch
+Patch4: 0003-sbitmapq-fix-invalid-offset-for-sbitmap_queue_alloc_.patch
+Patch5: 0004-sbitmapq-fix-invalid-offset-for-sbitmap_queue_round_.patch
+Patch6: 0005-sbitmapq-fix-invalid-offset-for-sbitmap_word_depth-o.patch
+Patch7: 0006-Makefile-add-missing-crash_target.o-to-be-cleaned.patch
+Patch8: 0007-bt-x86_64-filter-out-idle-task-stack.patch
+Patch9: 0008-bt-arm64-add-support-for-bt-n-idle.patch
+Patch10: 0009-gdb-print-details-of-unnamed-struct-and-union.patch
+Patch11: 0010-Enhance-dev-d-D-options-to-support-blk-mq-sbitmap.patch
+Patch12: 0011-Fix-for-dev-d-D-options-to-support-blk-mq-change-on-.patch
+Patch13: 0012-Doc-update-man-page-for-the-bpf-and-sbitmapq-command.patch
+Patch14: 0013-sbitmapq-Fix-for-sbitmap_queue-without-ws_active-mem.patch
+Patch15: 0014-sbitmapq-Fix-for-sbitmap_word-without-cleared-member.patch
+Patch16: 0015-sbitmapq-Fix-for-sbitmap_queue-without-min_shallow_d.patch
+Patch17: 0016-Make-dev-d-D-options-parse-sbitmap-on-Linux-4.18-and.patch
+Patch18: crash-8.0.0-5-gdb-cdefs.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -41,8 +57,24 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %setup -n %{name}-%{version} -q
 %patch0 -p1 -b lzo_snappy_zstd.patch
 %patch1 -p1 -b crash-8.0.1_build.patch
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
+%patch16 -p1
+%patch17 -p1
 %ifarch ppc64le
-%patch2 -p1 -b crash-8.0.0-5-gdb-cdefs.patch
+%patch18 -p1 -b crash-8.0.0-5-gdb-cdefs.patch
 %endif
 
 
@@ -70,6 +102,9 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Fri Jun 10 2022 Lianbo Jiang <lijiang@redhat.com> - 8.0.1-2
+- Update to the latest upstream commit <c07068266b41>
+
 * Sun May 01 2022 Lianbo Jiang <lijiang@redhat.com> - 8.0.1-1
 - Rebase to upstream crash 8.0.1
 

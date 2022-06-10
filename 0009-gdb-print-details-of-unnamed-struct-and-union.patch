@@ -1,0 +1,67 @@
+From dda5b2d02b8d8de1264f84b6267582aa7a1e5a57 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Tue, 31 May 2022 17:12:16 +0900
+Subject: [PATCH 09/16] gdb: print details of unnamed struct and union
+
+Currently gdb's "ptype" command does not print the details of unnamed
+structure and union deeper than second level in a structure, it prints
+only "{...}" instead.  And crash's "struct" and similar commands also
+inherit this behavior, so we cannot get the full information of them.
+
+To print the details of them, change the show variable when it is an
+unnamed one like crash-7.x.
+
+Without the patch:
+   crash> struct -o page
+   struct page {
+      [0] unsigned long flags;
+          union {
+              struct {...};
+              struct {...};
+   ...
+
+With the patch:
+   crash> struct -o page
+   struct page {
+      [0] unsigned long flags;
+          union {
+              struct {
+      [8]         struct list_head lru;
+     [24]         struct address_space *mapping;
+     [32]         unsigned long index;
+     [40]         unsigned long private;
+              };
+              struct {
+      [8]         dma_addr_t dma_addr;
+              };
+   ...
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ gdb-10.2.patch | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index b67db4e1ded9..577f5e45fc5a 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -1638,3 +1638,15 @@ exit 0
+  	$(ECHO_CXXLD) $(CC_LD) $(INTERNAL_LDFLAGS) $(WIN32LDAPP) \
+                  -o $(shell /bin/cat mergeobj) $(LIBGDB_OBS) \
+                  $(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES) $(shell /bin/cat mergelibs)
++--- gdb-10.2/gdb/c-typeprint.c.orig
+++++ gdb-10.2/gdb/c-typeprint.c
++@@ -1202,6 +1202,9 @@ c_type_print_base_struct_union (struct t
++ 		= podata->end_bitpos
++ 		  - TYPE_LENGTH (type->field (i).type ()) * TARGET_CHAR_BIT;
++ 	    }
+++	  else if (strlen(TYPE_FIELD_NAME (type, i)) == 0)
+++	    /* crash: Print details for unnamed struct and union. */
+++	    newshow = show;
++
++ 	  c_print_type_1 (type->field (i).type (),
++ 			  TYPE_FIELD_NAME (type, i),
+-- 
+2.30.2
+

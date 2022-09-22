@@ -1,9 +1,9 @@
 --- a/gdb-10.2.patch
 +++ b/gdb-10.2.patch
-@@ -1650,3 +1650,14 @@ exit 0
- 
-  	  c_print_type_1 (type->field (i).type (),
-  			  TYPE_FIELD_NAME (type, i),
+@@ -1737,3 +1737,14 @@ exit 0
+          struct field *nextfield;
+          short nfields;
+          struct type *typedef_type, *target_type;
 +--- gdb-10.2/gnulib/import/libc-config.h.orig
 ++++ gdb-10.2/gnulib/import/libc-config.h
 +@@ -156,7 +156,7 @@
@@ -15,5 +15,3 @@
 + 
 + /* <cdefs.h> __inline is too pessimistic for non-GCC.  */
 + #undef __inline
--- 
-2.20.1

@@ -1,0 +1,86 @@
+From bdbf5887d6259ea3108d4fa674f3794adad54d52 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Thu, 1 Sep 2022 13:42:28 +0900
+Subject: [PATCH 25/29] Fix gcc-11 compiler warnings on gdb-10.2/gdb/symtab.c
+
+Without the patch, the following gcc-11 compiler warnings are emitted
+for gdb-10.2/gdb/symtab.c:
+
+symtab.c: In function 'void gdb_get_datatype(gnu_request*)':
+symtab.c:7131:31: warning: ISO C++17 does not allow 'register' storage class specifier [-Wregister]
+  7131 |         register struct type *type;
+       |                               ^~~~
+symtab.c:7132:31: warning: ISO C++17 does not allow 'register' storage class specifier [-Wregister]
+  7132 |         register struct type *typedef_type;
+       |                               ^~~~~~~~~~~~
+...
+
+Usually we don't fix compiler warnings for gdb, but these are emitted
+even by "make clean ; make warn", which doesn't recompile the whole
+gdb, so it would be better to fix.
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ gdb-10.2.patch | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index 642cd6a78a1d..91edfb338445 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -9,6 +9,7 @@
+ # to all subsequent patch applications.
+ 
+ tar xvzmf gdb-10.2.tar.gz \
++	gdb-10.2/gdb/symtab.c \
+ 	gdb-10.2/gdb/printcmd.c \
+ 	gdb-10.2/gdb/symfile.c \
+ 	gdb-10.2/gdb/Makefile.in
+@@ -1696,3 +1697,43 @@ exit 0
+  
+    /* If the nearest symbol is too far away, don't print anything symbolic.  */
+  
++--- gdb-10.2/gdb/symtab.c.orig
+++++ gdb-10.2/gdb/symtab.c
++@@ -7128,8 +7128,8 @@ gdb_get_line_number(struct gnu_request *
++ static void
++ gdb_get_datatype(struct gnu_request *req)
++ {
++-        register struct type *type;
++-        register struct type *typedef_type;
+++        struct type *type;
+++        struct type *typedef_type;
++         expression_up expr;
++         struct symbol *sym;
++         struct value *val;
++@@ -7235,7 +7235,7 @@ gdb_get_datatype(struct gnu_request *req
++ static void
++ dump_enum(struct type *type, struct gnu_request *req)
++ {
++-        register int i;
+++        int i;
++         int len;
++         long long lastval;
++ 
++@@ -7271,7 +7271,7 @@ dump_enum(struct type *type, struct gnu_
++ static void
++ eval_enum(struct type *type, struct gnu_request *req)
++ {
++-        register int i;
+++        int i;
++         int len;
++         long long lastval;
++ 
++@@ -7298,7 +7298,7 @@ eval_enum(struct type *type, struct gnu_
++ static void
++ get_member_data(struct gnu_request *req, struct type *type, long offset, int is_first)
++ {
++-        register short i;
+++        short i;
++         struct field *nextfield;
++         short nfields;
++         struct type *typedef_type, *target_type;
+-- 
+2.37.1
+

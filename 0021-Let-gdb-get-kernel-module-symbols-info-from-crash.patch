@@ -1,0 +1,142 @@
+From 2145b2bb79c59aa25c5155a8f9851554d1813fb9 Mon Sep 17 00:00:00 2001
+From: Tao Liu <ltao@redhat.com>
+Date: Wed, 31 Aug 2022 11:54:13 +0800
+Subject: [PATCH 21/29] Let gdb get kernel module symbols info from crash
+
+Gdb will try to resolve an address to its corresponding symbol name such as
+when printing a structure. It works fine for kernel symbols, because gdb can
+find them through vmlinux. However as for kernel modules symbols, crash
+resolves them by dig into "struct module", which gdb don't know. As a result,
+gdb fails to translate a kernel module address to its symbol name without
+"mod -s|-S" options. For example we can reproduce the issue as follows.
+
+    crash> timer
+    ....
+    4331308176       336  ffff94ea24240860  ffffffffc03762c0  <estimation_timer>
+    ....
+    crash> sym 0xffffffffc03762c0
+    ffffffffc03762c0 (t) estimation_timer [ip_vs]
+
+Before patch:
+    crash> timer_list ffff94ea24240860
+    struct timer_list {
+      ....
+      function = 0xffffffffc03762c0,
+      ....
+    }
+
+After patch:
+    crash> timer_list ffff94ea24240860
+    struct timer_list {
+      ....
+      function = 0xffffffffc03762c0 <estimation_timer>,
+      ....
+    }
+
+In this patch, we add an interface for gdb, when gdb trying to build kernel
+module's address symbolic, the info can be get from crash.
+
+Signed-off-by: Tao Liu <ltao@redhat.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h          |  2 ++
+ gdb-10.2.patch  | 35 +++++++++++++++++++++++++++++++++++
+ gdb_interface.c | 12 ++++++++++++
+ 3 files changed, 49 insertions(+)
+
+diff --git a/defs.h b/defs.h
+index 9d6d8916284b..afdcf6c4ac20 100644
+--- a/defs.h
++++ b/defs.h
+@@ -4874,6 +4874,7 @@ extern "C" int patch_kernel_symbol(struct gnu_request *);
+ struct syment *symbol_search(char *);
+ int gdb_line_number_callback(ulong, ulong, ulong);
+ int gdb_print_callback(ulong);
++char *gdb_lookup_module_symbol(ulong, ulong *);
+ extern "C" int same_file(char *, char *);
+ #endif
+ 
+@@ -7284,6 +7285,7 @@ int gdb_pass_through(char *, FILE *, ulong);
+ int gdb_readmem_callback(ulong, void *, int, int);
+ int gdb_line_number_callback(ulong, ulong, ulong);
+ int gdb_print_callback(ulong);
++char *gdb_lookup_module_symbol(ulong, ulong *);
+ void gdb_error_hook(void);
+ void restore_gdb_sanity(void);
+ int is_gdb_command(int, ulong);
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index f0034ed626a0..642cd6a78a1d 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -9,6 +9,7 @@
+ # to all subsequent patch applications.
+ 
+ tar xvzmf gdb-10.2.tar.gz \
++	gdb-10.2/gdb/printcmd.c \
+ 	gdb-10.2/gdb/symfile.c \
+ 	gdb-10.2/gdb/Makefile.in
+ 
+@@ -1661,3 +1662,37 @@ exit 0
+ +       return name_copy ? std::string (name_copy) : std::string ();
+    }
+  #endif
++ 
++--- gdb-10.2/gdb/printcmd.c.orig
+++++ gdb-10.2/gdb/printcmd.c
++@@ -576,6 +576,10 @@ print_address_symbolic (struct gdbarch *gdbarch, CORE_ADDR addr,
++ 
++ /* See valprint.h.  */
++ 
+++#ifdef CRASH_MERGE
+++extern "C" char *gdb_lookup_module_symbol(unsigned long, unsigned long *);
+++#endif
+++
++ int
++ build_address_symbolic (struct gdbarch *gdbarch,
++ 			CORE_ADDR addr,  /* IN */
++@@ -682,7 +686,19 @@ build_address_symbolic (struct gdbarch *gdbarch,
++ 	}
++     }
++   if (symbol == NULL && msymbol.minsym == NULL)
+++#ifdef CRASH_MERGE
+++  {
+++    char *name_ptr = gdb_lookup_module_symbol(addr, (unsigned long *)offset);
+++    if (name_ptr) {
+++      *name = name_ptr;
+++      return 0;
+++    } else {
+++      return 1;
+++    }
+++  }
+++#else
++     return 1;
+++#endif
++ 
++   /* If the nearest symbol is too far away, don't print anything symbolic.  */
++ 
+diff --git a/gdb_interface.c b/gdb_interface.c
+index 3a7fcc9e3ade..b14319c66147 100644
+--- a/gdb_interface.c
++++ b/gdb_interface.c
+@@ -935,6 +935,18 @@ gdb_print_callback(ulong addr)
+ 		return IS_KVADDR(addr);
+ }
+ 
++char *
++gdb_lookup_module_symbol(ulong addr, ulong *offset)
++{
++	struct syment *sp;
++
++	if ((sp = value_search_module(addr, offset))) {
++		return sp->name;
++	} else {
++		return NULL;
++	}
++}
++
+ /*
+  *  Used by gdb_interface() to catch gdb-related errors, if desired.
+  */
+-- 
+2.37.1
+

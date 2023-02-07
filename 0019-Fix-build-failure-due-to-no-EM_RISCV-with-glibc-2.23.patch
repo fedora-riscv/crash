@@ -1,0 +1,49 @@
+From 4cf7c714e3cc97e6d41a9b1fdd48f5199f632a4d Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Tue, 27 Dec 2022 09:53:46 +0900
+Subject: [PATCH 19/28] Fix build failure due to no EM_RISCV with glibc-2.23
+ and earlier
+
+With glibc-2.23 and earlier (e.g. RHEL7), crash build fails with errors
+like this due to EM_RISCV undeclared:
+
+  $ make -j 24 warn
+  TARGET: X86_64
+  CRASH: 8.0.2++
+  GDB: 10.2
+  ...
+  symbols.c: In function 'is_kernel':
+  symbols.c:3746:8: error: 'EM_RISCV' undeclared (first use in this function)
+     case EM_RISCV:
+          ^
+  ...
+
+Define EM_RISCV as 243 [1][2] if not defined.
+
+[1] https://sourceware.org/git/?p=glibc.git;a=commitdiff;h=94e73c95d9b5
+[2] http://www.sco.com/developers/gabi/latest/ch4.eheader.html
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/defs.h b/defs.h
+index d3d837631632..08ac4dc96a92 100644
+--- a/defs.h
++++ b/defs.h
+@@ -3493,6 +3493,10 @@ struct arm64_stackframe {
+ #define _MAX_PHYSMEM_BITS       48
+ #endif  /* MIPS64 */
+ 
++#ifndef EM_RISCV
++#define EM_RISCV		243
++#endif
++
+ #ifdef RISCV64
+ #define _64BIT_
+ #define MACHINE_TYPE		"RISCV64"
+-- 
+2.37.1
+

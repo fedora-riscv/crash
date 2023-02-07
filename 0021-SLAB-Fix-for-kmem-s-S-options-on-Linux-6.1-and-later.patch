@@ -1,0 +1,46 @@
+From 120d6e89fc14eb7f1c9a3106305c7066730f36b8 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Thu, 5 Jan 2023 17:18:51 +0900
+Subject: [PATCH 21/28] SLAB: Fix for "kmem -s|-S" options on Linux 6.1 and
+ later
+
+Kernel commit e36ce448a08d ("mm/slab: use kmalloc_node() for off slab
+freelist_idx_t array allocation"), which is contained in Linux 6.1 and
+later kernels, removed kmem_cache.freelist_cache member on kernels
+configured with CONFIG_SLAB=y.
+
+Without the patch, crash does not set SLAB_OVERLOAD_PAGE and
+"kmem -s|-S" options fail with the following error:
+
+  kmem: invalid structure member offset: slab_list
+        FILE: memory.c  LINE: 12156  FUNCTION: verify_slab_v2()
+
+Use kmem_cache.freelist_size instead, which was introduced together
+with kmem_cache.freelist_cache by kernel commit 8456a648cf44.
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ memory.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/memory.c b/memory.c
+index 625a94b7d7d4..71ded688206f 100644
+--- a/memory.c
++++ b/memory.c
+@@ -535,8 +535,11 @@ vm_init(void)
+ 	/*
+ 	 * slab: overload struct slab over struct page 
+          * https://lkml.org/lkml/2013/10/16/155
++	 *
++	 * commit e36ce448a08d removed kmem_cache.freelist_cache in 6.1,
++	 * so use freelist_size instead.
+ 	 */
+-	if (MEMBER_EXISTS("kmem_cache", "freelist_cache")) {
++	if (MEMBER_EXISTS("kmem_cache", "freelist_size")) {
+ 		vt->flags |= SLAB_OVERLOAD_PAGE;
+ 		ANON_MEMBER_OFFSET_INIT(page_s_mem, "page", "s_mem");
+ 		ANON_MEMBER_OFFSET_INIT(page_freelist, "page", "freelist");
+-- 
+2.37.1
+

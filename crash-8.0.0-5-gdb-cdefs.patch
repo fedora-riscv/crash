@@ -1,9 +1,9 @@
 --- a/gdb-10.2.patch
 +++ b/gdb-10.2.patch
-@@ -1737,3 +1737,14 @@ exit 0
-          struct field *nextfield;
-          short nfields;
-          struct type *typedef_type, *target_type;
+@@ -2078,3 +2078,14 @@ exit 0
+  
+    return new_type;
+  }
 +--- gdb-10.2/gnulib/import/libc-config.h.orig
 ++++ gdb-10.2/gnulib/import/libc-config.h
 +@@ -156,7 +156,7 @@

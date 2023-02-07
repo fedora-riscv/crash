@@ -1,0 +1,52 @@
+From 46344aa2f92b07ded52cf9841f8db24dd7fe67d7 Mon Sep 17 00:00:00 2001
+From: Tao Liu <ltao@redhat.com>
+Date: Tue, 10 Jan 2023 14:56:32 +0800
+Subject: [PATCH 28/28] Dump maple tree offset variables by "help -o"
+
+In the previous patches, some variables are added to offset_table and
+size_table, print them out with "help -o" command.
+
+Signed-off-by: Tao Liu <ltao@redhat.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ symbols.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/symbols.c b/symbols.c
+index 33e68d520a72..e38df8aad0f5 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -10766,6 +10766,21 @@ dump_offset_table(char *spec, ulong makestruct)
+ 		OFFSET(sbq_wait_state_wait_cnt));
+ 	fprintf(fp, "           sbq_wait_state_wait: %ld\n",
+ 		OFFSET(sbq_wait_state_wait));
++	fprintf(fp, "               mm_struct_mm_mt: %ld\n", OFFSET(mm_struct_mm_mt));
++	fprintf(fp, "            maple_tree_ma_root: %ld\n", OFFSET(maple_tree_ma_root));
++	fprintf(fp, "           maple_tree_ma_flags: %ld\n", OFFSET(maple_tree_ma_flags));
++	fprintf(fp, "             maple_node_parent: %ld\n", OFFSET(maple_node_parent));
++	fprintf(fp, "               maple_node_ma64: %ld\n", OFFSET(maple_node_ma64));
++	fprintf(fp, "               maple_node_mr64: %ld\n", OFFSET(maple_node_mr64));
++	fprintf(fp, "               maple_node_slot: %ld\n", OFFSET(maple_node_slot));
++	fprintf(fp, "         maple_arange_64_pivot: %ld\n", OFFSET(maple_arange_64_pivot));
++	fprintf(fp, "          maple_arange_64_slot: %ld\n", OFFSET(maple_arange_64_slot));
++	fprintf(fp, "           maple_arange_64_gap: %ld\n", OFFSET(maple_arange_64_gap));
++	fprintf(fp, "          maple_arange_64_meta: %ld\n", OFFSET(maple_arange_64_meta));
++	fprintf(fp, "          maple_range_64_pivot: %ld\n", OFFSET(maple_range_64_pivot));
++	fprintf(fp, "           maple_range_64_slot: %ld\n", OFFSET(maple_range_64_slot));
++	fprintf(fp, "            maple_metadata_end: %ld\n", OFFSET(maple_metadata_end));
++	fprintf(fp, "            maple_metadata_gap: %ld\n", OFFSET(maple_metadata_gap));
+ 
+ 	fprintf(fp, "\n                    size_table:\n");
+ 	fprintf(fp, "                          page: %ld\n", SIZE(page));
+@@ -11038,6 +11053,8 @@ dump_offset_table(char *spec, ulong makestruct)
+ 	fprintf(fp, "                 sbitmap_queue: %ld\n", SIZE(sbitmap_queue));
+ 	fprintf(fp, "                sbq_wait_state: %ld\n", SIZE(sbq_wait_state));
+ 	fprintf(fp, "                   blk_mq_tags: %ld\n", SIZE(blk_mq_tags));
++	fprintf(fp, "                    maple_tree: %ld\n", SIZE(maple_tree));
++	fprintf(fp, "                    maple_node: %ld\n", SIZE(maple_node));
+ 
+ 	fprintf(fp, "                percpu_counter: %ld\n", SIZE(percpu_counter));
+ 
+-- 
+2.37.1
+

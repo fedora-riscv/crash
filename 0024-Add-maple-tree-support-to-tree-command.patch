@@ -1,0 +1,335 @@
+From 16a696762cbfe6a40312840fee2297f05fdefb21 Mon Sep 17 00:00:00 2001
+From: Tao Liu <ltao@redhat.com>
+Date: Tue, 10 Jan 2023 14:56:28 +0800
+Subject: [PATCH 24/28] Add maple tree support to "tree" command
+
+The maple tree is a new data structure for crash, so "tree" command
+needs to support it for users to dump and view the content of maple
+trees.  This patch achieves this by using ported mt_dump() and its
+related functions from kernel and adapting them with "tree" command.
+
+Also introduce a new -v arg specifically for dumping the complete
+content of a maple tree:
+
+    crash> tree -t maple 0xffff9034c006aec0 -v
+
+    maple_tree(ffff9034c006aec0) flags 309, height 2 root 0xffff9034de70041e
+
+    0-18446744073709551615: node 0xffff9034de700400 depth 0 type 3 parent 0xffff9034c006aec1 contents:...
+      0-140112331583487: node 0xffff9034c01e8800 depth 1 type 1 parent 0xffff9034de700406 contents:...
+        0-94643156942847: (nil)
+        94643156942848-94643158024191: 0xffff9035131754c0
+        94643158024192-94643160117247: (nil)
+        ...
+
+The existing options of "tree" command can work as well:
+
+    crash> tree -t maple -r mm_struct.mm_mt 0xffff9034c006aec0 -p
+    ffff9035131754c0
+      index: 1  position: root/0/1
+    ffff9035131751c8
+      index: 2  position: root/0/3
+    ffff9035131757b8
+      index: 3  position: root/0/4
+    ...
+
+    crash> tree -t maple 0xffff9034c006aec0 -p -x -s vm_area_struct.vm_start,vm_end
+    ffff9035131754c0
+      index: 1  position: root/0/1
+      vm_start = 0x5613d3c00000,
+      vm_end = 0x5613d3d08000,
+    ffff9035131751c8
+      index: 2  position: root/0/3
+      vm_start = 0x5613d3f07000,
+      vm_end = 0x5613d3f0b000,
+    ffff9035131757b8
+      index: 3  position: root/0/4
+      vm_start = 0x5613d3f0b000,
+      vm_end = 0x5613d3f14000,
+    ....
+
+Signed-off-by: Tao Liu <ltao@redhat.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h       |  1 +
+ maple_tree.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tools.c      | 67 +++++++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 114 insertions(+), 17 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index 46bfd4a67e64..f98e18937949 100644
+--- a/defs.h
++++ b/defs.h
+@@ -2713,6 +2713,7 @@ struct tree_data {
+ #define TREE_PARSE_MEMBER         (VERBOSE << 7)
+ #define TREE_READ_MEMBER          (VERBOSE << 8)
+ #define TREE_LINEAR_ORDER         (VERBOSE << 9)
++#define TREE_STRUCT_VERBOSE       (VERBOSE << 10)
+ 
+ #define ALIAS_RUNTIME  (1)
+ #define ALIAS_RCLOCAL  (2)
+diff --git a/maple_tree.c b/maple_tree.c
+index 474faeda6252..471136f3eb1d 100644
+--- a/maple_tree.c
++++ b/maple_tree.c
+@@ -173,6 +173,10 @@ static void do_mt_range64(ulong entry, ulong min, ulong max,
+ 
+ 	mr64_buf = node_buf + OFFSET(maple_node_mr64);
+ 
++	if (td && td->flags & TREE_STRUCT_VERBOSE) {
++		dump_mt_range64(mr64_buf);
++	}
++
+ 	for (i = 0; i < mt_slots[maple_range_64]; i++) {
+ 		last = max;
+ 
+@@ -230,6 +234,10 @@ static void do_mt_arange64(ulong entry, ulong min, ulong max,
+ 
+ 	ma64_buf = node_buf + OFFSET(maple_node_ma64);
+ 
++	if (td && td->flags & TREE_STRUCT_VERBOSE) {
++		dump_mt_arange64(ma64_buf);
++	}
++
+ 	for (i = 0; i < mt_slots[maple_arange_64]; i++) {
+ 		last = max;
+ 
+@@ -275,6 +283,51 @@ static void do_mt_entry(ulong entry, ulong min, ulong max, uint depth,
+ 
+ 	if (!td)
+ 		return;
++
++	if (!td->count && td->structname_args) {
++		/*
++		 * Retrieve all members' info only once (count == 0)
++		 * After last iteration all memory will be freed up
++		 */
++		e = (struct req_entry **)GETBUF(sizeof(*e) * td->structname_args);
++		for (i = 0; i < td->structname_args; i++)
++			e[i] = fill_member_offsets(td->structname[i]);
++	}
++
++	td->count++;
++
++	if (td->flags & TREE_STRUCT_VERBOSE) {
++		dump_mt_entry(entry, min, max, depth);
++	} else if (td->flags & VERBOSE && entry)
++		fprintf(fp, "%lx\n", entry);
++	if (td->flags & TREE_POSITION_DISPLAY && entry)
++		fprintf(fp, "  index: %ld  position: %s/%u\n",
++			++(*global_index), path, index);
++
++	if (td->structname) {
++		if (td->flags & TREE_STRUCT_RADIX_10)
++			print_radix = 10;
++		else if (td->flags & TREE_STRUCT_RADIX_16)
++			print_radix = 16;
++		else
++			print_radix = 0;
++
++		for (i = 0; i < td->structname_args; i++) {
++			switch (count_chars(td->structname[i], '.')) {
++			case 0:
++				dump_struct(td->structname[i], entry, print_radix);
++				break;
++			default:
++				if (td->flags & TREE_PARSE_MEMBER)
++					dump_struct_members_for_tree(td, i, entry);
++				else if (td->flags & TREE_READ_MEMBER)
++					dump_struct_members_fast(e[i], print_radix, entry);
++			}
++		}
++	}
++
++	if (e)
++		FREEBUF(e);
+ }
+ 
+ static void do_mt_node(ulong entry, ulong min, ulong max,
+@@ -293,6 +346,10 @@ static void do_mt_node(ulong entry, ulong min, ulong max,
+ 	readmem(maple_node, KVADDR, node_buf, SIZE(maple_node),
+ 		"mt_dump_node read maple_node", FAULT_ON_ERROR);
+ 
++	if (td && td->flags & TREE_STRUCT_VERBOSE) {
++		dump_mt_node(maple_node, node_buf, type, min, max, depth);
++	}
++
+ 	switch (type) {
+ 	case maple_dense:
+ 		for (i = 0; i < mt_slots[maple_dense]; i++) {
+@@ -335,6 +392,12 @@ static int do_maple_tree_traverse(ulong ptr, int is_root,
+ 			"mt_dump read maple_tree", FAULT_ON_ERROR);
+ 		entry = ULONG(tree_buf + OFFSET(maple_tree_ma_root));
+ 
++		if (td && td->flags & TREE_STRUCT_VERBOSE) {
++			fprintf(fp, "maple_tree(%lx) flags %X, height %u root 0x%lx\n\n",
++				ptr, UINT(tree_buf + OFFSET(maple_tree_ma_flags)),
++				mt_height(tree_buf), entry);
++		}
++
+ 		if (!xa_is_node(entry))
+ 			do_mt_entry(entry, 0, 0, 0, 0, path, &global_index, ops);
+ 		else if (entry) {
+diff --git a/tools.c b/tools.c
+index 5f86771f5327..c2cfa7e280bc 100644
+--- a/tools.c
++++ b/tools.c
+@@ -30,7 +30,7 @@ static void dealloc_hq_entry(struct hq_entry *);
+ static void show_options(void);
+ static void dump_struct_members(struct list_data *, int, ulong);
+ static void rbtree_iteration(ulong, struct tree_data *, char *);
+-static void dump_struct_members_for_tree(struct tree_data *, int, ulong);
++void dump_struct_members_for_tree(struct tree_data *, int, ulong);
+ 
+ struct req_entry {
+ 	char *arg, *name, **member;
+@@ -40,8 +40,8 @@ struct req_entry {
+ };
+ 
+ static void print_value(struct req_entry *, unsigned int, ulong, unsigned int);
+-static struct req_entry *fill_member_offsets(char *);
+-static void dump_struct_members_fast(struct req_entry *, int, ulong);
++struct req_entry *fill_member_offsets(char *);
++void dump_struct_members_fast(struct req_entry *, int, ulong);
+ 
+ FILE *
+ set_error(char *target)
+@@ -3666,7 +3666,7 @@ dump_struct_members_fast(struct req_entry *e, int radix, ulong p)
+ 	}
+ }
+ 
+-static struct req_entry *
++struct req_entry *
+ fill_member_offsets(char *arg)
+ {
+ 	int j;
+@@ -4307,6 +4307,7 @@ dump_struct_members(struct list_data *ld, int idx, ulong next)
+ #define RADIXTREE_REQUEST (0x1)
+ #define RBTREE_REQUEST    (0x2)
+ #define XARRAY_REQUEST    (0x4)
++#define MAPLE_REQUEST     (0x8)
+ 
+ void
+ cmd_tree()
+@@ -4317,6 +4318,7 @@ cmd_tree()
+ 	struct datatype_member struct_member, *sm;
+ 	struct syment *sp;
+ 	ulong value;
++	char *type_name = NULL;
+ 
+ 	type_flag = 0;
+ 	root_offset = 0;
+@@ -4324,25 +4326,33 @@ cmd_tree()
+ 	td = &tree_data;
+ 	BZERO(td, sizeof(struct tree_data));
+ 
+-	while ((c = getopt(argcnt, args, "xdt:r:o:s:S:plN")) != EOF) {
++	while ((c = getopt(argcnt, args, "xdt:r:o:s:S:plNv")) != EOF) {
+ 		switch (c)
+ 		{
+ 		case 't':
+-			if (type_flag & (RADIXTREE_REQUEST|RBTREE_REQUEST|XARRAY_REQUEST)) {
++			if (type_flag & (RADIXTREE_REQUEST|RBTREE_REQUEST|XARRAY_REQUEST|MAPLE_REQUEST)) {
+ 				error(INFO, "multiple tree types may not be entered\n");
+ 				cmd_usage(pc->curcmd, SYNOPSIS);
+ 			}
+ 
+ 			if (STRNEQ(optarg, "ra"))
+-				if (MEMBER_EXISTS("radix_tree_root", "xa_head"))
++				if (MEMBER_EXISTS("radix_tree_root", "xa_head")) {
+ 					type_flag = XARRAY_REQUEST;
+-				else
++					type_name = "Xarrays";
++				} else {
+ 					type_flag = RADIXTREE_REQUEST;
+-			else if (STRNEQ(optarg, "rb"))
++					type_name = "radix trees";
++				}
++			else if (STRNEQ(optarg, "rb")) {
+ 				type_flag = RBTREE_REQUEST;
+-			else if (STRNEQ(optarg, "x"))
++				type_name = "rbtrees";
++			} else if (STRNEQ(optarg, "x")) {
+ 				type_flag = XARRAY_REQUEST;
+-			else {
++				type_name = "Xarrays";
++			} else if (STRNEQ(optarg, "m")) {
++				type_flag = MAPLE_REQUEST;
++				type_name = "maple trees";
++			} else {
+ 				error(INFO, "invalid tree type: %s\n", optarg);
+ 				cmd_usage(pc->curcmd, SYNOPSIS);
+ 			}
+@@ -4417,6 +4427,9 @@ cmd_tree()
+ 					"-d and -x are mutually exclusive\n");
+ 			td->flags |= TREE_STRUCT_RADIX_10;
+ 			break;
++		case 'v':
++			td->flags |= TREE_STRUCT_VERBOSE;
++			break;
+ 		default:
+ 			argerrs++;
+ 			break;
+@@ -4426,13 +4439,17 @@ cmd_tree()
+ 	if (argerrs)
+ 		cmd_usage(pc->curcmd, SYNOPSIS);
+ 
+-	if ((type_flag & (XARRAY_REQUEST|RADIXTREE_REQUEST)) && (td->flags & TREE_LINEAR_ORDER))
+-		error(FATAL, "-l option is not applicable to %s\n", 
+-			type_flag & RADIXTREE_REQUEST ? "radix trees" : "Xarrays");
++	if ((type_flag & (XARRAY_REQUEST|RADIXTREE_REQUEST|MAPLE_REQUEST)) &&
++	    (td->flags & TREE_LINEAR_ORDER))
++		error(FATAL, "-l option is not applicable to %s\n", type_name);
+ 
+-	if ((type_flag & (XARRAY_REQUEST|RADIXTREE_REQUEST)) && (td->flags & TREE_NODE_OFFSET_ENTERED))
+-		error(FATAL, "-o option is not applicable to %s\n",
+-			type_flag & RADIXTREE_REQUEST ? "radix trees" : "Xarrays");
++	if ((type_flag & (XARRAY_REQUEST|RADIXTREE_REQUEST|MAPLE_REQUEST)) &&
++	    (td->flags & TREE_NODE_OFFSET_ENTERED))
++		error(FATAL, "-o option is not applicable to %s\n", type_name);
++
++	if ((type_flag & (RBTREE_REQUEST|XARRAY_REQUEST|RADIXTREE_REQUEST)) &&
++	    (td->flags & TREE_STRUCT_VERBOSE))
++		error(FATAL, "-v option is not applicable to %s\n", type_name);
+ 
+ 	if ((td->flags & TREE_ROOT_OFFSET_ENTERED) && 
+ 	    (td->flags & TREE_NODE_POINTER))
+@@ -4506,12 +4523,26 @@ next_arg:
+ 		if (td->flags & TREE_STRUCT_RADIX_16)
+ 			fprintf(fp, "%sTREE_STRUCT_RADIX_16",
+ 				others++ ? "|" : "");
++		if (td->flags & TREE_PARSE_MEMBER)
++			fprintf(fp, "%sTREE_PARSE_MEMBER",
++				others++ ? "|" : "");
++		if (td->flags & TREE_READ_MEMBER)
++			fprintf(fp, "%sTREE_READ_MEMBER",
++				others++ ? "|" : "");
++		if (td->flags & TREE_LINEAR_ORDER)
++			fprintf(fp, "%sTREE_LINEAR_ORDER",
++				others++ ? "|" : "");
++		if (td->flags & TREE_STRUCT_VERBOSE)
++			fprintf(fp, "%sTREE_STRUCT_VERBOSE",
++				others++ ? "|" : "");
+ 		fprintf(fp, ")\n");
+ 		fprintf(fp, "              type: ");
+ 			if (type_flag & RADIXTREE_REQUEST)
+ 				fprintf(fp, "radix\n");
+ 			else if (type_flag & XARRAY_REQUEST)
+ 				fprintf(fp, "xarray\n");
++			else if (type_flag & MAPLE_REQUEST)
++				fprintf(fp, "maple\n");
+ 			else
+ 				fprintf(fp, "red-black%s", 
+ 					type_flag & RBTREE_REQUEST ? 
+@@ -4532,6 +4563,8 @@ next_arg:
+ 		do_rdtree(td);
+ 	else if (type_flag & XARRAY_REQUEST)
+ 		do_xatree(td);
++	else if (type_flag & MAPLE_REQUEST)
++		do_mptree(td);
+ 	else
+ 		do_rbtree(td);
+ 	hq_close();
+-- 
+2.37.1
+

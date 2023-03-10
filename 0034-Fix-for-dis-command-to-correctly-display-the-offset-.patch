@@ -1,0 +1,62 @@
+From 59c19818190dd4b7ae0dc2221586a4ad6f4fe905 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Tue, 21 Feb 2023 11:03:26 +0800
+Subject: [PATCH 06/12] Fix for "dis" command to correctly display the offset
+ of disassembly code
+
+For gdb-10.2, the disassembly code may start with "=>", which needs to
+be stripped when calculating the address. Otherwise, parsing the address
+will fail because the current code always assumes that it starts with the
+"0x". For example:
+
+  crash> gdb disassemble 0xffffffffa2317add
+  Dump of assembler code for function native_queued_spin_lock_slowpath:
+     ...
+     0xffffffffa2317ad3 <+35>:    mov    %edx,%eax
+     0xffffffffa2317ad5 <+37>:    lock cmpxchg %ecx,(%rdi)
+  => 0xffffffffa2317ad9 <+41>:    cmp    %eax,%edx
+     0xffffffffa2317adb <+43>:    jne    0xffffffffa2317ac0 ...
+     0xffffffffa2317add <+45>:    pop    %rbp
+     ...
+
+Without the patch:
+  crash> dis 0xffffffffa2317add -r | tail -5
+  0xffffffffa2317ad3 <native_queued_spin_lock_slowpath+35>:	mov    %edx,%eax
+  0xffffffffa2317ad5 <native_queued_spin_lock_slowpath+37>:	lock cmpxchg %ecx,(%rdi)
+  0xffffffffa2317ad5 <native_queued_spin_lock_slowpath+37>:	cmp    %eax,%edx
+                                                       ^^
+  0xffffffffa2317adb <native_queued_spin_lock_slowpath+43>:	jne    0xffffffffa2317ac0 ...
+  0xffffffffa2317add <native_queued_spin_lock_slowpath+45>:	pop    %rbp
+
+With the patch:
+
+  crash> dis 0xffffffffa2317add -r | tail -5
+  0xffffffffa2317ad3 <native_queued_spin_lock_slowpath+35>:	mov    %edx,%eax
+  0xffffffffa2317ad5 <native_queued_spin_lock_slowpath+37>:	lock cmpxchg %ecx,(%rdi)
+  0xffffffffa2317ad9 <native_queued_spin_lock_slowpath+41>:	cmp    %eax,%edx
+  0xffffffffa2317adb <native_queued_spin_lock_slowpath+43>:	jne    0xffffffffa2317ac0 ...
+  0xffffffffa2317add <native_queued_spin_lock_slowpath+45>:	pop    %rbp
+
+Reported-by: Vernon Lovejoy <vlovejoy@redhat.com>
+---
+ kernel.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel.c b/kernel.c
+index a42e6ad7d78c..6e98f5f6f6b1 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -2112,6 +2112,10 @@ cmd_dis(void)
+ 			rewind(pc->tmpfile);
+ 
+ 		while (fgets(buf2, BUFSIZE, pc->tmpfile)) {
++
++			if (STRNEQ(buf2, "=>"))
++				shift_string_left(buf2, 2);
++
+ 			strip_beginning_whitespace(buf2);
+ 
+ 			if (do_load_module_filter)
+-- 
+2.37.1
+

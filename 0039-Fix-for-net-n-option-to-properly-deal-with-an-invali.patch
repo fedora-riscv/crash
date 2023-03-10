@@ -1,0 +1,44 @@
+From 5a652ed0c8db8d4c5891091b747470431054c717 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Wed, 8 Mar 2023 20:22:02 +0800
+Subject: [PATCH 11/12] Fix for "net -n" option to properly deal with an
+ invalid argument
+
+The help/man page of the "net" command suggests that "-n" option can
+accept two kinds of argument: PID or task_struct pointer.  However,
+the "net -n" command accepts an invalid argument and shows the
+namespace of the current context silently.  For example:
+
+  crash> net -n 1000000000
+     NET_DEVICE     NAME   IP ADDRESS(ES)
+  ffff949dc11d7000  lo     127.0.0.1
+  ffff949dcc01c000  eno49  192.168.122.17
+
+With the patch, emit an error expectedly.
+
+  crash> net -n 1000000000
+  net: invalid task or pid value: 1000000000
+
+Reported-by: Buland Kumar Singh <bsingh@redhat.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ net.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net.c b/net.c
+index 987dc8934942..18c238be346d 100644
+--- a/net.c
++++ b/net.c
+@@ -420,6 +420,9 @@ cmd_net(void)
+ 				case STR_PID:
+ 				case STR_TASK:
+ 					task = tc->task;
++					break;
++				case STR_INVALID:
++					error(FATAL, "invalid task or pid value: %s\n", args[optind]);
+ 				}
+ 			}
+ 			break;
+-- 
+2.37.1
+

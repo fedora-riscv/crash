@@ -1,0 +1,71 @@
+From ade71c3ec1d28751c3d6ba1eec71781bdff093d3 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Tue, 7 Mar 2023 19:04:08 +0800
+Subject: [PATCH 12/12] gdb: Fix an assertion failure in
+ dw2_find_pc_sect_compunit_symtab()
+
+This is a partial backport patch from gdb commit 834eaf9201c1 ("Fix
+crash in new DWARF indexer").
+
+Without the patch, the "dis -rl" option may abort due to an assertion
+failure in gdb's dw2_find_pc_sect_compunit_symtab():
+
+  crash> dis -rl ffffffff96ad716c
+  dwarf2/read.c:4928: internal-error: compunit_symtab* dw2_find_pc_sect_compunit_symtab(objfile*, bound_minimal_symbol, CORE_ADDR, obj_section*, int): Assertion `result != NULL' failed.
+  A problem internal to GDB has been detected,
+  further debugging may prove unreliable.
+  Quit this debugging session? (y or n) dwarf2/read.c:4928: internal-error: compunit_symtab* dw2_find_pc_sect_compunit_symtab(objfile*, bound_minimal_symbol, CORE_ADDR, obj_section*, int): Assertion `result != NULL' failed.
+  A problem internal to GDB has been detected,
+  further debugging may prove unreliable.
+  Aborted (core dumped)
+
+Reported-by: Buland Kumar Singh <bsingh@redhat.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ gdb-10.2.patch | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/gdb-10.2.patch b/gdb-10.2.patch
+index 5089df9e72e1..835aae9859be 100644
+--- a/gdb-10.2.patch
++++ b/gdb-10.2.patch
+@@ -4,7 +4,7 @@
+ # that have already been applied.  However, if a gdb file has been modified
+ # multiple times, the subsequent patching may fail to recognize that a
+ # given patch has been previously applied, and will attempt to re-apply it.
+-# To prevent any uninintended consequences, this file also acts as a
++# To prevent any unintended consequences, this file also acts as a
+ # shell script that can restore any gdb file to its original state prior
+ # to all subsequent patch applications.
+ 
+@@ -12,7 +12,8 @@ tar xvzmf gdb-10.2.tar.gz \
+ 	gdb-10.2/gdb/symtab.c \
+ 	gdb-10.2/gdb/printcmd.c \
+ 	gdb-10.2/gdb/symfile.c \
+-	gdb-10.2/gdb/Makefile.in
++	gdb-10.2/gdb/Makefile.in \
++	gdb-10.2/gdb/dwarf2/read.c
+ 
+ exit 0
+ 
+@@ -3105,3 +3106,17 @@ exit 0
+  
+  m4_include([../../config/override.m4])
+  
++--- gdb-10.2/gdb/dwarf2/read.c.orig
+++++ gdb-10.2/gdb/dwarf2/read.c
++@@ -4925,7 +4925,10 @@ dw2_find_pc_sect_compunit_symtab (struct objfile *objfile,
++   result = recursively_find_pc_sect_compunit_symtab
++     (dw2_instantiate_symtab (data, per_objfile, false), pc);
++ 
++-  gdb_assert (result != NULL);
+++  if (warn_if_readin && result == nullptr)
+++    warning (_("(Error: pc %s in address map, but not in symtab.)"),
+++            paddress (objfile->arch (), pc));
+++
++   return result;
++ }
++ 
+-- 
+2.37.1
+

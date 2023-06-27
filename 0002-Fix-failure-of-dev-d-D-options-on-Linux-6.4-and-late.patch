@@ -1,0 +1,179 @@
+From 58c1816521c2e6bece3d69256b1866c9df8d93aa Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Tue, 16 May 2023 08:59:50 +0900
+Subject: [PATCH 02/13] Fix failure of "dev -d|-D" options on Linux 6.4 and
+ later kernels
+
+Kernel commit 2df418cf4b72 ("driver core: class: remove subsystem
+private pointer from struct class"), which is contained in Linux 6.4 and
+later kernels, removed the class.p member for struct subsys_private.  As
+a result, the "dev -d|-D" options fail with the following error.
+
+  dev: invalid structure member offset: class_p
+       FILE: dev.c  LINE: 4689  FUNCTION: init_iter()
+
+Search the class_kset list for the subsys_private of block class to fix
+this.
+
+As a preparation, introduce get_subsys_private() function, which is
+abstracted from the same search procedure in init_memory_block().
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h   |  1 +
+ dev.c    | 20 +++++++++++++++++---
+ memory.c | 35 +++--------------------------------
+ tools.c  | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 64 insertions(+), 35 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index 211fc9d55d33..21cc760444d1 100644
+--- a/defs.h
++++ b/defs.h
+@@ -5521,6 +5521,7 @@ struct rb_node *rb_left(struct rb_node *, struct rb_node *);
+ struct rb_node *rb_next(struct rb_node *);
+ struct rb_node *rb_last(struct rb_root *);
+ long percpu_counter_sum_positive(ulong fbc);
++ulong get_subsys_private(char *, char *);
+ 
+ /* 
+  *  symbols.c 
+diff --git a/dev.c b/dev.c
+index 75d30bd022a1..9d38aef9b3db 100644
+--- a/dev.c
++++ b/dev.c
+@@ -4686,9 +4686,16 @@ init_iter(struct iter *i)
+ 		} else {
+ 			/* kernel version > 2.6.27, klist */
+ 			unsigned long class_private_addr;
+-			readmem(block_class_addr + OFFSET(class_p), KVADDR,
+-				&class_private_addr, sizeof(class_private_addr),
+-				"class.p", FAULT_ON_ERROR);
++
++			if (INVALID_MEMBER(class_p)) /* kernel version >= 6.4 */
++				class_private_addr = get_subsys_private("class_kset", "block");
++			else
++				readmem(block_class_addr + OFFSET(class_p), KVADDR,
++					&class_private_addr, sizeof(class_private_addr),
++					"class.p", FAULT_ON_ERROR);
++
++			if (!class_private_addr)
++				error(FATAL, "cannot determine subsys_private for block.\n");
+ 
+ 			if (VALID_STRUCT(class_private)) {
+ 				/* 2.6.27 < kernel version <= 2.6.37-rc2 */
+@@ -4823,6 +4830,13 @@ void diskio_init(void)
+ 	if (INVALID_MEMBER(class_devices))
+ 		MEMBER_OFFSET_INIT(class_devices, "class", "devices");
+ 	MEMBER_OFFSET_INIT(class_p, "class", "p");
++	if (INVALID_MEMBER(class_p)) {
++		MEMBER_OFFSET_INIT(kset_list, "kset", "list");
++		MEMBER_OFFSET_INIT(kset_kobj, "kset", "kobj");
++		MEMBER_OFFSET_INIT(kobject_name, "kobject", "name");
++		MEMBER_OFFSET_INIT(kobject_entry, "kobject", "entry");
++		MEMBER_OFFSET_INIT(subsys_private_subsys, "subsys_private", "subsys");
++	}
+ 	MEMBER_OFFSET_INIT(class_private_devices, "class_private",
+ 		"class_devices");
+ 	MEMBER_OFFSET_INIT(device_knode_class, "device", "knode_class");
+diff --git a/memory.c b/memory.c
+index 0568f18eb9b7..953fc380c03c 100644
+--- a/memory.c
++++ b/memory.c
+@@ -17865,38 +17865,9 @@ init_memory_block(int *klistcnt, ulong **klistbuf)
+ 	 * v6.3-rc1
+ 	 * d2bf38c088e0 driver core: remove private pointer from struct bus_type
+ 	 */
+-	if (INVALID_MEMBER(bus_type_p)) {
+-		int i, cnt;
+-		char buf[32];
+-		ulong bus_kset, list, name;
+-
+-		BZERO(ld, sizeof(struct list_data));
+-
+-		get_symbol_data("bus_kset", sizeof(ulong), &bus_kset);
+-		readmem(bus_kset + OFFSET(kset_list), KVADDR, &list,
+-			sizeof(ulong), "bus_kset.list", FAULT_ON_ERROR);
+-
+-		ld->flags |= LIST_ALLOCATE;
+-		ld->start = list;
+-		ld->end = bus_kset + OFFSET(kset_list);
+-		ld->list_head_offset = OFFSET(kobject_entry);
+-
+-		cnt = do_list(ld);
+-		for (i = 0; i < cnt; i++) {
+-			readmem(ld->list_ptr[i] + OFFSET(kobject_name), KVADDR, &name,
+-				sizeof(ulong), "kobject.name", FAULT_ON_ERROR);
+-			read_string(name, buf, sizeof(buf)-1);
+-			if (CRASHDEBUG(1))
+-				fprintf(fp, "kobject: %lx name: %s\n", ld->list_ptr[i], buf);
+-			if (STREQ(buf, "memory")) {
+-				/* entry is subsys_private.subsys.kobj. See bus_to_subsys(). */
+-				private = ld->list_ptr[i] - OFFSET(kset_kobj)
+-						- OFFSET(subsys_private_subsys);
+-				break;
+-			}
+-		}
+-		FREEBUF(ld->list_ptr);
+-	} else {
++	if (INVALID_MEMBER(bus_type_p))
++		private = get_subsys_private("bus_kset", "memory");
++	else {
+ 		ulong memory_subsys = symbol_value("memory_subsys");
+ 		readmem(memory_subsys + OFFSET(bus_type_p), KVADDR, &private,
+ 			sizeof(void *), "memory_subsys.private", FAULT_ON_ERROR);
+diff --git a/tools.c b/tools.c
+index c2cfa7e280bc..392a79707e61 100644
+--- a/tools.c
++++ b/tools.c
+@@ -6963,3 +6963,46 @@ percpu_counter_sum_positive(ulong fbc)
+ 
+ 	return (ret < 0) ? 0 : ret;
+ }
++
++ulong
++get_subsys_private(char *kset_name, char *target_name)
++{
++	ulong kset_addr, kset_list, name_addr, private = 0;
++	struct list_data list_data, *ld;
++	char buf[32];
++	int i, cnt;
++
++	if (!symbol_exists(kset_name))
++		return 0;
++
++	ld = &list_data;
++	BZERO(ld, sizeof(struct list_data));
++
++	get_symbol_data(kset_name, sizeof(ulong), &kset_addr);
++	readmem(kset_addr + OFFSET(kset_list), KVADDR, &kset_list,
++		sizeof(ulong), "kset.list", FAULT_ON_ERROR);
++
++	ld->flags |= LIST_ALLOCATE;
++	ld->start = kset_list;
++	ld->end = kset_addr + OFFSET(kset_list);
++	ld->list_head_offset = OFFSET(kobject_entry);
++
++	cnt = do_list(ld);
++
++	for (i = 0; i < cnt; i++) {
++		readmem(ld->list_ptr[i] + OFFSET(kobject_name), KVADDR, &name_addr,
++			sizeof(ulong), "kobject.name", FAULT_ON_ERROR);
++		read_string(name_addr, buf, sizeof(buf)-1);
++		if (CRASHDEBUG(1))
++			fprintf(fp, "kobject: %lx name: %s\n", ld->list_ptr[i], buf);
++		if (STREQ(buf, target_name)) {
++			/* entry is subsys_private.subsys.kobj. See bus_to_subsys(). */
++			private = ld->list_ptr[i] - OFFSET(kset_kobj)
++					- OFFSET(subsys_private_subsys);
++			break;
++		}
++	}
++	FREEBUF(ld->list_ptr);
++
++	return private;
++}
+-- 
+2.37.1
+

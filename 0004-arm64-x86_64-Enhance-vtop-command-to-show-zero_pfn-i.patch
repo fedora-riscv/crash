@@ -1,0 +1,225 @@
+From a0eceb041dfa248d66f9f9a455106184b7823bec Mon Sep 17 00:00:00 2001
+From: Rongwei Wang <rongwei.wang@linux.alibaba.com>
+Date: Mon, 29 May 2023 19:55:51 +0800
+Subject: [PATCH 04/13] arm64/x86_64: Enhance "vtop" command to show zero_pfn
+ information
+
+Enhance the "vtop" command to show "ZERO PAGE" information when PTE or
+PMD has attached to {huge_}zero_pfn.  For example:
+
+  crash> vtop -c 13674 ffff8917e000
+  VIRTUAL     PHYSICAL
+  ffff8917e000  836e71000
+
+  PAGE DIRECTORY: ffff000802f8d000
+     PGD: ffff000802f8dff8 => 884e29003
+     PUD: ffff000844e29ff0 => 884e93003
+     PMD: ffff000844e93240 => 840413003
+     PTE: ffff000800413bf0 => 160000836e71fc3
+    PAGE: 836e71000  (ZERO PAGE)
+  ...
+
+Hugepage case:
+  crash> vtop -c 14538 ffff95800000
+  VIRTUAL     PHYSICAL
+  ffff95800000  910c00000
+
+  PAGE DIRECTORY: ffff000801fa0000
+     PGD: ffff000801fa0ff8 => 884f53003
+     PUD: ffff000844f53ff0 => 8426cb003
+     PMD: ffff0008026cb560 => 60000910c00fc1
+    PAGE: 910c00000  (2MB, ZERO PAGE)
+  ...
+
+Note that
+1. support displaying zero page only for THP (except for 1G THP)
+2. do not support hugetlb cases.
+
+Signed-off-by: Rongwei Wang <rongwei.wang@linux.alibaba.com>
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ arm64.c  | 24 ++++++++++++++++--------
+ defs.h   |  5 +++++
+ memory.c | 23 +++++++++++++++++++++++
+ x86_64.c |  9 +++++----
+ 4 files changed, 49 insertions(+), 12 deletions(-)
+
+diff --git a/arm64.c b/arm64.c
+index 56fb841f43f8..efbdccbec9d3 100644
+--- a/arm64.c
++++ b/arm64.c
+@@ -1787,7 +1787,8 @@ arm64_vtop_2level_64k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if ((pgd_val & PMD_TYPE_MASK) == PMD_TYPE_SECT) {
+ 		ulong sectionbase = (pgd_val & SECTION_PAGE_MASK_512MB) & PHYS_MASK;
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx  (512MB)\n\n", sectionbase);
++			fprintf(fp, "  PAGE: %lx  (512MB%s)\n\n", sectionbase,
++				IS_ZEROPAGE(sectionbase) ? ", ZERO PAGE" : "");
+ 			arm64_translate_pte(pgd_val, 0, 0);
+ 		}
+ 		*paddr = sectionbase + (vaddr & ~SECTION_PAGE_MASK_512MB);
+@@ -1806,7 +1807,8 @@ arm64_vtop_2level_64k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if (pte_val & PTE_VALID) {
+ 		*paddr = (PAGEBASE(pte_val) & PHYS_MASK) + PAGEOFFSET(vaddr);
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx\n\n", PAGEBASE(*paddr));
++			fprintf(fp, "  PAGE: %lx  %s\n\n", PAGEBASE(*paddr),
++				IS_ZEROPAGE(PAGEBASE(*paddr)) ? "(ZERO PAGE)" : "");
+ 			arm64_translate_pte(pte_val, 0, 0);
+ 		}
+ 	} else {
+@@ -1859,7 +1861,8 @@ arm64_vtop_3level_64k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if ((pmd_val & PMD_TYPE_MASK) == PMD_TYPE_SECT) {
+ 		ulong sectionbase = PTE_TO_PHYS(pmd_val) & SECTION_PAGE_MASK_512MB;
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx  (512MB)\n\n", sectionbase);
++			fprintf(fp, "  PAGE: %lx  (512MB%s)\n\n", sectionbase,
++				IS_ZEROPAGE(sectionbase) ? ", ZERO PAGE" : "");
+ 			arm64_translate_pte(pmd_val, 0, 0);
+ 		}
+ 		*paddr = sectionbase + (vaddr & ~SECTION_PAGE_MASK_512MB);
+@@ -1878,7 +1881,8 @@ arm64_vtop_3level_64k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if (pte_val & PTE_VALID) {
+ 		*paddr = PTE_TO_PHYS(pte_val) + PAGEOFFSET(vaddr);
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx\n\n", PAGEBASE(*paddr));
++			fprintf(fp, "  PAGE: %lx  %s\n\n", PAGEBASE(*paddr),
++				IS_ZEROPAGE(PAGEBASE(*paddr)) ? "(ZERO PAGE)" : "");
+ 			arm64_translate_pte(pte_val, 0, 0);
+ 		}
+ 	} else {
+@@ -1940,7 +1944,8 @@ arm64_vtop_3level_4k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if ((pmd_val & PMD_TYPE_MASK) == PMD_TYPE_SECT) {
+ 		ulong sectionbase = (pmd_val & SECTION_PAGE_MASK_2MB) & PHYS_MASK;
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx  (2MB)\n\n", sectionbase);
++			fprintf(fp, "  PAGE: %lx  (2MB%s)\n\n", sectionbase,
++				IS_ZEROPAGE(sectionbase) ? ", ZERO PAGE" : "");
+ 			arm64_translate_pte(pmd_val, 0, 0);
+ 		}
+ 		*paddr = sectionbase + (vaddr & ~SECTION_PAGE_MASK_2MB);
+@@ -1959,7 +1964,8 @@ arm64_vtop_3level_4k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if (pte_val & PTE_VALID) {
+ 		*paddr = (PAGEBASE(pte_val) & PHYS_MASK) + PAGEOFFSET(vaddr);
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx\n\n", PAGEBASE(*paddr));
++			fprintf(fp, "  PAGE: %lx  %s\n\n", PAGEBASE(*paddr),
++				IS_ZEROPAGE(PAGEBASE(*paddr)) ? "(ZERO PAGE)" : "");
+ 			arm64_translate_pte(pte_val, 0, 0);
+ 		}
+ 	} else {
+@@ -2029,7 +2035,8 @@ arm64_vtop_4level_4k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if ((pmd_val & PMD_TYPE_MASK) == PMD_TYPE_SECT) {
+ 		ulong sectionbase = (pmd_val & SECTION_PAGE_MASK_2MB) & PHYS_MASK;
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx  (2MB)\n\n", sectionbase);
++			fprintf(fp, "  PAGE: %lx  (2MB%s)\n\n", sectionbase,
++				IS_ZEROPAGE(sectionbase) ? ", ZERO PAGE" : "");
+ 			arm64_translate_pte(pmd_val, 0, 0);
+ 		}
+ 		*paddr = sectionbase + (vaddr & ~SECTION_PAGE_MASK_2MB);
+@@ -2048,7 +2055,8 @@ arm64_vtop_4level_4k(ulong pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if (pte_val & PTE_VALID) {
+ 		*paddr = (PAGEBASE(pte_val) & PHYS_MASK) + PAGEOFFSET(vaddr);
+ 		if (verbose) {
+-			fprintf(fp, "  PAGE: %lx\n\n", PAGEBASE(*paddr));
++			fprintf(fp, "  PAGE: %lx  %s\n\n", PAGEBASE(*paddr),
++				IS_ZEROPAGE(PAGEBASE(*paddr)) ? "(ZERO PAGE)" : "");
+ 			arm64_translate_pte(pte_val, 0, 0);
+ 		}
+ 	} else {
+diff --git a/defs.h b/defs.h
+index bfa07c3f5150..7d8bb8ab3de1 100644
+--- a/defs.h
++++ b/defs.h
+@@ -2619,6 +2619,8 @@ struct vm_table {                /* kernel VM-related data */
+ 		char *name;
+ 	} *pageflags_data;
+ 	ulong max_mem_section_nr;
++	ulong zero_paddr;
++	ulong huge_zero_paddr;
+ };
+ 
+ #define NODES                       (0x1)
+@@ -3000,6 +3002,9 @@ struct load_module {
+ #define VIRTPAGEBASE(X)  (((ulong)(X)) & (ulong)machdep->pagemask)
+ #define PHYSPAGEBASE(X)  (((physaddr_t)(X)) & (physaddr_t)machdep->pagemask)
+ 
++#define IS_ZEROPAGE(paddr)   ((paddr) == vt->zero_paddr || \
++			      (paddr) == vt->huge_zero_paddr)
++
+ /* 
+  * Sparse memory stuff
+  *  These must follow the definitions in the kernel mmzone.h
+diff --git a/memory.c b/memory.c
+index 15fa8b2f08f1..ea3005a5c01f 100644
+--- a/memory.c
++++ b/memory.c
+@@ -1209,6 +1209,27 @@ vm_init(void)
+ 		machdep->memory_size()));
+ 	vt->paddr_prlen = strlen(buf);
+ 
++	vt->zero_paddr = ~0UL;
++	if (kernel_symbol_exists("zero_pfn")) {
++		ulong zero_pfn;
++
++		if (readmem(symbol_value("zero_pfn"), KVADDR,
++			    &zero_pfn, sizeof(zero_pfn),
++			    "read zero_pfn", QUIET|RETURN_ON_ERROR))
++			vt->zero_paddr = zero_pfn << PAGESHIFT();
++	}
++
++	vt->huge_zero_paddr = ~0UL;
++	if (kernel_symbol_exists("huge_zero_pfn")) {
++		ulong huge_zero_pfn;
++
++		if (readmem(symbol_value("huge_zero_pfn"), KVADDR,
++			    &huge_zero_pfn, sizeof(huge_zero_pfn),
++			    "read huge_zero_pfn", QUIET|RETURN_ON_ERROR) &&
++		    huge_zero_pfn != ~0UL)
++			vt->huge_zero_paddr = huge_zero_pfn << PAGESHIFT();
++	}
++
+ 	if (vt->flags & PERCPU_KMALLOC_V1) 
+                 vt->dump_kmem_cache = dump_kmem_cache_percpu_v1;
+ 	else if (vt->flags & PERCPU_KMALLOC_V2) 
+@@ -14065,6 +14086,8 @@ dump_vm_table(int verbose)
+ 	} else {
+ 		fprintf(fp, "    node_online_map: (unused)\n");
+ 	}
++	fprintf(fp, "         zero_paddr: %lx\n", vt->zero_paddr);
++	fprintf(fp, "    huge_zero_paddr: %lx\n", vt->huge_zero_paddr);
+ 	fprintf(fp, "   nr_vm_stat_items: %d\n", vt->nr_vm_stat_items);
+ 	fprintf(fp, "      vm_stat_items: %s", (vt->flags & VM_STAT) ?
+ 		"\n" : "(not used)\n");
+diff --git a/x86_64.c b/x86_64.c
+index 5019c69e452e..693a08bea758 100644
+--- a/x86_64.c
++++ b/x86_64.c
+@@ -2114,8 +2114,9 @@ x86_64_uvtop_level4(struct task_context *tc, ulong uvaddr, physaddr_t *paddr, in
+ 		goto no_upage;
+         if (pmd_pte & _PAGE_PSE) {
+ 		if (verbose) {
+-                        fprintf(fp, "  PAGE: %lx  (2MB)\n\n", 
+-				PAGEBASE(pmd_pte) & PHYSICAL_PAGE_MASK);
++			fprintf(fp, "  PAGE: %lx  (2MB%s)\n\n",
++				PAGEBASE(pmd_pte) & PHYSICAL_PAGE_MASK,
++				IS_ZEROPAGE(PAGEBASE(pmd_pte) & PHYSICAL_PAGE_MASK) ? ", ZERO PAGE" : "");
+                         x86_64_translate_pte(pmd_pte, 0, 0);
+                 }
+ 
+@@ -2143,8 +2144,8 @@ x86_64_uvtop_level4(struct task_context *tc, ulong uvaddr, physaddr_t *paddr, in
+ 	*paddr = (PAGEBASE(pte) & PHYSICAL_PAGE_MASK) + PAGEOFFSET(uvaddr);
+ 
+ 	if (verbose) {
+-		fprintf(fp, "  PAGE: %lx\n\n", 
+-			PAGEBASE(*paddr) & PHYSICAL_PAGE_MASK);
++		fprintf(fp, "  PAGE: %lx  %s\n\n", PAGEBASE(*paddr) & PHYSICAL_PAGE_MASK,
++			IS_ZEROPAGE(PAGEBASE(*paddr) & PHYSICAL_PAGE_MASK) ? "(ZERO PAGE)" : "");
+ 		x86_64_translate_pte(pte, 0, 0);
+ 	}
+ 
+-- 
+2.37.1
+

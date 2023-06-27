@@ -1,0 +1,62 @@
+From 9868ebc8e648e5791764a51567a23efae7170d9b Mon Sep 17 00:00:00 2001
+From: HATAYAMA Daisuke <d.hatayama@fujitsu.com>
+Date: Tue, 30 May 2023 19:38:35 +0900
+Subject: [PATCH 06/13] Fix segfault in arm64_is_kernel_exception_frame() when
+ corrupt stack pointer address is given
+
+Due to the corrupted mapping fixed by the previous commit,
+arm64_is_kernel_exception_frame() can receive invalid stack pointer
+address via the 2nd argument; different NT_PRSTATUS contains different
+task's stack pointer address. However, macro STACK_OFFSET_TYPE() never
+checks if a given address is within the range of the kernel stack of
+the corresponding task and hence can result in referring to outside of
+bt->stackbuf.
+
+	static int
+	arm64_is_kernel_exception_frame(struct bt_info *bt, ulong stkptr)
+	{
+			struct arm64_pt_regs *regs;
+		struct machine_specific *ms = machdep->machspec;
+
+			regs = (struct arm64_pt_regs *)&bt->stackbuf[(ulong)(STACK_OFFSET_TYPE(stkptr))];
+
+	=>	if (INSTACK(regs->sp, bt) && INSTACK(regs->regs[29], bt) &&
+			!(regs->pstate & (0xffffffff00000000ULL | PSR_MODE32_BIT)) &&
+			is_kernel_text(regs->pc) &&
+			is_kernel_text(regs->regs[30] | ms->CONFIG_ARM64_KERNELPACMASK)) {
+
+To fix this issue, check if the given stack pointer address points to
+the range of the kernel stack of the corresponding task, and abort if
+it turns out to be invalid.
+
+Although the corrupted mapping has already been fixed, this fix is
+still needed because corrupt stack pointer address can still be passed
+here from different reasons. Consider, for example, that data on the
+kernel stack can be modified abnormally due to any kernel bugs or
+hardware issues.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@fujitsu.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/defs.h b/defs.h
+index 6520d2f13f48..11fdc17e60d0 100644
+--- a/defs.h
++++ b/defs.h
+@@ -976,7 +976,10 @@ struct bt_info {
+ 
+ #define STACK_OFFSET_TYPE(OFF) \
+   (((ulong)(OFF) > STACKSIZE()) ? \
+-  (ulong)((ulong)(OFF) - (ulong)(bt->stackbase)) : (ulong)(OFF)) 
++  (((ulong)(OFF) < (ulong)(bt->stackbase) || (ulong)(OFF) >= (ulong)(bt->stackbase) + STACKSIZE()) ? \
++  error(FATAL, "invalid stack pointer is given\n") :			\
++   (ulong)((ulong)(OFF) - (ulong)(bt->stackbase))) :			\
++   (ulong)(OFF))
+ 
+ #define GET_STACK_ULONG(OFF) \
+  *((ulong *)((char *)(&bt->stackbuf[(ulong)(STACK_OFFSET_TYPE(OFF))])))
+-- 
+2.37.1
+

@@ -3,8 +3,8 @@
 #
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
-Version: 8.0.2
-Release: 3%{?dist}
+Version: 8.0.3
+Release: 1%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -18,36 +18,20 @@ Requires: binutils
 Provides: bundled(libiberty)
 Provides: bundled(gdb) = 10.2
 Patch0: lzo_snappy_zstd.patch
-Patch1: 0001-ps-Provide-an-option-to-display-no-header-line.patch
-Patch2: 0002-arm64-fix-backtraces-of-KASAN-kernel-dumpfile-trunca.patch
-Patch3: 0003-arm64-handle-vabits_actual-symbol-missing-case.patch
-Patch4: 0004-EPPIC-extension-support-for-crash-8.x-gdb-10.x.patch
-Patch5: 0005-x86_64-Fix-for-move-of-per-cpu-variables-into-struct.patch
-Patch6: 0006-Fix-for-mm_struct.rss_stat-conversion-into-percpu_co.patch
-Patch7: 0007-Fix-mount-command-to-appropriately-display-the-mount.patch
-Patch8: 0008-Add-RISCV64-framework-code-support.patch
-Patch9: 0009-RISCV64-Make-crash-tool-enter-command-line-and-suppo.patch
-Patch10: 0010-RISCV64-Add-dis-command-support.patch
-Patch11: 0011-RISCV64-Add-irq-command-support.patch
-Patch12: 0012-RISCV64-Add-bt-command-support.patch
-Patch13: 0013-RISCV64-Add-help-r-command-support.patch
-Patch14: 0014-RISCV64-Add-help-m-M-command-support.patch
-Patch15: 0015-RISCV64-Add-mach-command-support.patch
-Patch16: 0016-RISCV64-Add-the-implementation-of-symbol-verify.patch
-Patch17: 0017-SLUB-Fix-for-offset-change-of-struct-slab-members-on.patch
-Patch18: 0018-Fix-for-kmem-i-to-display-correct-SLAB-statistics-on.patch
-Patch19: 0019-Fix-build-failure-due-to-no-EM_RISCV-with-glibc-2.23.patch
-Patch20: 0020-gdb-Fix-an-assertion-failure-in-the-gdb-s-copy_type.patch
-Patch21: 0021-SLAB-Fix-for-kmem-s-S-options-on-Linux-6.1-and-later.patch
-Patch22: 0022-SLAB-Fix-for-kmem-s-S-options-on-Linux-6.2-rc1-and-l.patch
-Patch23: 0023-Port-the-maple-tree-data-structures-and-functions.patch
-Patch24: 0024-Add-maple-tree-support-to-tree-command.patch
-Patch25: 0025-Add-do_maple_tree-for-maple-tree-operations.patch
-Patch26: 0026-Introduce-maple-tree-vma-iteration-to-vm_area_dump.patch
-Patch27: 0027-Update-the-help-text-of-tree-command-for-maple-tree.patch
-Patch28: 0028-Dump-maple-tree-offset-variables-by-help-o.patch
-Patch29: crash-8.0.2_build.patch
-Patch30: crash-8.0.0-5-gdb-cdefs.patch
+Patch1: crash-8.0.3_build.patch
+Patch2: 0001-Fix-kernel-version-macros-for-revision-numbers-over-.patch
+Patch3: 0002-Fix-failure-of-dev-d-D-options-on-Linux-6.4-and-late.patch
+Patch4: 0003-Fix-kmem-v-option-displaying-no-regions-on-Linux-6.3.patch
+Patch5: 0004-arm64-x86_64-Enhance-vtop-command-to-show-zero_pfn-i.patch
+Patch6: 0005-diskdump-netdump-fix-segmentation-fault-caused-by-fa.patch
+Patch7: 0006-Fix-segfault-in-arm64_is_kernel_exception_frame-when.patch
+Patch8: 0007-Output-prompt-when-stdin-is-not-a-TTY.patch
+Patch9: 0008-x86_64-Fix-bt-command-printing-stale-entries-on-Linu.patch
+Patch10: 0009-Fix-invalid-structure-size-error-during-crash-startu.patch
+Patch11: 0010-Revert-Fix-segfault-in-arm64_is_kernel_exception_fra.patch
+Patch12: 0011-arm64-Fix-again-segfault-in-arm64_is_kernel_exceptio.patch
+Patch13: 0012-ppc64-Remove-redundant-PTE-checks.patch
+Patch14: 0013-Support-module-memory-layout-change-on-Linux-6.4.patch
 
 %description
 The core analysis suite is a self-contained tool that can be used to
@@ -82,25 +66,6 @@ offered by Mission Critical Linux, or the LKCD kernel patch.
 %patch12 -p1
 %patch13 -p1
 %patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1 -b crash-8.0.2_build.patch
-%ifarch ppc64le
-%patch30 -p1 -b crash-8.0.0-5-gdb-cdefs.patch
-%endif
-
 
 %build
 
@@ -126,6 +91,10 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Tue Jun 27 2023 Lianbo Jiang <lijiang@redhat.com> - 8.0.3-1
+- Rebase to upstream crash 8.0.3
+- Support module memory layout change on Linux 6.4
+
 * Tue Feb 07 2023 Lianbo Jiang <lijiang@redhat.com> - 8.0.2-3
 - Update to the latest upstream commit <46344aa2f92b>
 

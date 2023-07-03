@@ -1,5 +1,5 @@
---- crash-8.0.2/Makefile.orig
-+++ crash-8.0.2/Makefile
+--- crash-8.0.3/Makefile.orig
++++ crash-8.0.3/Makefile
 @@ -256,7 +256,7 @@ all: make_configure
  gdb_merge: force
  	@if [ ! -f ${GDB}/README ]; then \
@@ -9,8 +9,8 @@
  	@echo "../../${PROGRAM} ../../${PROGRAM}lib.a" > ${GDB}/gdb/mergeobj
  	@rm -f ${PROGRAM}
  	@if [ ! -f ${GDB}/config.status ]; then \
---- crash-8.0.2/diskdump.c.orig
-+++ crash-8.0.2/diskdump.c
+--- crash-8.0.3/diskdump.c.orig
++++ crash-8.0.3/diskdump.c
 @@ -23,6 +23,9 @@
   * GNU General Public License for more details.
   */

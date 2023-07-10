@@ -1,0 +1,45 @@
+From 6d0be1316aa3666895c0a8a0d3c98c235ec03bd4 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Mon, 10 Jul 2023 10:42:08 +0900
+Subject: [PATCH] Fix "irq -a" option on Linux 6.0 and later
+
+Kernel commit f0dd891dd5a1d ("lib/cpumask: move some one-line wrappers
+to header file"), which is contained in Linux 6.0 and later kernels,
+inlined alloc_cpumask_var() function.  As a result, the "irq -a" option
+fails to determine that cpumask_var_t is a pointer, and displays wrong
+CPU affinity for IRQs:
+
+  crash> irq -a
+  IRQ NAME                 AFFINITY
+    1 i8042                3
+    4 ttyS0
+    8 rtc0
+    9 acpi                 3
+   12 i8042                3
+  ...
+
+Use alloc_cpumask_var_node() function symbol instead to fix it.
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ kernel.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel.c b/kernel.c
+index 639ed64f306a..0fc77c19f12a 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -7298,7 +7298,8 @@ generic_get_irq_affinity(int irq)
+ 		tmp_addr = irq_desc_addr + \
+ 			   OFFSET(irq_desc_t_affinity);
+ 
+-	if (symbol_exists("alloc_cpumask_var")) /* pointer member */
++	if (symbol_exists("alloc_cpumask_var_node") ||
++	    symbol_exists("alloc_cpumask_var")) /* pointer member */
+ 		readmem(tmp_addr,KVADDR, &affinity_ptr, sizeof(ulong),
+ 		        "irq_desc affinity", FAULT_ON_ERROR);
+ 	else /* array member */
+-- 
+2.37.1
+

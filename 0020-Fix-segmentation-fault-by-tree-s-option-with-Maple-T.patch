@@ -1,0 +1,53 @@
+From f0b59524624b83d634b3fa8ab4ab3acf9ccce9df Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Mon, 10 Jul 2023 15:05:36 +0900
+Subject: [PATCH 4/4] Fix segmentation fault by "tree -s" option with Maple
+ Tree
+
+Without the patch, do_mt_entry() can call dump_struct_members_for_tree()
+with a NULL entry, and parse_for_member_extended() will cause a
+segmentation fault during strncpy().
+
+This is caused by "tree -t maple -s struct.member.member" style multiple
+level member access:
+
+  crash> tree -t maple -s irq_desc.irq_data.irq  sparse_irqs
+  ffff936980188400
+    irq_data.irq = 0,
+  ffff93698018be00
+    irq_data.irq = 1,
+  ...
+  ffff936980f38e00
+    irq_data.irq = 19,
+  Segmentation fault (core dumped)
+
+  (gdb) bt
+  #0  0x00007faaf8e51635 in __strncpy_avx2 () from /lib64/libc.so.6
+  #1  0x00000000005e5927 in parse_for_member_extended (dm=dm@entry=0x7ffcb9e6d860, ...
+  #2  0x0000000000603c45 in dump_struct_member (s=s@entry=0x128cde0 <shared_bufs+1024> ...
+  #3  0x0000000000513cf5 in dump_struct_members_for_tree (td=td@entry=0x7ffcb9e6eeb0, ...
+  #4  0x0000000000651f15 in do_mt_entry (entry=0, min=min@entry=20, max=max@entry=119, ...
+  ...
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ maple_tree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/maple_tree.c b/maple_tree.c
+index eccd273105a6..8c804d0cb80d 100644
+--- a/maple_tree.c
++++ b/maple_tree.c
+@@ -313,7 +313,7 @@ static void do_mt_entry(ulong entry, ulong min, ulong max, uint depth,
+ 		fprintf(fp, "  index: %ld  position: %s/%u\n",
+ 			++(*global_index), path, index);
+ 
+-	if (td->structname) {
++	if (td->structname && entry) {
+ 		if (td->flags & TREE_STRUCT_RADIX_10)
+ 			print_radix = 10;
+ 		else if (td->flags & TREE_STRUCT_RADIX_16)
+-- 
+2.37.1
+

@@ -4,7 +4,7 @@
 Summary: Kernel analysis utility for live systems, netdump, diskdump, kdump, LKCD or mcore dumpfiles
 Name: crash
 Version: 8.0.3
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3
 Source0: https://github.com/crash-utility/crash/archive/crash-%{version}.tar.gz
 Source1: http://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.gz
@@ -109,6 +109,14 @@ cp -p defs.h %{buildroot}%{_includedir}/crash
 %{_includedir}/*
 
 %changelog
+* Tue Jul 25 2023 Lianbo Jiang <lijiang@redhat.com> - 8.0.3-2
+- Fix failure of gathering task table on Linux 6.5-rc1 and later
+- Fix compilation error due to new strlcpy function that glibc added
+- Fix "irq -a" option on Linux 6.0 and later
+- Fix for irq/tree issues
+- Fix warning about kernel version inconsistency during crash startup
+
+
 * Tue Jun 27 2023 Lianbo Jiang <lijiang@redhat.com> - 8.0.3-1
 - Rebase to upstream crash 8.0.3
 - Support module memory layout change on Linux 6.4

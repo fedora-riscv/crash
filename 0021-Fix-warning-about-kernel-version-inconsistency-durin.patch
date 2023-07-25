@@ -1,0 +1,49 @@
+From aa5763800d614ff6080fd1909517a3939c250e86 Mon Sep 17 00:00:00 2001
+From: Lianbo Jiang <lijiang@redhat.com>
+Date: Fri, 21 Jul 2023 12:36:18 +0800
+Subject: [PATCH 1/2] Fix warning about kernel version inconsistency during
+ crash startup
+
+Currently, the symbol ".rodata" may not be found in some vmlinux, and
+the strings command will still be used to get the linux banner string,
+but this gets two strings as below:
+
+  # strings vmlinux | grep "Linux version"
+  Linux version 6.5.0-0.rc2.17.fc39.x86_64 ... GNU ld version 2.40-9.fc39) # SMP PREEMPT_DYNAMIC
+  Linux version 6.5.0-0.rc2.17.fc39.x86_64 ... GNU ld version 2.40-9.fc39) #1 SMP PREEMPT_DYNAMIC Mon Jul 17 14:57:35 UTC 2023
+
+In the verify_namelist(), the while-loop will only determine if the
+first linux banner string above matches and break the loop. But actually
+the second string above is correct one. Eventually, crash starts up with
+the following warning:
+
+  # ./crash -s vmlinux vmcore
+  WARNING: kernel version inconsistency between vmlinux and dumpfile
+
+  # ./crash -s
+  WARNING: kernel version inconsistency between vmlinux and live memory
+
+Let's always try to match the correct one, otherwise still prints a
+warning as before.
+
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ kernel.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel.c b/kernel.c
+index 546eed95eebd..9801812387bd 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -1375,8 +1375,6 @@ verify_namelist()
+ 				buffer3[i++] = *p1++;
+ 			buffer3[i] = NULLCHAR;
+ 		}
+-
+-		break;
+         }
+         pclose(pipe);
+ 
+-- 
+2.37.1
+

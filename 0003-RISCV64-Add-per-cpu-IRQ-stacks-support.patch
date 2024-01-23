@@ -1,0 +1,436 @@
+From 12fbed3280a147a40e572808b660aa838f3ca372 Mon Sep 17 00:00:00 2001
+From: Song Shuai <songshuaishuai@tinylab.org>
+Date: Wed, 13 Dec 2023 17:45:07 +0800
+Subject: [PATCH 3/6] RISCV64: Add per-cpu IRQ stacks support
+
+This patch introduces per-cpu IRQ stacks for RISCV64 to let
+"bt" do backtrace on it and 'bt -E' search eframes on it,
+and the 'help -m' command displays the addresses of each
+per-cpu IRQ stack.
+
+TEST: a vmcore dumped via hacking the handle_irq_event_percpu()
+( Why not using lkdtm INT_HW_IRQ_EN EXCEPTION ?
+  There is a deadlock[1] in crash_kexec path if use that)
+
+  crash> bt
+  PID: 0        TASK: ffffffff8140db00  CPU: 0    COMMAND: "swapper/0"
+   #0 [ff20000000003e60] __handle_irq_event_percpu at ffffffff8006462e
+   #1 [ff20000000003ed0] handle_irq_event_percpu at ffffffff80064702
+   #2 [ff20000000003ef0] handle_irq_event at ffffffff8006477c
+   #3 [ff20000000003f20] handle_fasteoi_irq at ffffffff80068664
+   #4 [ff20000000003f50] generic_handle_domain_irq at ffffffff80063988
+   #5 [ff20000000003f60] plic_handle_irq at ffffffff8046633e
+   #6 [ff20000000003fb0] generic_handle_domain_irq at ffffffff80063988
+   #7 [ff20000000003fc0] riscv_intc_irq at ffffffff80465f8e
+   #8 [ff20000000003fd0] handle_riscv_irq at ffffffff808361e8
+       PC: ffffffff80837314  [default_idle_call+50]
+       RA: ffffffff80837310  [default_idle_call+46]
+       SP: ffffffff81403da0  CAUSE: 8000000000000009
+  epc : ffffffff80837314 ra : ffffffff80837310 sp : ffffffff81403da0
+   gp : ffffffff814ef848 tp : ffffffff8140db00 t0 : ff2000000004bb18
+   t1 : 0000000000032c73 t2 : ffffffff81200a48 s0 : ffffffff81403db0
+   s1 : 0000000000000000 a0 : 0000000000000004 a1 : 0000000000000000
+   a2 : ff6000009f1e7000 a3 : 0000000000002304 a4 : ffffffff80c1c2d8
+   a5 : 0000000000000000 a6 : ff6000001fe01958 a7 : 00002496ea89dbf1
+   s2 : ffffffff814f0220 s3 : 0000000000000001 s4 : 000000000000003f
+   s5 : ffffffff814f03d8 s6 : 0000000000000000 s7 : ffffffff814f00d0
+   s8 : ffffffff81526f10 s9 : ffffffff80c1d880 s10: 0000000000000000
+   s11: 0000000000000001 t3 : 0000000000003392 t4 : 0000000000000000
+   t5 : 0000000000000000 t6 : 0000000000000040
+   status: 0000000200000120 badaddr: 0000000000000000
+    cause: 8000000000000009 orig_a0: ffffffff80837310
+  --- <IRQ stack> ---
+   #9 [ffffffff81403da0] default_idle_call at ffffffff80837314
+   #10 [ffffffff81403db0] do_idle at ffffffff8004d0a0
+   #11 [ffffffff81403e40] cpu_startup_entry at ffffffff8004d21e
+   #12 [ffffffff81403e60] kernel_init at ffffffff8083746a
+   #13 [ffffffff81403e70] arch_post_acpi_subsys_init at ffffffff80a006d8
+   #14 [ffffffff81403e80] console_on_rootfs at ffffffff80a00c92
+  crash>
+
+  crash> bt -E
+  CPU 0 IRQ STACK:
+  KERNEL-MODE EXCEPTION FRAME AT: ff20000000003a48
+       PC: ffffffff8006462e  [__handle_irq_event_percpu+30]
+       RA: ffffffff80064702  [handle_irq_event_percpu+18]
+       SP: ff20000000003e60  CAUSE: 000000000000000d
+  epc : ffffffff8006462e ra : ffffffff80064702 sp : ff20000000003e60
+   gp : ffffffff814ef848 tp : ffffffff8140db00 t0 : 0000000000046600
+   t1 : ffffffff80836464 t2 : ffffffff81200a48 s0 : ff20000000003ed0
+   s1 : 0000000000000000 a0 : 0000000000000000 a1 : 0000000000000118
+   a2 : 0000000000000052 a3 : 0000000000000000 a4 : 0000000000000000
+   a5 : 0000000000010001 a6 : ff6000001fe01958 a7 : 00002496ea89dbf1
+   s2 : ff60000000941ab0 s3 : ffffffff814a0658 s4 : ff60000000089230
+   s5 : ffffffff814a0518 s6 : ffffffff814a0620 s7 : ffffffff80e5f0f8
+   s8 : ffffffff80fc50b0 s9 : ffffffff80c1d880 s10: 0000000000000000
+   s11: 0000000000000001 t3 : 0000000000003392 t4 : 0000000000000000
+   t5 : 0000000000000000 t6 : 0000000000000040
+   status: 0000000200000100 badaddr: 0000000000000078
+    cause: 000000000000000d orig_a0: ff20000000003ea0
+
+  CPU 1 IRQ STACK: (none found)
+
+  crash>
+
+  crash> help -m
+  <snip>
+             machspec: ced1e0
+          irq_stack_size: 16384
+           irq_stacks[0]: ff20000000000000
+           irq_stacks[1]: ff20000000008000
+  crash>
+
+[1]: https://lore.kernel.org/linux-riscv/20231208111015.173237-1-songshuaishuai@tinylab.org/
+
+Signed-off-by: Song Shuai <songshuaishuai@tinylab.org>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h    |   7 +-
+ help.c    |   8 +--
+ riscv64.c | 195 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 198 insertions(+), 12 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index 9cf9501348ed..b71cdbd01b8d 100644
+--- a/defs.h
++++ b/defs.h
+@@ -3643,6 +3643,8 @@ typedef signed int s32;
+ #define pmd_index_l5_4k(addr) (((addr) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
+ #define pte_index_l5_4k(addr) (((addr) >> PAGESHIFT()) & (PTRS_PER_PTE - 1))
+ 
++/* machdep->flags */
++#define KSYMS_START	(0x1)
+ #define VM_L3_4K	(0x2)
+ #define VM_L3_2M	(0x4)
+ #define VM_L3_1G	(0x8)
+@@ -3652,6 +3654,7 @@ typedef signed int s32;
+ #define VM_L5_4K	(0x80)
+ #define VM_L5_2M	(0x100)
+ #define VM_L5_1G	(0x200)
++#define IRQ_STACKS	(0x400)
+ 
+ #define VM_FLAGS	(VM_L3_4K | VM_L3_2M | VM_L3_1G | \
+ 			 VM_L4_4K | VM_L4_2M | VM_L4_1G | \
+@@ -7027,8 +7030,6 @@ struct riscv64_unwind_frame {
+ 	ulong pc;
+ };
+ 
+-#define KSYMS_START	(0x1)
+-
+ struct machine_specific {
+ 	ulong phys_base;
+ 	ulong page_offset;
+@@ -7058,6 +7059,8 @@ struct machine_specific {
+ 	ulong struct_page_size;
+ 
+ 	struct riscv64_register *crash_task_regs;
++	ulong irq_stack_size;
++	ulong *irq_stacks;
+ };
+ /* from arch/riscv/include/asm/pgtable-bits.h */
+ #define _PAGE_PRESENT	(machdep->machspec->_page_present)
+diff --git a/help.c b/help.c
+index d80e843703c1..a4319dd2a717 100644
+--- a/help.c
++++ b/help.c
+@@ -1938,10 +1938,10 @@ char *help_bt[] = {
+ "           fails or the -t option starts too high in the process stack).",
+ "       -l  show file and line number of each stack trace text location.",
+ "       -e  search the stack for possible kernel and user mode exception frames.",
+-"       -E  search the IRQ stacks (x86, x86_64, arm64, and ppc64), and the",
+-"           exception stacks (x86_64) for possible exception frames; all other",
+-"           arguments except for -c will be ignored since this is not a context-",
+-"           sensitive operation.",
++"       -E  search the IRQ stacks (x86, x86_64, arm64, riscv64 and ppc64), and",
++"           the exception stacks (x86_64) for possible exception frames; all",
++"           other arguments except for -c will be ignored since this is not a",
++"           context-sensitive operation.",
+ "       -f  display all stack data contained in a frame; this option can be",
+ "           used to determine the arguments passed to each function; on ia64,",
+ "           the argument register contents are dumped.",
+diff --git a/riscv64.c b/riscv64.c
+index 6097c0029ccc..a26b8a43cb29 100644
+--- a/riscv64.c
++++ b/riscv64.c
+@@ -33,6 +33,7 @@ static int riscv64_uvtop(struct task_context *tc, ulong vaddr,
+ static int riscv64_kvtop(struct task_context *tc, ulong kvaddr,
+ 			  physaddr_t *paddr, int verbose);
+ static void riscv64_cmd_mach(void);
++static void riscv64_irq_stack_init(void);
+ static void riscv64_stackframe_init(void);
+ static void riscv64_back_trace_cmd(struct bt_info *bt);
+ static int riscv64_eframe_search(struct bt_info *bt);
+@@ -54,9 +55,15 @@ static void riscv64_get_va_bits(struct machine_specific *ms);
+ static void riscv64_get_struct_page_size(struct machine_specific *ms);
+ static void riscv64_print_exception_frame(struct bt_info *, ulong , int );
+ static int riscv64_is_kernel_exception_frame(struct bt_info *, ulong );
++static int riscv64_on_irq_stack(int , ulong);
++static int riscv64_on_process_stack(struct bt_info *, ulong );
++static void riscv64_set_process_stack(struct bt_info *);
++static void riscv64_set_irq_stack(struct bt_info *);
+ 
+ #define REG_FMT 	"%016lx"
+ #define SZ_2G		0x80000000
++#define USER_MODE	(0)
++#define KERNEL_MODE	(1)
+ 
+ /*
+  * Holds registers during the crash.
+@@ -191,11 +198,14 @@ riscv64_verify_symbol(const char *name, ulong value, char type)
+ void
+ riscv64_dump_machdep_table(ulong arg)
+ {
+-	int others = 0;
++	const struct machine_specific *ms = machdep->machspec;
++	int others = 0, i = 0;
+ 
+ 	fprintf(fp, "              flags: %lx (", machdep->flags);
+ 	if (machdep->flags & KSYMS_START)
+ 		fprintf(fp, "%sKSYMS_START", others++ ? "|" : "");
++	if (machdep->flags & IRQ_STACKS)
++		fprintf(fp, "%sIRQ_STACKS", others++ ? "|" : "");
+ 	fprintf(fp, ")\n");
+ 
+ 	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
+@@ -251,6 +261,15 @@ riscv64_dump_machdep_table(ulong arg)
+ 	fprintf(fp, "   max_physmem_bits: %ld\n", machdep->max_physmem_bits);
+ 	fprintf(fp, "  sections_per_root: %ld\n", machdep->sections_per_root);
+ 	fprintf(fp, "           machspec: %lx\n", (ulong)machdep->machspec);
++	if (machdep->flags & IRQ_STACKS) {
++		fprintf(fp, "        irq_stack_size: %ld\n", ms->irq_stack_size);
++		for (i = 0; i < kt->cpus; i++)
++			fprintf(fp, "         irq_stacks[%d]: %lx\n",
++				i, ms->irq_stacks[i]);
++	} else {
++		fprintf(fp, "        irq_stack_size: (unused)\n");
++		fprintf(fp, "            irq_stacks: (unused)\n");
++	}
+ }
+ 
+ static ulong
+@@ -665,6 +684,111 @@ riscv64_display_full_frame(struct bt_info *bt, struct riscv64_unwind_frame *curr
+ 	fprintf(fp, "\n");
+ }
+ 
++/*
++ * Gather IRQ stack values.
++ */
++static void
++riscv64_irq_stack_init(void)
++{
++	int i;
++	struct syment *sp;
++	struct gnu_request request, *req;
++	struct machine_specific *ms = machdep->machspec;
++	ulong p, sz;
++	req = &request;
++
++	if (symbol_exists("irq_stack_ptr") &&
++	    (sp = per_cpu_symbol_search("irq_stack_ptr")) &&
++	    get_symbol_type("irq_stack_ptr", NULL, req)) {
++		if (CRASHDEBUG(1)) {
++			fprintf(fp, "irq_stack_ptr: \n");
++			fprintf(fp, "  type: %x, %s\n",
++				(int)req->typecode,
++				(req->typecode == TYPE_CODE_PTR) ?
++						"TYPE_CODE_PTR" : "other");
++			fprintf(fp, "  target_typecode: %x, %s\n",
++				(int)req->target_typecode,
++				req->target_typecode == TYPE_CODE_INT ?
++						"TYPE_CODE_INT" : "other");
++			fprintf(fp, "  target_length: %ld\n",
++						req->target_length);
++			fprintf(fp, "  length: %ld\n", req->length);
++		}
++
++		if (!(ms->irq_stacks = (ulong *)malloc((size_t)(kt->cpus * sizeof(ulong)))))
++			error(FATAL, "cannot malloc irq_stack addresses\n");
++
++		/*
++		 * find IRQ_STACK_SIZE (i.e. THREAD_SIZE) via thread_union.stack
++		 * or set STACKSIZE() as default.
++		 */
++		if (MEMBER_EXISTS("thread_union", "stack")) {
++			if ((sz = MEMBER_SIZE("thread_union", "stack")) > 0)
++				ms->irq_stack_size = sz;
++		} else
++			ms->irq_stack_size = machdep->stacksize;
++
++		machdep->flags |= IRQ_STACKS;
++
++		for (i = 0; i < kt->cpus; i++) {
++			p = kt->__per_cpu_offset[i] + sp->value;
++			if (CRASHDEBUG(1))
++				fprintf(fp, " IRQ stack pointer[%d] is  %lx\n", i, p);
++			readmem(p, KVADDR, &(ms->irq_stacks[i]), sizeof(ulong),
++				"IRQ stack pointer", RETURN_ON_ERROR);
++		}
++	}
++}
++
++static int
++riscv64_on_irq_stack(int cpu, ulong stkptr)
++{
++	struct machine_specific *ms = machdep->machspec;
++	ulong * stacks = ms->irq_stacks;
++	ulong stack_size = ms->irq_stack_size;
++
++	if ((cpu >= kt->cpus) || (stacks == NULL) || !stack_size)
++		return FALSE;
++
++	if ((stkptr >= stacks[cpu]) &&
++	    (stkptr < (stacks[cpu] + stack_size)))
++		return TRUE;
++
++	return FALSE;
++}
++
++static int
++riscv64_on_process_stack(struct bt_info *bt, ulong stkptr)
++{
++	ulong stackbase, stacktop;
++
++	stackbase = GET_STACKBASE(bt->task);
++	stacktop = GET_STACKTOP(bt->task);
++
++	if ((stkptr >= stackbase) && (stkptr < stacktop))
++		return TRUE;
++
++	return FALSE;
++}
++
++static void
++riscv64_set_irq_stack(struct bt_info *bt)
++{
++	struct machine_specific *ms = machdep->machspec;
++
++	bt->stackbase = ms->irq_stacks[bt->tc->processor];
++	bt->stacktop = bt->stackbase + ms->irq_stack_size;
++	alter_stackbuf(bt);
++}
++
++static void
++riscv64_set_process_stack(struct bt_info *bt)
++{
++	bt->stackbase = GET_STACKBASE(bt->task);
++	bt->stacktop = GET_STACKTOP(bt->task);
++	alter_stackbuf(bt);
++}
++
+ static void
+ riscv64_stackframe_init(void)
+ {
+@@ -751,7 +875,7 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ {
+ 	struct riscv64_unwind_frame current, previous;
+ 	struct stackframe curr_frame;
+-	struct riscv64_register * regs;
++	struct riscv64_register *regs, *irq_regs;
+ 	int level = 0;
+ 
+ 	if (bt->flags & BT_REGS_NOT_FOUND)
+@@ -759,6 +883,11 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ 
+ 	regs = (struct riscv64_register *) bt->machdep;
+ 
++	if (riscv64_on_irq_stack(bt->tc->processor, bt->frameptr)) {
++		riscv64_set_irq_stack(bt);
++		bt->flags |= BT_IRQSTACK;
++	}
++
+ 	current.pc = bt->instptr;
+ 	current.sp = bt->stkptr;
+ 	current.fp = bt->frameptr;
+@@ -813,6 +942,35 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ 		current.fp = previous.fp;
+ 		current.sp = previous.sp;
+ 
++		/*
++		 * When backtracing to do_irq(), find the original FP of do_irq()
++		 * and then use the saved pt_regs in process stack to continue
++		 */
++		if ((bt->flags & BT_IRQSTACK) &&
++		    !riscv64_on_irq_stack(bt->tc->processor, current.fp)){
++			if (riscv64_on_process_stack(bt, current.fp)){
++
++				frameptr = (struct stackframe *)current.fp - 1;
++
++				if (!readmem((ulong)frameptr, KVADDR, &curr_frame,
++				    sizeof(curr_frame), "get do_irq stack frame", RETURN_ON_ERROR))
++					return;
++
++				riscv64_set_process_stack(bt);
++
++				irq_regs = (struct riscv64_register *)
++					&bt->stackbuf[(ulong)(STACK_OFFSET_TYPE(curr_frame.fp))];
++
++				current.pc = irq_regs->regs[RISCV64_REGS_EPC];
++				current.fp = irq_regs->regs[RISCV64_REGS_FP];
++				current.sp = irq_regs->regs[RISCV64_REGS_SP];
++
++				bt->flags &= ~BT_IRQSTACK;
++				riscv64_print_exception_frame(bt, curr_frame.fp, KERNEL_MODE);
++				fprintf(fp, "--- <IRQ stack> ---\n");
++			}
++		}
++
+ 		if (CRASHDEBUG(8))
+ 			fprintf(fp, "next %d pc %#lx sp %#lx fp %lx\n",
+ 				level, current.pc, current.sp, current.fp);
+@@ -1423,6 +1581,8 @@ riscv64_init(int when)
+ 	case POST_GDB:
+ 		machdep->section_size_bits = _SECTION_SIZE_BITS;
+ 		machdep->max_physmem_bits = _MAX_PHYSMEM_BITS;
++
++		riscv64_irq_stack_init();
+ 		riscv64_stackframe_init();
+ 		riscv64_page_type_init();
+ 
+@@ -1518,9 +1678,6 @@ riscv64_display_regs_from_elf_notes(int cpu, FILE *ofp)
+ 	riscv64_dump_pt_regs(regs, ofp, 0);
+ }
+ 
+-#define USER_MODE	(0)
+-#define KERNEL_MODE	(1)
+-
+ static void
+ riscv64_print_exception_frame(struct bt_info *bt, ulong ptr, int mode)
+ {
+@@ -1639,7 +1796,33 @@ static int
+ riscv64_eframe_search(struct bt_info *bt)
+ {
+ 	ulong ptr;
+-	int count;
++	int count, c;
++	struct machine_specific *ms = machdep->machspec;
++
++	if (bt->flags & BT_EFRAME_SEARCH2) {
++		if (!(machdep->flags & IRQ_STACKS))
++			error(FATAL, "IRQ stacks do not exist in this kernel\n");
++
++		for (c = 0; c < kt->cpus; c++) {
++			if ((bt->flags & BT_CPUMASK) &&
++			    !(NUM_IN_BITMAP(bt->cpumask, c)))
++				continue;
++
++			fprintf(fp, "CPU %d IRQ STACK: ", c);
++			bt->stackbase = ms->irq_stacks[c];
++			bt->stacktop = bt->stackbase + ms->irq_stack_size;
++			alter_stackbuf(bt);
++
++			count = riscv64_dump_kernel_eframes(bt);
++
++			if (count)
++				fprintf(fp, "\n");
++			else
++				fprintf(fp, "(none found)\n\n");
++		}
++
++		return 0;
++	}
+ 
+ 	count = riscv64_dump_kernel_eframes(bt);
+ 
+-- 
+2.41.0
+

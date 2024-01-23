@@ -1,0 +1,63 @@
+From aed1b7d3a064112d5c34eff81fa9ca0c50c5c782 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Tue, 16 Jan 2024 17:00:48 +0900
+Subject: [PATCH 5/6] x86_64: Fix "bt" command not printing stack trace enough
+
+On recent x86_64 kernels, the check of caller function (BT_CHECK_CALLER)
+does not work correctly due to inappropriate direct_call_targets.  As a
+result, the correct frame is ignored and the remaining frames will be
+truncated.
+
+Skip the caller check if ORC unwinder is available, as the check is not
+necessary with it.
+
+Without the patch:
+  crash> bt 493113
+  PID: 493113   TASK: ff2e34ecbd3ca2c0  CPU: 27   COMMAND: "sriov_fec_daemo"
+   #0 [ff77abc4e81cfb08] __schedule at ffffffff81b239cb
+   #1 [ff77abc4e81cfb70] schedule at ffffffff81b23e2d
+   #2 [ff77abc4e81cfb88] schedule_timeout at ffffffff81b2c9e8
+      RIP: 000000000047cdbb  RSP: 000000c0000975a8  RFLAGS: 00000216
+      ...
+
+With the patch:
+  crash> bt 493113
+  PID: 493113   TASK: ff2e34ecbd3ca2c0  CPU: 27   COMMAND: "sriov_fec_daemo"
+   #0 [ff77abc4e81cfb08] __schedule at ffffffff81b239cb
+   #1 [ff77abc4e81cfb70] schedule at ffffffff81b23e2d
+   #2 [ff77abc4e81cfb88] schedule_timeout at ffffffff81b2c9e8
+   #3 [ff77abc4e81cfbf0] __wait_for_common at ffffffff81b24abb
+   #4 [ff77abc4e81cfc68] vfio_unregister_group_dev at ffffffffc10e76ae [vfio]
+   #5 [ff77abc4e81cfca8] vfio_pci_core_unregister_device at ffffffffc11bb599 [vfio_pci_core]
+   #6 [ff77abc4e81cfcc0] vfio_pci_remove at ffffffffc103e045 [vfio_pci]
+   #7 [ff77abc4e81cfcd0] pci_device_remove at ffffffff815d7513
+   ...
+
+Reported-by: Crystal Wood <crwood@redhat.com>
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ x86_64.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/x86_64.c b/x86_64.c
+index f59991f8c4c5..502817d3b2bd 100644
+--- a/x86_64.c
++++ b/x86_64.c
+@@ -3342,6 +3342,13 @@ x86_64_print_stack_entry(struct bt_info *bt, FILE *ofp, int level,
+ 
+ 	bt->call_target = name;
+ 
++	/*
++	 * The caller check below does not work correctly for some kernels,
++	 * so skip it if ORC unwinder is available.
++	 */
++	if (machdep->flags & ORC)
++		return result;
++
+ 	if (is_direct_call_target(bt)) {
+ 		if (CRASHDEBUG(2))
+ 			fprintf(ofp, "< enable BT_CHECK_CALLER for %s >\n", 
+-- 
+2.41.0
+

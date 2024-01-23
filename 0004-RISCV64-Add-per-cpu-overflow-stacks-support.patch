@@ -1,0 +1,287 @@
+From a69496279133705f095f790a9b3425266f88b1d4 Mon Sep 17 00:00:00 2001
+From: Song Shuai <songshuaishuai@tinylab.org>
+Date: Wed, 13 Dec 2023 17:45:08 +0800
+Subject: [PATCH 4/6] RISCV64: Add per-cpu overflow stacks support
+
+The patch introduces per-cpu overflow stacks for RISCV64 to let
+"bt" do backtrace on it and the 'help -m' command dispalys the
+addresss of each per-cpu overflow stack.
+
+TEST: a lkdtm DIRECT EXHAUST_STACK vmcore
+
+  crash> bt
+  PID: 1        TASK: ff600000000d8000  CPU: 1    COMMAND: "sh"
+   #0 [ff6000001fc501c0] riscv_crash_save_regs at ffffffff8000a1dc
+   #1 [ff6000001fc50320] panic at ffffffff808773ec
+   #2 [ff6000001fc50380] walk_stackframe at ffffffff800056da
+       PC: ffffffff80876a34  [memset+96]
+       RA: ffffffff80563dc0  [recursive_loop+68]
+       SP: ff2000000000fd50  CAUSE: 000000000000000f
+  epc : ffffffff80876a34 ra : ffffffff80563dc0 sp : ff2000000000fd50
+   gp : ffffffff81515d38 tp : 0000000000000000 t0 : ff2000000000fd58
+   t1 : ff600000000d88c8 t2 : 6143203a6d74646b s0 : ff20000000010190
+   s1 : 0000000000000012 a0 : ff2000000000fd58 a1 : 1212121212121212
+   a2 : 0000000000000400 a3 : ff20000000010158 a4 : 0000000000000000
+   a5 : 725bedba92260900 a6 : 000000000130e0f0 a7 : 0000000000000000
+   s2 : ff2000000000fd58 s3 : ffffffff815170d8 s4 : ff20000000013e60
+   s5 : 000000000000000e s6 : ff20000000013e60 s7 : 0000000000000000
+   s8 : ff60000000861000 s9 : 00007fffc3641694 s10: 00007fffc3641690
+   s11: 00005555796ed240 t3 : 0000000000010297 t4 : ffffffff80c17810
+   t5 : ffffffff8195e7b8 t6 : ff20000000013b18
+   status: 0000000200000120 badaddr: ff2000000000fd58
+    cause: 000000000000000f orig_a0: 0000000000000000
+  --- <OVERFLOW stack> ---
+   #3 [ff2000000000fd50] memset at ffffffff80876a34
+   #4 [ff20000000010190] recursive_loop at ffffffff80563e16
+   #5 [ff200000000105d0] recursive_loop at ffffffff80563e16
+   < recursive_loop ...>
+   #16 [ff20000000013490] recursive_loop at ffffffff80563e16
+   #17 [ff200000000138d0] recursive_loop at ffffffff80563e16
+   #18 [ff20000000013d10] lkdtm_EXHAUST_STACK at ffffffff8088005e
+   #19 [ff20000000013d30] lkdtm_do_action at ffffffff80563292
+   #20 [ff20000000013d40] direct_entry at ffffffff80563474
+   #21 [ff20000000013d70] full_proxy_write at ffffffff8032fb3a
+   #22 [ff20000000013db0] vfs_write at ffffffff801d6414
+   #23 [ff20000000013e60] ksys_write at ffffffff801d67b8
+   #24 [ff20000000013eb0] __riscv_sys_write at ffffffff801d6832
+   #25 [ff20000000013ec0] do_trap_ecall_u at ffffffff80884a20
+  crash>
+
+  crash> help -m
+  <snip>
+          irq_stack_size: 16384
+           irq_stacks[0]: ff20000000000000
+           irq_stacks[1]: ff20000000008000
+          overflow_stack_size: 4096
+           overflow_stacks[0]: ff6000001fa7a510
+           overflow_stacks[1]: ff6000001fc4f510
+  crash>
+
+Signed-off-by: Song Shuai <songshuaishuai@tinylab.org>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h    |   6 +++
+ riscv64.c | 113 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 118 insertions(+), 1 deletion(-)
+
+diff --git a/defs.h b/defs.h
+index b71cdbd01b8d..2a29c07305f2 100644
+--- a/defs.h
++++ b/defs.h
+@@ -3655,6 +3655,9 @@ typedef signed int s32;
+ #define VM_L5_2M	(0x100)
+ #define VM_L5_1G	(0x200)
+ #define IRQ_STACKS	(0x400)
++#define OVERFLOW_STACKS     (0x800)
++
++#define RISCV64_OVERFLOW_STACK_SIZE (1 << 12)
+ 
+ #define VM_FLAGS	(VM_L3_4K | VM_L3_2M | VM_L3_1G | \
+ 			 VM_L4_4K | VM_L4_2M | VM_L4_1G | \
+@@ -7061,6 +7064,9 @@ struct machine_specific {
+ 	struct riscv64_register *crash_task_regs;
+ 	ulong irq_stack_size;
+ 	ulong *irq_stacks;
++
++	ulong overflow_stack_size;
++	ulong *overflow_stacks;
+ };
+ /* from arch/riscv/include/asm/pgtable-bits.h */
+ #define _PAGE_PRESENT	(machdep->machspec->_page_present)
+diff --git a/riscv64.c b/riscv64.c
+index a26b8a43cb29..98bf02a59b12 100644
+--- a/riscv64.c
++++ b/riscv64.c
+@@ -34,6 +34,7 @@ static int riscv64_kvtop(struct task_context *tc, ulong kvaddr,
+ 			  physaddr_t *paddr, int verbose);
+ static void riscv64_cmd_mach(void);
+ static void riscv64_irq_stack_init(void);
++static void riscv64_overflow_stack_init(void);
+ static void riscv64_stackframe_init(void);
+ static void riscv64_back_trace_cmd(struct bt_info *bt);
+ static int riscv64_eframe_search(struct bt_info *bt);
+@@ -59,6 +60,8 @@ static int riscv64_on_irq_stack(int , ulong);
+ static int riscv64_on_process_stack(struct bt_info *, ulong );
+ static void riscv64_set_process_stack(struct bt_info *);
+ static void riscv64_set_irq_stack(struct bt_info *);
++static int riscv64_on_overflow_stack(int, ulong);
++static void riscv64_set_overflow_stack(struct bt_info *);
+ 
+ #define REG_FMT 	"%016lx"
+ #define SZ_2G		0x80000000
+@@ -206,6 +209,8 @@ riscv64_dump_machdep_table(ulong arg)
+ 		fprintf(fp, "%sKSYMS_START", others++ ? "|" : "");
+ 	if (machdep->flags & IRQ_STACKS)
+ 		fprintf(fp, "%sIRQ_STACKS", others++ ? "|" : "");
++	if (machdep->flags & OVERFLOW_STACKS)
++		fprintf(fp, "%sOVERFLOW_STACKS", others++ ? "|" : "");
+ 	fprintf(fp, ")\n");
+ 
+ 	fprintf(fp, "             kvbase: %lx\n", machdep->kvbase);
+@@ -270,6 +275,15 @@ riscv64_dump_machdep_table(ulong arg)
+ 		fprintf(fp, "        irq_stack_size: (unused)\n");
+ 		fprintf(fp, "            irq_stacks: (unused)\n");
+ 	}
++	if (machdep->flags & OVERFLOW_STACKS) {
++		fprintf(fp, "        overflow_stack_size: %ld\n", ms->overflow_stack_size);
++		for (i = 0; i < kt->cpus; i++)
++			fprintf(fp, "         overflow_stacks[%d]: %lx\n",
++				i, ms->overflow_stacks[i]);
++	} else {
++		fprintf(fp, "        overflow_stack_size: (unused)\n");
++		fprintf(fp, "            overflow_stacks: (unused)\n");
++	}
+ }
+ 
+ static ulong
+@@ -684,6 +698,48 @@ riscv64_display_full_frame(struct bt_info *bt, struct riscv64_unwind_frame *curr
+ 	fprintf(fp, "\n");
+ }
+ 
++
++/*
++ * Gather Overflow stack values.
++ */
++static void
++riscv64_overflow_stack_init(void)
++{
++	int i;
++	struct syment *sp;
++	struct gnu_request request, *req;
++	struct machine_specific *ms = machdep->machspec;
++	req = &request;
++
++	if (symbol_exists("overflow_stack") &&
++	    (sp = per_cpu_symbol_search("overflow_stack")) &&
++	    get_symbol_type("overflow_stack", NULL, req)) {
++		if (CRASHDEBUG(1)) {
++			fprintf(fp, "overflow_stack: \n");
++			fprintf(fp, "  type: %x, %s\n",
++				(int)req->typecode,
++				(req->typecode == TYPE_CODE_ARRAY) ?
++						"TYPE_CODE_ARRAY" : "other");
++			fprintf(fp, "  target_typecode: %x, %s\n",
++				(int)req->target_typecode,
++				req->target_typecode == TYPE_CODE_INT ?
++						"TYPE_CODE_INT" : "other");
++			fprintf(fp, "  target_length: %ld\n",
++						req->target_length);
++			fprintf(fp, "  length: %ld\n", req->length);
++		}
++
++		if (!(ms->overflow_stacks = (ulong *)malloc((size_t)(kt->cpus * sizeof(ulong)))))
++			error(FATAL, "cannot malloc overflow_stack addresses\n");
++
++		ms->overflow_stack_size = RISCV64_OVERFLOW_STACK_SIZE;
++		machdep->flags |= OVERFLOW_STACKS;
++
++		for (i = 0; i < kt->cpus; i++)
++			ms->overflow_stacks[i] = kt->__per_cpu_offset[i] + sp->value;
++	}
++}
++
+ /*
+  * Gather IRQ stack values.
+  */
+@@ -757,6 +813,23 @@ riscv64_on_irq_stack(int cpu, ulong stkptr)
+ 	return FALSE;
+ }
+ 
++static int
++riscv64_on_overflow_stack(int cpu, ulong stkptr)
++{
++	struct machine_specific *ms = machdep->machspec;
++	ulong * stacks = ms->overflow_stacks;
++	ulong stack_size = ms->overflow_stack_size;
++
++	if ((cpu >= kt->cpus) || (stacks == NULL) || !stack_size)
++		return FALSE;
++
++	if ((stkptr >= stacks[cpu]) &&
++	    (stkptr < (stacks[cpu] + stack_size)))
++		return TRUE;
++
++	return FALSE;
++}
++
+ static int
+ riscv64_on_process_stack(struct bt_info *bt, ulong stkptr)
+ {
+@@ -781,6 +854,16 @@ riscv64_set_irq_stack(struct bt_info *bt)
+ 	alter_stackbuf(bt);
+ }
+ 
++static void
++riscv64_set_overflow_stack(struct bt_info *bt)
++{
++	struct machine_specific *ms = machdep->machspec;
++
++	bt->stackbase = ms->overflow_stacks[bt->tc->processor];
++	bt->stacktop = bt->stackbase + ms->overflow_stack_size;
++	alter_stackbuf(bt);
++}
++
+ static void
+ riscv64_set_process_stack(struct bt_info *bt)
+ {
+@@ -875,7 +958,7 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ {
+ 	struct riscv64_unwind_frame current, previous;
+ 	struct stackframe curr_frame;
+-	struct riscv64_register *regs, *irq_regs;
++	struct riscv64_register *regs, *irq_regs, *overflow_regs;
+ 	int level = 0;
+ 
+ 	if (bt->flags & BT_REGS_NOT_FOUND)
+@@ -888,6 +971,11 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ 		bt->flags |= BT_IRQSTACK;
+ 	}
+ 
++	if (riscv64_on_overflow_stack(bt->tc->processor, bt->frameptr)) {
++		riscv64_set_overflow_stack(bt);
++		bt->flags |= BT_OVERFLOW_STACK;
++	}
++
+ 	current.pc = bt->instptr;
+ 	current.sp = bt->stkptr;
+ 	current.fp = bt->frameptr;
+@@ -971,6 +1059,28 @@ riscv64_back_trace_cmd(struct bt_info *bt)
+ 			}
+ 		}
+ 
++		/*
++		 * When backtracing to handle_kernel_stack_overflow()
++		 * use pt_regs saved in overflow stack to continue
++		 */
++		if ((bt->flags & BT_OVERFLOW_STACK) &&
++		    !riscv64_on_overflow_stack(bt->tc->processor, current.fp)) {
++
++				overflow_regs = (struct riscv64_register *)
++					&bt->stackbuf[(ulong)(STACK_OFFSET_TYPE(current.sp))];
++
++				riscv64_print_exception_frame(bt, current.sp, KERNEL_MODE);
++
++				current.pc = overflow_regs->regs[RISCV64_REGS_EPC];
++				current.fp = overflow_regs->regs[RISCV64_REGS_FP];
++				current.sp = overflow_regs->regs[RISCV64_REGS_SP];
++
++				riscv64_set_process_stack(bt);
++
++				bt->flags &= ~BT_OVERFLOW_STACK;
++				fprintf(fp, "--- <OVERFLOW stack> ---\n");
++		}
++
+ 		if (CRASHDEBUG(8))
+ 			fprintf(fp, "next %d pc %#lx sp %#lx fp %lx\n",
+ 				level, current.pc, current.sp, current.fp);
+@@ -1583,6 +1693,7 @@ riscv64_init(int when)
+ 		machdep->max_physmem_bits = _MAX_PHYSMEM_BITS;
+ 
+ 		riscv64_irq_stack_init();
++		riscv64_overflow_stack_init();
+ 		riscv64_stackframe_init();
+ 		riscv64_page_type_init();
+ 
+-- 
+2.41.0
+

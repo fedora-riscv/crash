@@ -1,0 +1,192 @@
+From 7b8db357511c4e1a1750ab9cb7b9da8d9cb12b66 Mon Sep 17 00:00:00 2001
+From: Ming Wang <wangming01@loongson.cn>
+Date: Thu, 28 Dec 2023 19:46:27 +0800
+Subject: [PATCH 03/12] LoongArch64: Add 'pte' command support
+
+The pte command converts the pte table entry into a physical address and
+displays the page flags. Also fixed the pte part in the vtop command.
+
+E.g. With this patch:
+...
+crash> vtop fffb8bf772
+VIRTUAL           PHYSICAL
+fffb8bf772        40000001231bf772
+
+SEGMENT: xuvrange
+PAGE DIRECTORY: 9000000096d10000
+  PGD: 9000000096d10078 => 900000009665c000
+  PMD: 000000009665ffe8 => 9000000098894000
+  PTE: 0000000098897178 => 40000001231bc39f
+ PAGE: 40000001231bc000
+
+      PTE             PHYSICAL      FLAGS
+40000001231bc39f  40000001231bc000  (VALID|DIRTY|PLV|PRESENT|WRITE|PROTNONE|NO_EXEC)
+
+      VMA              START             END        FLAGS FILE
+90000000a4927660       fffb89c000       fffb8c0000 100173
+
+Co-developed-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Ming Wang <wangming01@loongson.cn>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ loongarch64.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
+
+diff --git a/loongarch64.c b/loongarch64.c
+index 4e63e4003856..15d1474a0408 100644
+--- a/loongarch64.c
++++ b/loongarch64.c
+@@ -46,6 +46,8 @@ static int loongarch64_uvtop(struct task_context *tc, ulong vaddr,
+ 			physaddr_t *paddr, int verbose);
+ static int loongarch64_kvtop(struct task_context *tc, ulong kvaddr,
+ 			physaddr_t *paddr, int verbose);
++static int loongarch64_translate_pte(ulong pte, void *physaddr,
++			ulonglong pte64);
+ 
+ /*
+  * 3 Levels paging       PAGE_SIZE=16KB
+@@ -80,6 +82,110 @@ typedef struct { ulong pte; } pte_t;
+ 
+ static struct machine_specific loongarch64_machine_specific = { 0 };
+ 
++/*
++ * Check and print the flags on the page
++ */
++static void
++check_page_flags(ulong pte)
++{
++#define CHECK_PAGE_FLAG(flag)				\
++	if ((_PAGE_##flag) && (pte & _PAGE_##flag))	\
++		fprintf(fp, "%s" #flag, others++ ? "|" : "")
++
++	int others = 0;
++	fprintf(fp, "(");
++
++	if (pte) {
++		CHECK_PAGE_FLAG(VALID);
++		CHECK_PAGE_FLAG(DIRTY);
++		CHECK_PAGE_FLAG(PLV);
++
++		/* Determine whether it is a huge page format */
++		if (pte & _PAGE_HGLOBAL) {
++			CHECK_PAGE_FLAG(HUGE);
++			CHECK_PAGE_FLAG(HGLOBAL);
++		} else {
++			CHECK_PAGE_FLAG(GLOBAL);
++		}
++
++		CHECK_PAGE_FLAG(PRESENT);
++		CHECK_PAGE_FLAG(WRITE);
++		CHECK_PAGE_FLAG(PROTNONE);
++		CHECK_PAGE_FLAG(SPECIAL);
++		CHECK_PAGE_FLAG(NO_READ);
++		CHECK_PAGE_FLAG(NO_EXEC);
++		CHECK_PAGE_FLAG(RPLV);
++	} else {
++		fprintf(fp, "no mapping");
++	}
++
++	fprintf(fp, ")\n");
++}
++
++/*
++ * Translate a PTE, returning TRUE if the page is present.
++ * If a physaddr pointer is passed in, don't print anything.
++ */
++static int
++loongarch64_translate_pte(ulong pte, void *physaddr, ulonglong unused)
++{
++	char ptebuf[BUFSIZE];
++	char physbuf[BUFSIZE];
++	char buf1[BUFSIZE];
++	char buf2[BUFSIZE];
++	char buf3[BUFSIZE];
++	char *arglist[MAXARGS];
++	int page_present;
++	int c, len1, len2, len3;
++	ulong paddr;
++
++	paddr = PTOB(pte >> _PFN_SHIFT);
++	page_present = !!(pte & _PAGE_PRESENT);
++
++	if (physaddr) {
++		*(ulong *)physaddr = paddr;
++		return page_present;
++	}
++
++	sprintf(ptebuf, "%lx", pte);
++	len1 = MAX(strlen(ptebuf), strlen("PTE"));
++	fprintf(fp, "%s  ", mkstring(buf1, len1, CENTER | LJUST, "PTE"));
++
++	if (!page_present) {
++		swap_location(pte, buf1);
++		if ((c = parse_line(buf1, arglist)) != 3)
++			error(FATAL, "cannot determine swap location\n");
++
++		len2 = MAX(strlen(arglist[0]), strlen("SWAP"));
++		len3 = MAX(strlen(arglist[2]), strlen("OFFSET"));
++
++		fprintf(fp, "%s  %s\n",
++			mkstring(buf2, len2, CENTER|LJUST, "SWAP"),
++			mkstring(buf3, len3, CENTER|LJUST, "OFFSET"));
++
++		strcpy(buf2, arglist[0]);
++		strcpy(buf3, arglist[2]);
++		fprintf(fp, "%s  %s  %s\n",
++			mkstring(ptebuf, len1, CENTER|RJUST, NULL),
++			mkstring(buf2, len2, CENTER|RJUST, NULL),
++			mkstring(buf3, len3, CENTER|RJUST, NULL));
++		return page_present;
++	}
++
++	sprintf(physbuf, "%lx", paddr);
++	len2 = MAX(strlen(physbuf), strlen("PHYSICAL"));
++	fprintf(fp, "%s  ", mkstring(buf1, len2, CENTER | LJUST, "PHYSICAL"));
++
++	fprintf(fp, "FLAGS\n");
++	fprintf(fp, "%s  %s  ",
++		mkstring(ptebuf, len1, CENTER | RJUST, NULL),
++		mkstring(physbuf, len2, CENTER | RJUST, NULL));
++
++	check_page_flags(pte);
++
++	return page_present;
++}
++
+ /*
+  * Identify and print the segment name to which the virtual address belongs
+  */
+@@ -147,6 +253,21 @@ loongarch64_pgd_vtop(ulong *pgd, ulong vaddr, physaddr_t *paddr, int verbose)
+ 	if (!pte_val)
+ 		goto no_page;
+ 
++	if (!(pte_val & _PAGE_PRESENT)) {
++		if (verbose) {
++			fprintf(fp, "\n");
++			loongarch64_translate_pte((ulong)pte_val, 0, pte_val);
++		}
++		return FALSE;
++	}
++
++	*paddr = PTOB(pte_val >> _PFN_SHIFT) + PAGEOFFSET(vaddr);
++
++	if (verbose) {
++		fprintf(fp, " PAGE: %016lx\n\n", PAGEBASE(*paddr));
++		loongarch64_translate_pte(pte_val, 0, 0);
++	}
++
+ 	return TRUE;
+ no_page:
+ 	fprintf(fp, "invalid\n");
+@@ -347,6 +468,7 @@ loongarch64_init(int when)
+ 		machdep->processor_speed = loongarch64_processor_speed;
+ 		machdep->get_stackbase = generic_get_stackbase;
+ 		machdep->get_stacktop = generic_get_stacktop;
++		machdep->translate_pte = loongarch64_translate_pte;
+ 		machdep->memory_size = generic_memory_size;
+ 		machdep->is_task_addr = loongarch64_is_task_addr;
+ 		machdep->get_smp_cpus = loongarch64_get_smp_cpus;
+-- 
+2.41.0
+

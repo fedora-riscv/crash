@@ -1,0 +1,81 @@
+From 0f34aa46cae9876542df77113d27b14a456c7f7e Mon Sep 17 00:00:00 2001
+From: Ming Wang <wangming01@loongson.cn>
+Date: Thu, 28 Dec 2023 19:46:32 +0800
+Subject: [PATCH 08/12] LoongArch64: Add 'irq' command support
+
+Added support for the 'irq' series of commands in the LoongArch64
+architecture, except for the 'irq -d' command, others can be used.
+
+The result of using the 'irq' command without this patch is as follows:
+crash> irq
+ IRQ   IRQ_DESC/_DATA      IRQACTION      NAME
+ ...
+ 16   9000000090423c00  9000000000f4c500
+ 17   9000000090423e00  9000000000f4c500
+ 18   9000000090495c00  9000000000f4c500
+ 19   9000000090494a00  9000000000f4c500
+ 20   9000000090496400  9000000090418480  "IPI"
+ 21   9000000090496200  9000000090418500  "timer"
+ 22   9000000090cb2600  9000000090d9c780  "acpi"
+ 23   9000000090cb3c00      (unused)
+ 24   9000000090cb1800      (unused)
+ 25   9000000090cb0800  900000009117f580  "loongson_i2c"
+                        900000009117ee80  "loongson_i2c"
+                        900000009117cc00  "loongson_i2c"
+                        900000009117e800  "loongson_i2c"
+                        900000009117c780  "loongson_i2c"
+                        900000009117df00  "loongson_i2c"
+...
+
+Co-developed-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Ming Wang <wangming01@loongson.cn>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ loongarch64.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/loongarch64.c b/loongarch64.c
+index 5c19933ecc6c..6437c4aa4656 100644
+--- a/loongarch64.c
++++ b/loongarch64.c
+@@ -1158,6 +1158,9 @@ loongarch64_dump_machdep_table(ulong arg)
+ 	fprintf(fp, "       is_task_addr: loongarch64_is_task_addr()\n");
+ 	fprintf(fp, "      verify_symbol: loongarch64_verify_symbol()\n");
+ 	fprintf(fp, "         dis_filter: generic_dis_filter()\n");
++	fprintf(fp, "           dump_irq: generic_dump_irq()\n");
++	fprintf(fp, "    show_interrupts: generic_show_interrupts()\n");
++	fprintf(fp, "   get_irq_affinity: generic_get_irq_affinity()\n");
+ 	fprintf(fp, "           cmd_mach: loongarch64_cmd_mach()\n");
+ 	fprintf(fp, "       get_smp_cpus: loongarch64_get_smp_cpus()\n");
+ 	fprintf(fp, "          is_kvaddr: generic_is_kvaddr()\n");
+@@ -1240,6 +1243,9 @@ loongarch64_init(int when)
+ 		machdep->is_task_addr = loongarch64_is_task_addr;
+ 		machdep->get_smp_cpus = loongarch64_get_smp_cpus;
+ 		machdep->dis_filter = generic_dis_filter;
++		machdep->dump_irq = generic_dump_irq;
++		machdep->show_interrupts = generic_show_interrupts;
++		machdep->get_irq_affinity = generic_get_irq_affinity;
+ 		machdep->value_to_symbol = generic_machdep_value_to_symbol;
+ 		machdep->init_kernel_pgd = NULL;
+ 		break;
+@@ -1247,7 +1253,16 @@ loongarch64_init(int when)
+ 	case POST_GDB:
+ 		machdep->section_size_bits = _SECTION_SIZE_BITS;
+ 		machdep->max_physmem_bits = _MAX_PHYSMEM_BITS;
++
++		if (symbol_exists("irq_desc"))
++			ARRAY_LENGTH_INIT(machdep->nr_irqs, irq_desc,
++					  "irq_desc", NULL, 0);
++		else if (kernel_symbol_exists("nr_irqs"))
++			get_symbol_data("nr_irqs", sizeof(unsigned int),
++					&machdep->nr_irqs);
++
+ 		loongarch64_stackframe_init();
++
+ 		if (!machdep->hz)
+ 			machdep->hz = 250;
+ 		break;
+-- 
+2.41.0
+

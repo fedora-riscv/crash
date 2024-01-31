@@ -1,0 +1,169 @@
+From be214379cdb9980d61849e4bb5bac555cb165017 Mon Sep 17 00:00:00 2001
+From: Ming Wang <wangming01@loongson.cn>
+Date: Thu, 28 Dec 2023 19:46:31 +0800
+Subject: [PATCH 07/12] LoongArch64: Add 'help -r' command support
+
+Add support form printing out the registers from the dump file. We don't
+take the registers directly from the ELF notes but instead use the version
+we've saved into the machine_specific structure.  If we don't do this,
+we'd get misleading output when the number of ELF notes don't match the
+number of online CPUs.
+
+E.g. Without this patch:
+crash> help -r
+CPU 0:
+     R0: 0000000000000000   R1: 900000000026cd2c   R2: 90000000013e8000
+     R3: 90000000013ebdf0   R4: 9000000005923878   R5: 0000000000000000
+     R6: 0000000000000001   R7: 7fffffffffffffff   R8: 0000000000000003
+     R9: 9000000094f644a8  R10: ffffffffa9059289  R11: 0000000001167617
+    R12: 0000000000000000  R13: 0000000000000002  R14: 0000000000168d9a
+    R15: 90000000017fd358  R16: 90000000013fe000  R17: 000001383a11ae73
+    R18: fffffffffffffff7  R19: 0000000000000000  R20: 0000000000000954
+    R21: 90000000002c65cc  R22: 0000000000000000  R23: 90000000014168d0
+    R24: 0000000000000000  R25: 0000000000000004  R26: 90000000014169a8
+    R27: 0000000000000004  R28: 900000000150f596  R29: 9000000001257f18
+    R30: 0000000000000000  R31: 0000000000000000
+    CSR epc : 9000000005923878    CSR badv: 9000000000221620
+    CSR crmd: 000000b0            CSR prmd: 90000000014169a8
+    CSR ecfg: 00000000           CSR estat: 90000000014168d0
+    CSR eneu: 00000004
+...
+
+Co-developed-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Ming Wang <wangming01@loongson.cn>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ diskdump.c    |  5 +++-
+ loongarch64.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ netdump.c     |  4 ++-
+ 3 files changed, 76 insertions(+), 2 deletions(-)
+
+diff --git a/diskdump.c b/diskdump.c
+index bec0d82e9092..3ae7bf2da541 100644
+--- a/diskdump.c
++++ b/diskdump.c
+@@ -2648,6 +2648,9 @@ diskdump_display_regs(int cpu, FILE *ofp)
+ 
+ 	if (machine_type("MIPS64"))
+ 		mips64_display_regs_from_elf_notes(cpu, ofp);
++
++	if (machine_type("LOONGARCH64"))
++		loongarch64_display_regs_from_elf_notes(cpu, ofp);
+ }
+ 
+ void
+@@ -2659,7 +2662,7 @@ dump_registers_for_compressed_kdump(void)
+ 	    !(machine_type("X86") || machine_type("X86_64") ||
+ 	      machine_type("ARM64") || machine_type("PPC64") ||
+ 	      machine_type("MIPS") || machine_type("MIPS64") ||
+-	      machine_type("RISCV64")))
++	      machine_type("RISCV64") || machine_type("LOONGARCH64")))
+ 		error(FATAL, "-r option not supported for this dumpfile\n");
+ 
+ 	if (machine_type("ARM64") && (kt->cpus != dd->num_prstatus_notes))
+diff --git a/loongarch64.c b/loongarch64.c
+index 2624c9ba329a..5c19933ecc6c 100644
+--- a/loongarch64.c
++++ b/loongarch64.c
+@@ -1269,6 +1269,75 @@ loongarch64_init(int when)
+ void
+ loongarch64_display_regs_from_elf_notes(int cpu, FILE *ofp)
+ {
++	const struct machine_specific *ms = machdep->machspec;
++	struct loongarch64_pt_regs *regs;
++
++	if (!ms->crash_task_regs) {
++		error(INFO, "registers not collected for cpu %d\n", cpu);
++		return;
++	}
++
++	regs = &ms->crash_task_regs[cpu];
++	if (!regs->regs[LOONGARCH64_EF_SP] && !regs->csr_epc) {
++		error(INFO, "registers not collected for cpu %d\n", cpu);
++		return;
++	}
++
++	fprintf(ofp,
++		"     R0: %016lx   R1: %016lx   R2: %016lx\n"
++		"     R3: %016lx   R4: %016lx   R5: %016lx\n"
++		"     R6: %016lx   R7: %016lx   R8: %016lx\n"
++		"     R9: %016lx  R10: %016lx  R11: %016lx\n"
++		"    R12: %016lx  R13: %016lx  R14: %016lx\n"
++		"    R15: %016lx  R16: %016lx  R17: %016lx\n"
++		"    R18: %016lx  R19: %016lx  R20: %016lx\n"
++		"    R21: %016lx  R22: %016lx  R23: %016lx\n"
++		"    R24: %016lx  R25: %016lx  R26: %016lx\n"
++		"    R27: %016lx  R28: %016lx  R29: %016lx\n"
++		"    R30: %016lx  R31: %016lx\n"
++		"    CSR epc : %016lx    CSR badv: %016lx\n"
++		"    CSR crmd: %08lx            CSR prmd: %08lx\n"
++		"    CSR ecfg: %08lx           CSR estat: %08lx\n"
++		"    CSR eneu: %08lx",
++		regs->regs[LOONGARCH64_EF_R0],
++		regs->regs[LOONGARCH64_EF_R0 + 1],
++		regs->regs[LOONGARCH64_EF_R0 + 2],
++		regs->regs[LOONGARCH64_EF_R0 + 3],
++		regs->regs[LOONGARCH64_EF_R0 + 4],
++		regs->regs[LOONGARCH64_EF_R0 + 5],
++		regs->regs[LOONGARCH64_EF_R0 + 6],
++		regs->regs[LOONGARCH64_EF_R0 + 7],
++		regs->regs[LOONGARCH64_EF_R0 + 8],
++		regs->regs[LOONGARCH64_EF_R0 + 9],
++		regs->regs[LOONGARCH64_EF_R0 + 10],
++		regs->regs[LOONGARCH64_EF_R0 + 11],
++		regs->regs[LOONGARCH64_EF_R0 + 12],
++		regs->regs[LOONGARCH64_EF_R0 + 13],
++		regs->regs[LOONGARCH64_EF_R0 + 14],
++		regs->regs[LOONGARCH64_EF_R0 + 15],
++		regs->regs[LOONGARCH64_EF_R0 + 16],
++		regs->regs[LOONGARCH64_EF_R0 + 17],
++		regs->regs[LOONGARCH64_EF_R0 + 18],
++		regs->regs[LOONGARCH64_EF_R0 + 19],
++		regs->regs[LOONGARCH64_EF_R0 + 20],
++		regs->regs[LOONGARCH64_EF_R0 + 21],
++		regs->regs[LOONGARCH64_EF_R0 + 22],
++		regs->regs[LOONGARCH64_EF_R0 + 23],
++		regs->regs[LOONGARCH64_EF_R0 + 24],
++		regs->regs[LOONGARCH64_EF_R0 + 25],
++		regs->regs[LOONGARCH64_EF_R0 + 26],
++		regs->regs[LOONGARCH64_EF_R0 + 27],
++		regs->regs[LOONGARCH64_EF_R0 + 28],
++		regs->regs[LOONGARCH64_EF_R0 + 29],
++		regs->regs[LOONGARCH64_EF_R0 + 30],
++		regs->regs[LOONGARCH64_EF_R0 + 31],
++		regs->csr_epc,
++		regs->csr_badvaddr,
++		regs->csr_crmd,
++		regs->csr_prmd,
++		regs->csr_ecfg,
++		regs->csr_estat,
++		regs->csr_euen);
+ }
+ 
+ #else /* !LOONGARCH64 */
+diff --git a/netdump.c b/netdump.c
+index dbcf253c3358..b4e2a5cb2037 100644
+--- a/netdump.c
++++ b/netdump.c
+@@ -2961,6 +2961,8 @@ display_regs_from_elf_notes(int cpu, FILE *ofp)
+ 		mips64_display_regs_from_elf_notes(cpu, ofp);
+ 	} else if (machine_type("RISCV64")) {
+ 		riscv64_display_regs_from_elf_notes(cpu, ofp);
++	} else if (machine_type("LOONGARCH64")) {
++		loongarch64_display_regs_from_elf_notes(cpu, ofp);
+ 	}
+ }
+ 
+@@ -2972,7 +2974,7 @@ dump_registers_for_elf_dumpfiles(void)
+         if (!(machine_type("X86") || machine_type("X86_64") || 
+ 	    machine_type("ARM64") || machine_type("PPC64") ||
+ 	    machine_type("MIPS") || machine_type("MIPS64") ||
+-	    machine_type("RISCV64")))
++	    machine_type("RISCV64") || machine_type("LOONGARCH64")))
+                 error(FATAL, "-r option not supported for this dumpfile\n");
+ 
+ 	if (NETDUMP_DUMPFILE()) {
+-- 
+2.41.0
+

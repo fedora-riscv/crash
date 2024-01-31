@@ -1,0 +1,120 @@
+From 756158045183a01963f2e677786dac480453ced1 Mon Sep 17 00:00:00 2001
+From: Ming Wang <wangming01@loongson.cn>
+Date: Thu, 28 Dec 2023 19:46:28 +0800
+Subject: [PATCH 04/12] LoongArch64: Add 'mach' command support
+
+The 'mach' command can only get some basic machine state information, such
+as machine type, processor speed, etc.
+
+E.g. With this patch:
+crash> mach
+       MACHINE TYPE: loongarch64
+        MEMORY SIZE: 64 GB
+               CPUS: 16
+    PROCESSOR SPEED: 2200 Mhz
+                 HZ: 250
+          PAGE SIZE: 16384
+  KERNEL STACK SIZE: 16384
+
+Co-developed-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Ming Wang <wangming01@loongson.cn>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ loongarch64.c | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+
+diff --git a/loongarch64.c b/loongarch64.c
+index 15d1474a0408..20c889288d0c 100644
+--- a/loongarch64.c
++++ b/loongarch64.c
+@@ -49,6 +49,8 @@ static int loongarch64_kvtop(struct task_context *tc, ulong kvaddr,
+ static int loongarch64_translate_pte(ulong pte, void *physaddr,
+ 			ulonglong pte64);
+ 
++static void loongarch64_cmd_mach(void);
++static void loongarch64_display_machine_stats(void);
+ /*
+  * 3 Levels paging       PAGE_SIZE=16KB
+  *  PGD  |  PMD  |  PTE  |  OFFSET  |
+@@ -334,6 +336,59 @@ loongarch64_kvtop(struct task_context *tc, ulong kvaddr, physaddr_t *paddr, int
+ 			     verbose);
+ }
+ 
++/*
++ * Machine dependent command.
++ */
++static void
++loongarch64_cmd_mach(void)
++{
++	int c;
++
++	while ((c = getopt(argcnt, args, "cmo")) != EOF) {
++		switch (c) {
++		case 'c':
++		case 'm':
++		case 'o':
++			option_not_supported(c);
++			break;
++		default:
++			argerrs++;
++			break;
++		}
++	}
++
++	if (argerrs)
++		cmd_usage(pc->curcmd, SYNOPSIS);
++
++	loongarch64_display_machine_stats();
++}
++
++/*
++ * "mach" command output.
++ */
++static void
++loongarch64_display_machine_stats(void)
++{
++	struct new_utsname *uts;
++	char buf[BUFSIZE];
++	ulong mhz;
++
++	uts = &kt->utsname;
++
++	fprintf(fp, "       MACHINE TYPE: %s\n", uts->machine);
++	fprintf(fp, "        MEMORY SIZE: %s\n", get_memory_size(buf));
++	fprintf(fp, "               CPUS: %d\n", get_cpus_to_display());
++	fprintf(fp, "    PROCESSOR SPEED: ");
++	if ((mhz = machdep->processor_speed()))
++		fprintf(fp, "%ld Mhz\n", mhz);
++	else
++		fprintf(fp, "(unknown)\n");
++	fprintf(fp, "                 HZ: %d\n", machdep->hz);
++	fprintf(fp, "          PAGE SIZE: %d\n", PAGESIZE());
++	fprintf(fp, "  KERNEL STACK SIZE: %ld\n", STACKSIZE());
++
++}
++
+ /*
+  * Accept or reject a symbol from the kernel namelist.
+  */
+@@ -464,6 +519,7 @@ loongarch64_init(int when)
+ 		machdep->is_uvaddr = generic_is_uvaddr;
+ 		machdep->uvtop = loongarch64_uvtop;
+ 		machdep->kvtop = loongarch64_kvtop;
++		machdep->cmd_mach = loongarch64_cmd_mach;
+ 		machdep->vmalloc_start = loongarch64_vmalloc_start;
+ 		machdep->processor_speed = loongarch64_processor_speed;
+ 		machdep->get_stackbase = generic_get_stackbase;
+@@ -480,6 +536,9 @@ loongarch64_init(int when)
+ 	case POST_GDB:
+ 		machdep->section_size_bits = _SECTION_SIZE_BITS;
+ 		machdep->max_physmem_bits = _MAX_PHYSMEM_BITS;
++		if (!machdep->hz)
++			machdep->hz = 250;
++		break;
+ 
+ 	case POST_VM:
+ 		break;
+-- 
+2.41.0
+

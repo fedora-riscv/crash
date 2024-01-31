@@ -1,0 +1,264 @@
+From 5977936c0a91b89e48d026867e6a2f8261ba0c2d Mon Sep 17 00:00:00 2001
+From: Edward Chron <echron@arista.com>
+Date: Sun, 21 Jan 2024 10:31:51 -0800
+Subject: [PATCH 12/12] Add "log -c" option to display printk caller id
+
+Add support so that dmesg entries include the optional Linux Kernel
+debug CONFIG option PRINTK_CALLER which adds an optional dmesg field
+that contains the Thread Id or CPU Id that is issuing the printk to
+add the message to the kernel ring buffer. If enabled, this CONFIG
+option makes debugging simpler as dmesg entries for a specific
+thread or CPU can be recognized. The config option was introduced
+with Linux 5.1 [1].
+
+Size of the PRINTK_CALLER field is determined by the maximum number
+tasks that can be run on the system which is limited by the value of
+/proc/sys/kernel/pid_max as pid values are from 0 to value - 1.
+This value determines the number of id digits needed by the caller id.
+The PRINTK_CALLER field is printed as T<id> for a Task Id or C<id>
+for a CPU Id for a printk in CPU context. The values are left space
+padded and enclosed in parentheses such as:
+         [    T123]   or   [     C16]
+
+Our patch adds the PRINTK_CALLER field after the timestamp if the
+printk caller log / dmesg option (-c) is selected:
+
+  crash> log -m -c
+  ...
+  [    0.014179] [     T1] <6>Secure boot disabled
+  [    0.014179] [    T29] <6>RAMDISK: [mem 0x3cf4f000-0x437bbfff]
+  ...
+
+[1] 15ff2069cb7f ("printk: Add caller information to printk() output.")
+
+Resolves: https://github.com/crash-utility/crash/issues/164
+Signed-off-by: Ivan Delalande <colona@arista.com>
+Signed-off-by: Edward Chron <echron@arista.com>
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h    | 18 ++++++++++++------
+ help.c    | 19 +++++++++++++++++--
+ kernel.c  | 25 ++++++++++++++++++++++++-
+ printk.c  | 34 ++++++++++++++++++++++++++++++++++
+ symbols.c |  1 +
+ 5 files changed, 88 insertions(+), 9 deletions(-)
+
+diff --git a/defs.h b/defs.h
+index ca1ac79ffa3e..98650e8780bf 100644
+--- a/defs.h
++++ b/defs.h
+@@ -2239,6 +2239,7 @@ struct offset_table {                    /* stash of commonly-used offsets */
+ 	long mnt_namespace_mounts;
+ 	long mnt_namespace_nr_mounts;
+ 	long mount_mnt_node;
++	long log_caller_id;
+ };
+ 
+ struct size_table {         /* stash of commonly-used sizes */
+@@ -6108,12 +6109,13 @@ void dump_log(int);
+ void parse_kernel_version(char *);
+ 
+ #define LOG_LEVEL(v) ((v) & 0x07)
+-#define SHOW_LOG_LEVEL (0x1)
+-#define SHOW_LOG_DICT  (0x2)
+-#define SHOW_LOG_TEXT  (0x4)
+-#define SHOW_LOG_AUDIT (0x8)
+-#define SHOW_LOG_CTIME (0x10)
+-#define SHOW_LOG_SAFE  (0x20)
++#define SHOW_LOG_LEVEL    (0x1)
++#define SHOW_LOG_DICT     (0x2)
++#define SHOW_LOG_TEXT     (0x4)
++#define SHOW_LOG_AUDIT    (0x8)
++#define SHOW_LOG_CTIME   (0x10)
++#define SHOW_LOG_SAFE    (0x20)
++#define SHOW_LOG_CALLER  (0x40)
+ void set_cpu(int);
+ void clear_machdep_cache(void);
+ struct stack_hook *gather_text_list(struct bt_info *);
+@@ -7588,6 +7590,10 @@ int calc_kaslr_offset(ulong *, ulong *);
+  */
+ void dump_lockless_record_log(int);
+ 
++/* caller_id default and max character sizes based on pid field size */
++#define PID_CHARS_MAX 16        /* Max Number of PID characters */
++#define PID_CHARS_DEFAULT 8     /* Default number of PID characters */
++
+ /*
+  *  gnu_binutils.c
+  */
+diff --git a/help.c b/help.c
+index 623b09cc3517..a9c4d30bc1c6 100644
+--- a/help.c
++++ b/help.c
+@@ -4024,7 +4024,7 @@ NULL
+ char *help_log[] = {
+ "log",
+ "dump system message buffer",
+-"[-Ttdmas]",
++"[-Ttdmasc]",
+ "  This command dumps the kernel log_buf contents in chronological order.  The",
+ "  command supports the older log_buf formats, which may or may not contain a",
+ "  timestamp inserted prior to each message, as well as the newer variable-length", 
+@@ -4047,7 +4047,11 @@ char *help_log[] = {
+ "        been copied out to the user-space audit daemon.",
+ "    -s  Dump the printk logs remaining in kernel safe per-CPU buffers that",
+ "        have not been flushed out to log_buf.",
+-" ",        
++"    -c  Display the caller id field that identifies either the thread id or",
++"        the CPU id (if in CPU context) that called printk(), if available.",
++"        Generally available on Linux 5.1 to 5.9 kernels configured with",
++"        CONFIG_PRINTK_CALLER or Linux 5.10 and later kernels.",
++" ",
+ "\nEXAMPLES",
+ "  Dump the kernel message buffer:\n",
+ "    %s> log",
+@@ -4215,6 +4219,17 @@ char *help_log[] = {
+ "    CPU: 0  ADDR: ffff8ca4fbc1ad00 LEN: 0  MESSAGE_LOST: 0",
+ "      (empty)",
+ "    ...",
++" ",
++"  Display the caller id that identifies the thread id of the task (begins",
++"  with 'T') or the processor id (begins with 'C' for in CPU context) that",
++"  called printk(), if available.\n",
++"    %s> log -c",
++"    ...",
++"    [    0.014179] [     T1] Secure boot disabled",
++"    [    0.014179] [    T29] RAMDISK: [mem 0x3cf4f000-0x437bbfff]",
++"    [    0.198789] [     C0] DMAR: DRHD: handling fault status reg 3",
++"    ...",
++
+ NULL               
+ };
+ 
+diff --git a/kernel.c b/kernel.c
+index 6dcf414693e6..1728b70c1b5c 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -5089,7 +5089,7 @@ cmd_log(void)
+ 
+ 	msg_flags = 0;
+ 
+-        while ((c = getopt(argcnt, args, "Ttdmas")) != EOF) {
++        while ((c = getopt(argcnt, args, "Ttdmasc")) != EOF) {
+                 switch(c)
+                 {
+ 		case 'T':
+@@ -5110,6 +5110,9 @@ cmd_log(void)
+ 		case 's':
+ 			msg_flags |= SHOW_LOG_SAFE;
+ 			break;
++		case 'c':
++			msg_flags |= SHOW_LOG_CALLER;
++			break;
+                 default:
+                         argerrs++;
+                         break;
+@@ -5369,6 +5372,25 @@ dump_log_entry(char *logptr, int msg_flags)
+ 		fprintf(fp, "%s", buf);
+ 	}
+ 
++	/*
++	 * The PRINTK_CALLER id field was introduced with Linux-5.1 so if
++	 * requested, Kernel version >= 5.1 and field exists print caller_id.
++	 */
++	if (msg_flags & SHOW_LOG_CALLER &&
++			VALID_MEMBER(log_caller_id)) {
++		const unsigned int cpuid = 0x80000000;
++		char cbuf[PID_CHARS_MAX];
++		unsigned int cid;
++
++		/* Get id type, isolate just id value in cid for print */
++		cid = UINT(logptr + OFFSET(log_caller_id));
++		sprintf(cbuf, "%c%d", (cid & cpuid) ? 'C' : 'T', cid & ~cpuid);
++		sprintf(buf, "[%*s] ", PID_CHARS_DEFAULT, cbuf);
++
++		ilen += strlen(buf);
++		fprintf(fp, "%s", buf);
++	}
++
+ 	level = LOG_LEVEL(level);
+ 
+ 	if (msg_flags & SHOW_LOG_LEVEL) {
+@@ -5424,6 +5446,7 @@ dump_variable_length_record_log(int msg_flags)
+ 			 * from log to printk_log.  See 62e32ac3505a0cab.
+ 			 */
+ 			log_struct_name = "printk_log";
++			MEMBER_OFFSET_INIT(log_caller_id, "printk_log", "caller_id");
+ 		} else 
+ 			log_struct_name = "log";
+ 
+diff --git a/printk.c b/printk.c
+index 8658016e65bf..be842a759549 100644
+--- a/printk.c
++++ b/printk.c
+@@ -9,6 +9,7 @@ struct prb_map {
+ 	unsigned long desc_ring_count;
+ 	char *descs;
+ 	char *infos;
++	unsigned int pid_max_chars;
+ 
+ 	char *text_data_ring;
+ 	unsigned long text_data_ring_size;
+@@ -162,6 +163,24 @@ dump_record(struct prb_map *m, unsigned long id, int msg_flags)
+ 		fprintf(fp, "%s", buf);
+ 	}
+ 
++	/*
++	 * The lockless ringbuffer introduced in Linux-5.10 always has
++	 * the caller_id field available, so if requested, print it.
++	 */
++	if (msg_flags & SHOW_LOG_CALLER) {
++		const unsigned int cpuid = 0x80000000;
++		char cbuf[PID_CHARS_MAX];
++		unsigned int cid;
++
++		/* Get id type, isolate id value in cid for print */
++		cid = UINT(info + OFFSET(printk_info_caller_id));
++		sprintf(cbuf, "%c%d", (cid & cpuid) ? 'C' : 'T', cid & ~cpuid);
++		sprintf(buf, "[%*s] ", m->pid_max_chars, cbuf);
++
++		ilen += strlen(buf);
++		fprintf(fp, "%s", buf);
++	}
++
+ 	if (msg_flags & SHOW_LOG_LEVEL) {
+ 		level = UCHAR(info + OFFSET(printk_info_level)) >> 5;
+ 		sprintf(buf, "<%x>", level);
+@@ -262,6 +281,21 @@ dump_lockless_record_log(int msg_flags)
+ 		goto out_text_data;
+ 	}
+ 
++	/* If caller_id was requested, get the pid_max value for print */
++	if (msg_flags & SHOW_LOG_CALLER) {
++		unsigned int pidmax;
++
++		get_symbol_data("pid_max", sizeof(pidmax), &pidmax);
++		if (pidmax <= 99999)
++			m.pid_max_chars = 6;
++		else if (pidmax <= 999999)
++			m.pid_max_chars = 7;
++		else
++			m.pid_max_chars = PID_CHARS_DEFAULT;
++	} else {
++		m.pid_max_chars = PID_CHARS_DEFAULT;
++	}
++
+ 	/* ready to go */
+ 
+ 	tail_id = ULONG(m.desc_ring + OFFSET(prb_desc_ring_tail_id) +
+diff --git a/symbols.c b/symbols.c
+index b07b101767c8..cbc9ed137062 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -11550,6 +11550,7 @@ dump_offset_table(char *spec, ulong makestruct)
+ 		OFFSET(log_level));
+ 	fprintf(fp, "               log_flags_level: %ld\n",
+ 		OFFSET(log_flags_level));
++	fprintf(fp, "                 log_caller_id: %ld\n", OFFSET(log_caller_id));
+ 
+ 	fprintf(fp, "               printk_info_seq: %ld\n", OFFSET(printk_info_seq));
+ 	fprintf(fp, "           printk_info_ts_nseq: %ld\n", OFFSET(printk_info_ts_nsec));
+-- 
+2.41.0
+

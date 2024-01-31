@@ -1,0 +1,111 @@
+From c3939d2e1930677e6dad5a0e47ab1e695f54404b Mon Sep 17 00:00:00 2001
+From: Ming Wang <wangming01@loongson.cn>
+Date: Thu, 28 Dec 2023 19:46:33 +0800
+Subject: [PATCH 09/12] LoongArch64: Add "--kaslr" command line option support
+
+Apply initial changes to support kernel address space layout
+randomization (KASLR) for loongarch64.  This is the minimal patch
+required to process loongarch64 dumps for the kernels configured
+with CONFIG_RANDOMIZE_BASE(CONFIG_RELOCATABLE), and to accept the
+"--kaslr" command line option. Only dumpfiles whose headers contain
+kernel VMCOREINFO data are supported.
+
+Example:
+crash vmcore vmlinux --kaslr auto
+
+Co-developed-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Youling Tang <tangyouling@loongson.cn>
+Signed-off-by: Ming Wang <wangming01@loongson.cn>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ crash.8   |  2 +-
+ help.c    |  9 +++++----
+ main.c    |  3 ++-
+ symbols.c | 10 ++++++----
+ 4 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/crash.8 b/crash.8
+index e553a0b4adb3..0662f9262629 100644
+--- a/crash.8
++++ b/crash.8
+@@ -491,7 +491,7 @@ Search for the kernel source code in directory instead of in the
+ standard location that is compiled into the debuginfo data.
+ .TP
+ .BI --kaslr \ offset | auto
+-If an x86_64 kernel was configured with 
++If an x86, x86_64, s390x or loongarch64 kernel was configured with
+ .B CONFIG_RANDOMIZE_BASE,
+ the offset value is equal to the difference between the symbol values 
+ compiled into the vmlinux file and their relocated KASLR values.  If set to
+diff --git a/help.c b/help.c
+index a4319dd2a717..5feb43d1d727 100644
+--- a/help.c
++++ b/help.c
+@@ -336,10 +336,11 @@ char *program_usage_info[] = {
+     "    and verification.  The default count is 32768.",
+     "",
+     "  --kaslr offset | auto",
+-    "    If x86, x86_64 or s390x kernel was configured with CONFIG_RANDOMIZE_BASE,",
+-    "    the offset value is equal to the difference between the symbol values ",
+-    "    compiled into the vmlinux file and their relocated KASLR value.  If", 
+-    "    set to auto, the KASLR offset value will be automatically calculated.",
++    "    If x86, x86_64, s390x or loongarch64 kernel was configured with",
++    "    CONFIG_RANDOMIZE_BASE, the offset value is equal to the difference",
++    "    between the symbol values compiled into the vmlinux file and their",
++    "    relocated KASLR value.  If set to auto, the KASLR offset value will",
++    "    be automatically calculated.",
+     "",
+     "  --minimal",
+     "    Bring up a session that is restricted to the log, dis, rd, sym,",
+diff --git a/main.c b/main.c
+index 4fd4ca57dbb2..0b6b9273ab06 100644
+--- a/main.c
++++ b/main.c
+@@ -228,7 +228,8 @@ main(int argc, char **argv)
+ 			} else if (STREQ(long_options[option_index].name, "kaslr")) {
+ 				if (!machine_type("X86_64") &&
+ 				    !machine_type("ARM64") && !machine_type("X86") &&
+-				    !machine_type("S390X") && !machine_type("RISCV64"))
++				    !machine_type("S390X") && !machine_type("RISCV64") &&
+++				    !machine_type("LOONGARCH64"))
+ 					error(INFO, "--kaslr not valid "
+ 						"with this machine type.\n");
+ 				else if (STREQ(optarg, "auto"))
+diff --git a/symbols.c b/symbols.c
+index cf25e9da9e8f..d43785d3126a 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -629,7 +629,8 @@ kaslr_init(void)
+ 	char *string;
+ 
+ 	if ((!machine_type("X86_64") && !machine_type("ARM64") && !machine_type("X86") &&
+-	    !machine_type("S390X") && !machine_type("RISCV64")) || (kt->flags & RELOC_SET))
++	    !machine_type("S390X") && !machine_type("RISCV64") && !machine_type("LOONGARCH64")) ||
++			(kt->flags & RELOC_SET))
+ 		return;
+ 
+ 	if (!kt->vmcoreinfo._stext_SYMBOL &&
+@@ -794,8 +795,8 @@ store_symbols(bfd *abfd, int dynamic, void *minisyms, long symcount,
+ 					fromend, size, store);
+ 		} else if (!(kt->flags & RELOC_SET))
+ 			kt->flags |= RELOC_FORCE;
+-	} else if (machine_type("X86_64") || machine_type("ARM64") ||
+-		   machine_type("S390X") || machine_type("RISCV64")) {
++	} else if (machine_type("X86_64") || machine_type("ARM64") || machine_type("S390X") ||
++			machine_type("RISCV64") || machine_type("LOONGARCH64")) {
+ 		if ((kt->flags2 & RELOC_AUTO) && !(kt->flags & RELOC_SET))
+ 			derive_kaslr_offset(abfd, dynamic, from,
+ 				fromend, size, store);
+@@ -867,7 +868,8 @@ store_sysmap_symbols(void)
+                         strerror(errno));
+ 
+ 	if (!machine_type("X86") && !machine_type("X86_64") &&
+-	    !machine_type("ARM64") && !machine_type("S390X"))
++	    !machine_type("ARM64") && !machine_type("S390X") &&
++	    !machine_type("LOONGARCH64"))
+ 		kt->flags &= ~RELOC_SET;
+ 
+ 	first = 0;
+-- 
+2.41.0
+

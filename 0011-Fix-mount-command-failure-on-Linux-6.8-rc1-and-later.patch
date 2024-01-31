@@ -1,0 +1,107 @@
+From 3d60d9d40457239683a5f20b01437db94f964fb8 Mon Sep 17 00:00:00 2001
+From: Kazuhito Hagio <k-hagio-ab@nec.com>
+Date: Fri, 26 Jan 2024 16:12:58 +0900
+Subject: [PATCH 11/12] Fix "mount" command failure on Linux 6.8-rc1 and later
+
+Kernel commit 2eea9ce4310d ("mounts: keep list of mounts in an rbtree")
+changed the structure that keeps the list of mounts to an rbtree.
+Without the patch, "mount" command fails with the following error:
+
+  crash> mount
+
+  mount: invalid structure member offset: mnt_namespace_list
+         FILE: filesys.c  LINE: 1643  FUNCTION: get_mount_list()
+
+Signed-off-by: Kazuhito Hagio <k-hagio-ab@nec.com>
+Signed-off-by: Lianbo Jiang <lijiang@redhat.com>
+---
+ defs.h    |  3 +++
+ filesys.c | 29 +++++++++++++++++++++++++++++
+ symbols.c |  3 +++
+ 3 files changed, 35 insertions(+)
+
+diff --git a/defs.h b/defs.h
+index d1edce9893d1..ca1ac79ffa3e 100644
+--- a/defs.h
++++ b/defs.h
+@@ -2236,6 +2236,9 @@ struct offset_table {                    /* stash of commonly-used offsets */
+ 	long zram_comp_algs;
+ 	long task_struct_thread_reg01;
+ 	long task_struct_thread_reg03;
++	long mnt_namespace_mounts;
++	long mnt_namespace_nr_mounts;
++	long mount_mnt_node;
+ };
+ 
+ struct size_table {         /* stash of commonly-used sizes */
+diff --git a/filesys.c b/filesys.c
+index 1d0ee7f0b24a..81fe856699e1 100644
+--- a/filesys.c
++++ b/filesys.c
+@@ -1634,6 +1634,31 @@ get_mount_list(int *cntptr, struct task_context *namespace_context)
+ 			&mnt_ns, sizeof(void *), "nsproxy mnt_ns", 
+ 			RETURN_ON_ERROR|QUIET))
+ 			error(FATAL, "cannot determine mount list location!\n");
++
++		/* Linux 6.8 and later keep list of mounts in an rbtree. */
++		if (VALID_MEMBER(mnt_namespace_nr_mounts)) {
++			uint nr_mounts;
++			ulong *mntlist, *l;
++			struct rb_root *mounts;
++			struct rb_node *node;
++
++			readmem(mnt_ns + OFFSET(mnt_namespace_nr_mounts), KVADDR, &nr_mounts,
++				sizeof(uint), "mnt_namespace.nr_mounts", FAULT_ON_ERROR);
++
++			if (!nr_mounts)
++				return NULL;
++
++			mounts = (struct rb_root *)(mnt_ns + OFFSET(mnt_namespace_mounts));
++
++			mntlist = (ulong *)GETBUF(sizeof(ulong) * nr_mounts);
++			l = mntlist;
++			for (node = rb_first(mounts); node; l++, node = rb_next(node))
++				*l = (ulong)node - OFFSET(mount_mnt_node);
++
++			*cntptr = nr_mounts;
++			return mntlist;
++		}
++
+         	if (!readmem(mnt_ns + OFFSET(mnt_namespace_root), KVADDR, 
+ 			&root, sizeof(void *), "mnt_namespace root", 
+ 			RETURN_ON_ERROR|QUIET))
+@@ -2063,6 +2088,10 @@ vfs_init(void)
+ 		MEMBER_OFFSET_INIT(nsproxy_mnt_ns, "nsproxy", "mnt_ns");
+         	MEMBER_OFFSET_INIT(mnt_namespace_root, "mnt_namespace", "root");
+         	MEMBER_OFFSET_INIT(mnt_namespace_list, "mnt_namespace", "list");
++		/* Linux 6.8 and later */
++		MEMBER_OFFSET_INIT(mnt_namespace_mounts, "mnt_namespace", "mounts");
++		MEMBER_OFFSET_INIT(mnt_namespace_nr_mounts, "mnt_namespace", "nr_mounts");
++		MEMBER_OFFSET_INIT(mount_mnt_node, "mount", "mnt_node");
+ 	} else if (THIS_KERNEL_VERSION >= LINUX(2,4,20)) {
+ 		if (CRASHDEBUG(2))
+ 			fprintf(fp, "hardwiring namespace stuff\n");
+diff --git a/symbols.c b/symbols.c
+index d43785d3126a..b07b101767c8 100644
+--- a/symbols.c
++++ b/symbols.c
+@@ -9925,6 +9925,8 @@ dump_offset_table(char *spec, ulong makestruct)
+ 		OFFSET(mnt_namespace_root));
+ 	fprintf(fp, "            mnt_namespace_list: %ld\n",
+ 		OFFSET(mnt_namespace_list));
++	fprintf(fp, "          mnt_namespace_mounts: %ld\n", OFFSET(mnt_namespace_mounts));
++	fprintf(fp, "       mnt_namespace_nr_mounts: %ld\n", OFFSET(mnt_namespace_nr_mounts));
+ 
+ 	fprintf(fp, "             pid_namespace_idr: %ld\n",
+ 		OFFSET(pid_namespace_idr));
+@@ -10581,6 +10583,7 @@ dump_offset_table(char *spec, ulong makestruct)
+ 		OFFSET(mount_mnt_devname));
+ 	fprintf(fp, "                     mount_mnt: %ld\n",
+ 		OFFSET(mount_mnt));
++	fprintf(fp, "                mount_mnt_node: %ld\n", OFFSET(mount_mnt_node));
+ 	fprintf(fp, "                namespace_root: %ld\n",
+ 			OFFSET(namespace_root));
+ 	fprintf(fp, "                namespace_list: %ld\n",
+-- 
+2.41.0
+
